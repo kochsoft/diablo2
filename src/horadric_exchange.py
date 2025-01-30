@@ -61,19 +61,19 @@ class Data:
     def __init__(self, data: bytes):
         self.data = data
 
-    def checksum_reset(self):
-        """Sets the checksum to 0. This is necessary before computation of a new checksum."""
-        self.data = self.data[0:12] + b'\x00\x00\x00\x00' + self.data[16:]
+    def checksum_compute(self) -> bytes:
+        csum = 0
+        for j in range(len(self.data)):
+            elt = 0 if 12 <= j < 16 else self.data[j]
+            csum = ((csum << 1) + elt) % 0xffffffff
+        csum = csum.to_bytes(4, 'little')
+        return csum
 
     def checksum_update(self) -> bytes:
         """Important function! Will update the checksum entry. This is important to be done as final
         step before saving. If the checksum does not reflect the save game file, the game will not accept it.
         :returns the checksum in a 4-byte binary string. Also updates the self.data accordingly."""
-        self.checksum_reset()
-        csum = 0
-        for elt in self.data:
-            csum = ((csum << 1) + elt) % 0xffffffff
-        csum = csum.to_bytes(4, 'little')
+        csum = self.checksum_compute()
         self.data = self.data[0:12] + csum + self.data[16:]
         return csum
 
@@ -123,7 +123,10 @@ class Data:
     #    pass
 
     def __str__(self) -> str:
-        msg = f"{self.get_name(True)}, a level {self.data[43]} {self.get_class(True)}. Checksum: '{int.from_bytes(self.get_checksum(), 'little')}'"
+        msg = f"{self.get_name(True)}, a level {self.data[43]} {self.get_class(True)}. "\
+              f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
+              f"Checksum (computed): '{int.from_bytes(self.checksum_compute(), 'little')}, "\
+              f"file size: {len(self.data)}"
         return msg
 
 
