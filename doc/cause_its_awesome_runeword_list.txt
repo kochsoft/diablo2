@@ -1,0 +1,279 @@
+D2: Runewords & Runes Cheat Sheet (in order by lvl)
+Guide
+All Diablo 2: Resurrected Runewords / Runes listed in order by level requirement & General info/tips.
+
+Color Coded Tool-tips Version: https://diablo2.io/forums/diablo-2-runewords-runes-cheat-sheet-t8644.html
+
+Countess Max Rune lvl Per Difficulty: (Always /players1)
+
+Normal: [El, Eld, Tir, Nef, Eth, Ith, Tal, Ral]
+
+Nightmare: [Ort, Thul, Amn, Sol, Shael, Dol, Hel, io] Very-rare [Lum/Ko]
+
+Hell: [Lum, Ko, Fal, Lem, Pul, Um, Mal, Ist] Very-rare [Gul, Vex, Ohm, Lo]
+
+Hellforge Max Rune lvl: (A4 Quest)
+
+Normal: El to Amn
+
+Nightmare: Sol to Um
+
+Hell: Hel to Gul
+
+Find what Runewords you can make based on runes:
+
+https://babelthuap.github.io/runewords/
+
+________________________________________________________________________________________________________
+
+ALL RUNEWORDS: (Runes listed at bottom)
+
+-*WARNING #1: You cannot create runewords in anything but white and grey (superior) bases. Meaning Magic, Rare, Set and Unique items with sockets will NOT work.
+
+-*WARNING #2: You cannot socket already socketed items. Also, when using the horadric cube it gives a percent chance for different socket numbers: https://d2.maxroll.gg/resources/horadri ... Base-Items
+
+-*WARNING #3: Always double Check Runeword recipes to make sure you put the runes in the correct order and in the correct item type. (Many people accidentally put Polearm-runewords inside Spear-class weapons for example.)
+
+Important Tips:
+
+-Choose bases with low strength and dexterity requirements.
+
+-You can easily buy a lot of the bases with open sockets from Vendors too. Reset all Vendor items by leaving town through the Main Entrance, Portal or Waypoint.
+
+-Use Hel Rune + TP scroll in the Horadric Cube to Remove all items from sockets, the Runes or Gems will be destroyed in the process.
+
+Source: http://classic.battle.net/diablo2exp/items/runewords-110.shtml
+
+Name __ Runes __ Weapon type
+
+13 - Nadir (Nef + Tir) (2 socket helms)
+
+13 - Steel (Tir + El) (2 socket swords/axes/maces)
+
+15 - Malice (Ith + El + Eth) (3 Socket Melee Weapons)
+
+17 - Stealth (Tal + Eth) (2 socket body armor)
+
+19 - Leaf (Tir + Ral) (2 socket staves only)
+
+21 - Ancients Pledge (Ral + Ort + Tal) (3 socket shields)
+
+21 - Holy Thunder (Eth + Ral + Ort + Tal) (4 Socket Scepters)
+
+21 - Zephyr (Ort + Eth) (2 Socket Missile Weapons)
+
+25 - King's Grace (Amn + Ral + Thul) (3 Socket Swords/Scepters)
+
+25 - Edge (Tir + Tal + Amn) (3 socket missle weapons)
+
+25 - Spirit (Tal + Thul + Ort + Amn) (4 socket swords only) (lvl 54 shield)
+
+25 - Myth (Hel + Amn + Nef) (3 socket body armor)
+
+25 - Strength (Amn + Tir) (2 socket weapons) (any kind)
+
+27 - Insight (Ral + Tir + Tal + Sol) (4 socket polearms/staves) (regen)
+
+27 - Honor (Amn + El + Ith + Tir + Sol) (5 socket melee weapons)
+
+27 - Lore (Ort + Sol) (2 socket helms)
+
+27 - Radiance (Nef + Sol + Ith) (3 socket helms)
+
+29 - Peace (Shael + Thul + Amn) (3 socket body armor)
+
+29 - Rhyme (Shael + Eth) (2 socket shields)
+
+35 - Black (Thul + io + Nef) (3 socket clubs/hammers/maces)
+
+35 - White (Dol + Io) (2 socket wand)
+
+37 - Memory (Lum + Io + Sol + Eth) (4 Socket Staves, not orbs)
+
+37 - Smoke (Nef + Lum) (2 socket body armor)
+
+37 - Splendor (Eth + Lum) (2 socket shields)
+
+39 - Harmony (Tir + Ith + Sol + Ko) (4 socket missile weapons) (vigor)
+
+39 - Melody (Shael + Ko + Nef) (3 Socket Missile Weapons)
+
+41 - Obedience (Hel + Ko + Thul + Eth + Fal) (5 socket polearms)
+
+41 - Lionheart (Hel + Lum + Fal) (3 Socket Body Armor)
+
+43 - Lawbringer (Amn + Lem + Ko) (3 socket Swords/Hammers/Scepters)
+
+43 - Voice of Reason (Lem + Ko + El + Eld) (4 socket Swords/Maces)
+
+43 - Passion (Dol + Ort + Eld + Lem) (4 Socket Weapons)
+
+43 - Wealth (Lem + Ko + Tir) (3 socket body armor)
+
+43 - Treachery (Shael + Thul + Lem) (3 socket body armor)
+
+45 - Enlightenment (Pul + Ral + Sol) (3 socket body armor)
+
+47 - Bone (Sol + Um + Um) (3 socket body armor)
+
+47 - Crescent Moon (Shael + Um + Tir) (3 socket Axes/Swords/Polearms)
+
+47 - Duress (Shael + Um + Thul) (3 Socket Body Armor)
+
+47 - Gloom (Fal + Um + Pul) (3 Socket Body Armor)
+
+47 - Stone (Shael + Um + Pul + Lum) (4 Socket Body Armor)
+
+49 - Oath (Shael + Pul + Mal + Lum) (4 socket Swords/Axes/Maces)
+
+49 - Prudence (Mal + Tir) (2 Socket Body Armor)
+
+49 - Rain (Ort + Mal + Ith) (3 socket body armor)
+
+49 - Sanctuary (Ko + Ko + Mal) (3 Socket Shields)
+
+49 - Venom (Tal + Dol + Mal) (3 Socket Weapons)
+
+51 - Delirium (Lem + Ist + Io) (3 Socket Helms)
+
+53 - Rift (Hel + Ko + Lem + Gul) (4 Socket Polearms/Scepters)
+
+53 - Kingslayer (Mal + Um + Gul + Fal) (4 Socket Swords/Axes)
+
+53 - Principle (Ral + Gul + Eld) (3 socket body armor)
+
+55 - Death (Hel + El + Vex + Ort + Gul) (5 Socket Swords/Axes)
+
+55 - Heart of The Oak (Ko + Vex + Pul + Thul) (4 Socket Staves/Maces*)
+
+55 - Silence (Dol + Eld + Hel + Ist + Tir + Vex) (6 Socket Weapons)
+
+57 - Call To Arms (Amn + Ral + Mal + Ist + Ohm) (5 Socket Weapons)
+
+57 - Chaos (Fal + Ohm + Um) (3 Socket Claws)
+
+57 - Exile (Vex + Ohm + Ist + Dol) (4 Socket Paladin Shields only)
+
+59 - Fortitude (El + Sol + Dol + Lo) (4 socket Weapons/Body Armor)
+
+59 - Grief (Eth + Tir + Lo + Mal + Ral) (5 socket Swords/Axes)
+
+61 - Dragon (Sur + Lo + Sol) (3 Socket Body Armor/Shields)
+
+61 - Bramble (Ral + Ohm + Sur + Eth) (4 Socket Body Armor)
+
+61 - Wind (Sur + El) (2 Socket Melee Weapons)
+
+63 - Infinity (Ber + Mal + Ber + Ist) (4 Socket Polearms)
+
+63 - Wrath (Pul + Lum + Ber + Mal) (4 Socket Missile Weapons)
+
+63 - Beast (Ber + Tir + Um + Mal + Lum) (5 Socket Axes/Scepters/Hammers)
+
+63 - Chains of Honor (Dol + Um + Ber + Ist) (4 Socket Body Armor)
+
+63 - Eternity (Amn + Ber + Ist + Sol + Sur) (5 Socket Melee Weapons)
+
+65 - Brand (Jah + Lo + Mal + Gul) (4 Socket Missile Weapons)
+
+65 - Destruction (Vex + Lo + Ber + Jah + Ko) (5 Socket Polearms/Swords)
+
+65 - Dream (Io + Jah + Pul) (3 Socket Helms/Shields)
+
+65 - Faith (Ohm + Jah + Lem + Eld) (4 Socket Missile Weapons)
+
+65 - Ice (Amn + Shael + Jah + Lo) (4 Socket Missile Weapons)
+
+65 - Last Wish (Jah + Mal + Jah + Sur + Jah + Ber)(6 Socket Swords/Hammers/Axes)
+
+65 - Phoenix (Vex + Vex + Lo + Jah) (4 Socket Weapons/Shields)
+
+65 - Enigma (Jah + Ith + Ber) (3 Socket Body Armor)
+
+65 - Famine (Fal + Ohm + Ort + Jah) (4 Socket Axes/Hammers)
+
+65 - Fury (Jah + Gul + Eth) (3 Socket Melee Weapons)
+
+67 - Pride (Cham + Sur + Io + Lo) (4 Socket Polearms)
+
+67 - Doom (Hel + Ohm + Um + Lo + Cham) (5 Socket Axes/Polearms/Hammers)
+
+67 - Hand of Justice (Sur + Cham + Amn + Lo) (4 Socket Weapons)
+
+69 - Breath of The Dying (Vex + Hel + El + Eld + Zod + Eth) (6 Socket Weapons)
+
+________________________________________________________________________________________________________
+
+Runes Source: http://classic.battle.net/diablo2exp/items/runes.shtml
+
+Lvl - Name _ Weapon Effect __ Armor, Helms & Shields Effect
+
+11 - El (+50 To Attack Rating, +1 Light Radius) (+15 Defense, +1 To Light Radius)
+
+11 - Eld (+75% Dmg Undead, +50 AR Undead) (15% Slower Stamina Drain/+7% Block Chance)
+
+13 - Tir (+2 To Mana After Each Kill) (+2 To Mana After Each Kill)
+
+13 - Nef (Knockback) (+30 Defense Vs. Missile)
+
+15 - Eth (-25% To Target Defense) (Regenerate Mana 15%)
+
+15 - Ith (+9 To Maximum Damage) (15% Damage Taken Goes to Mana)
+
+17 - Tal (+75 Poison Damage Over 5 Sec) (Poison Resist 30%/Poison Resist 35%(Shields))
+
+19 - Ral (Adds 5-30 Fire Damage) (Fire Resist 30%/Fire Resist 35%(Shields))
+
+21 - Ort (Adds 1-50 Lightning Dmg ) (Lightning Res 30%/Lightning Res 35%(Shields))
+
+23 - Thul (Adds 3-14 Cold Damage - 3 Sec) (Cold Resist 30%/Cold Resist 35%(Shields))
+
+25 - Amn (7% Life Stolen Per Hit) (Attacker Takes Damage of 14)
+
+27 - Sol (+9 To Minimum Damage) (Damage Reduced By 7)
+
+29 - Shael (20% Increased Attack Speed) (20% Faster Hit Recovery/20% Faster Block)
+
+31 - Dol (Hit Causes Monster To Flee 25%) (Replenish Life +7)
+
+00 - Hel (Requirements -20%) (Requirements -15%)
+
+35 - Io (+10 To Vitality) (+10 To Vitality)
+
+37 - Lum (+10 To Energy) (+10 To Energy)
+
+39 - Ko (+10 To Dexterity) (+10 To Dexterity)
+
+41 - Fal (+10 To Strength) (+10 To Strength)
+
+43 - Lem (+75% Extra Gold) (+50% Extra Gold)
+
+45 - Pul (+75% Dmg Demons, +100 AR Demons) (+30% Enhanced Defense)
+
+47 - Um (25% Chance of Open Wounds) (All Resistances +15(Armor/Helms) +22(Shield))
+
+49 - Mal (Prevent Monster Heal) (Magic Damage Reduced By 7)
+
+51 - Ist (30% Better Chance of Getting Magic Items) (25% Better Chance of Getting Magic Items)
+
+53 - Gul (20% Bonus To Attack Rating) (5% To Maximum Poison Resist)
+
+55 - Vex (7% Mana Stolen Per Hit) (5% To Maximum Fire Resist)
+
+57 - Ohm (+50% Enhanced Damage) (5% To Maximum Cold Resist)
+
+59 - Lo (20% Deadly Strike) (5% To Maximum Lightning Resist)
+
+61 - Sur (Hit Blinds Target) (Maximum Mana 5%/+50 To Mana (Shields))
+
+63 - Ber (20% Chance of Crushing Blow) (Damage Reduced by 8%)
+
+65 - Jah (Ignore Target's Defense) (Increase Maximum Life 5%/+50 Life (Shields))
+
+67 - Cham (Freeze Target +3) (Cannot Be Frozen)
+
+69 - Zod (Indestructible) (Indestructible)
+
+Color-coded tooltips Version: https://diablo2.io/forums/diablo-2-runewords-runes-cheat-sheet-t8644.html
+
+New Players Guide: https://diablo2.io/forums/d2-resurrected-new-players-guide-20-must-know-areas-t8912.html
