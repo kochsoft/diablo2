@@ -4,7 +4,7 @@ Python script for exchanging the Horadric Cube contents of two Diablo II charact
 Literature:
 ===========
 [1] https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md
-  Description of the Diablo 2 save game format.
+  Description of the Diablo 2 save game format. Quite good. Principal source of information.
 [2] https://github.com/krisives/d2s-format
   Description of the Diablo 2 save game format.
 [3] https://daancoppens.wordpress.com/2017/01/25/understanding-the-diablo-2-save-file-format-part-1/
@@ -20,15 +20,18 @@ v1.12, which is the one I am interested in has version code "96". More precisely
 Markus-Hermann Koch, mhk@markuskoch.eu, 2025/01/29.
 """
 
+import os
 import re
 import sys
-import argparse
+import time
 import logging
+import argparse
 from argparse import RawTextHelpFormatter
+from idlelib.stackviewer import VariablesTreeItem
 from pathlib import Path
 from copy import deepcopy
 from shutil import copyfile
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional, Union, Tuple
 from enum import Enum
 
 
@@ -36,30 +39,99 @@ logging.basicConfig(level=logging.INFO, format= '[%(asctime)s] {%(lineno)d} %(le
 _log = logging.getLogger()
 
 
-class E_Section(Enum):
-    """Sections of the save game file."""
-    ES_UNSPECIFIED = 0
-    ES_HEADER = 1
-    ES_QUESTS = 2
-    ES_WAYPOINTS = 3
-    ES_INTRODUCTIONS = 4
-    ES_STATISTICS = 5
-    ES_SKILLS = 6
-    ES_ITEMS = 7
+class E_ItemBlock(Enum):
+    """Convenience enum for handling the major item organisation sites.
+    https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#items """
+    IB_PLAYER_HD = 0
+    IB_PLAYER = 1
+    IB_CORPSE_HD = 2
+    IB_CORPSE = 3
+    IB_MERCENARY_HD = 4
+    IB_MERCENARY = 5
+    IB_IRONGOLEM_HD = 6
+    IB_IRONGOLEM = 7
+    IB_UNSPECIFIED = 10
 
 
-class E_ItemSites(Enum):
-    """Convenience enum for handling item site types."""
-    IS_UNSPECIFIED = 0
+class E_ItemParent(Enum):
+    """Bits 58-60 in the item putatively store the major site where the Item is equipped. 
+    https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#parent """
+    IP_STORED = 0
+    IP_EQUIPPED = 1
+    IP_BELT = 2
+    IP_CURSOR = 4
+    IP_ITEM = 6
+    IP_UNSPECIFIED = 10
+
+
+class E_ItemStorage(Enum):
+    """Relevant for stored items. Bits 73-75.
+    https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#parent """
     IS_INVENTORY = 1
-    IS_STASH = 2
-    IS_CUBE = 3
+    IS_CUBE =4
+    IS_STASH =5
+    IS_UNSPECIFIED = 10
 
+
+class E_ItemEquipment(Enum):
+    """Relevant for equipped items.
+    https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#parent """
+    IE_UNSPECIFIED = 0
+    IE_HELMET = 1
+    IE_AMULET = 2
+    IE_ARMOR = 3
+    IE_WEAPON_RIGHT = 4
+    IE_WEAPON_LEFT = 5
+    IE_RING_RIGHT = 6
+    IE_RING_LEFT = 7
+    IE_BELT = 8
+    IE_BOOTS = 9
+    IE_GLOVES = 10
+    IE_WEAPON_ALT_RIGHT = 11
+    IE_WEAPON_ALT_LEFT = 12
+
+
+class Item:
+    """Specialized class for managing the entirety of blocks concerned with items."""
+    def __init__(self, data: bytes, index_item: int):
+        """Initialization of the item.
+        :param data: Binary block describing the entirety of a .d2s file.
+        :param index_item: Index of the item within the .d2s file. I.e. the occurrence index of the item.
+          In essence, the index of the repetition of byte str 'JM' associated with this item.
+        :raises IndexError if index_item is <0 or requires an item that would not exist."""
+        self.data = data
+        self.index_item = index_item
+        #parts = data.split(b'JM', index_item+2)
+        #if len(parts) < index_item + 1:
+
+    def get_item_index(self) -> bytes:
+        pass
+
+    def get_parent(self) -> E_ItemParent:
+        pass
+
+    def get_storage(self) -> E_ItemStorage:
+        pass
+
+    def get_equipment(self) -> E_ItemEquipment:
+        pass
+
+    def __str__(self) -> str:
+        pass
 
 class Data:
     """Data object concerned with the binary content of the entirety of a .d2s save game file."""
-    def __init__(self, data: bytes):
-        self.data = data
+    def __init__(self, data: Union[bytes, str]):
+        """:param data: Either a string holding a .d2s file name, or a binary data blob of an already read such file."""
+        if isinstance(data, str):
+            with open(data, 'rb') as IN:
+                self.data = IN.read()
+            self.pfname = data
+        elif isinstance(data, bytes):
+            self.data = data
+            self.pfname = self.get_name(True) + '.d2s'
+        else:
+            raise ValueError(f"Given parameter data is of unusable type '{type(data).__name__}'.")
 
     def checksum_compute(self) -> bytes:
         csum = 0
@@ -116,11 +188,43 @@ class Data:
         elif val == 5: return "Druid"
         elif val == 6: return "Assassin"
 
-    #def is_dead(self) -> bool:
-    #    pass
+    def is_hardcore(self) -> bool:
+        """The bit of index 2 in status byte 36  decides if a character is hardcore."""
+        return self.data[36] & 4 > 0
+
+    def is_dead(self) -> bool:
+        """The bit of index 3 in status byte 36 decides if a character is dead."""
+        return self.data[36] & 8 > 0
+
+    def set_hardcore(self, to_hardcore: bool):
+        """Sets the character to hardcore or non-hardcore.
+        :param to_hardcore: Setting to hardcore if and only if this is True. Else to Softcore."""
+        val = self.data[36]
+        if to_hardcore:
+            val |= 4
+        else:
+            val &= 251
+        self.data[0:36] + val.to_bytes(1, 'little') + self.data[37:]
 
     #def get_items(self) -> Dict[E_ItemSites]:
     #    pass
+
+    @staticmethod
+    def get_time(frmt: str = "%y%m%d_%H%M%S", unix_time_s: Optional[int] = None) -> str:
+        """":return Time string aiming to become part of a backup pfname."""
+        unix_time_s = int(time.time()) if unix_time_s is None else int(unix_time_s)
+        return time.strftime(frmt, time.localtime(unix_time_s))
+
+    def save2disk(self, pfname: str, prefix_timestamp: bool = False):
+        """Write this data structure's current state to disk. As is. E.g., no checksums are updated automatically."""
+        if prefix_timestamp:
+            parts = os.path.split(pfname)
+            pname = parts[0]
+            fname = parts[1]
+            pfname = os.path.join(pname, Data.get_time() + '_' + fname + '.backup')
+        with open(pfname, 'wb') as OUT:
+            OUT.write(self.data)
+        print(f"Wrote {self.get_class(True)} {self.get_name(True)} to disk: {pfname}")
 
     def __str__(self) -> str:
         msg = f"{self.get_name(True)}, a level {self.data[43]} {self.get_class(True)}. "\
@@ -222,6 +326,7 @@ class Horadric:
         hsi1 = Horadric.get_headerskills_and_items(data1)
         res0 = hsi0[0]
         res1 = hsi1[0]
+        # Corpse and https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#items
         return [res0 + b'JM\x00\x00JM\x00\x00', res1 + b'JM\x00\x00JM\x00\x00']
         items0_prior = Horadric.parse_items(data0)
         items1_prior = Horadric.parse_items(data1)
@@ -281,24 +386,21 @@ class Horadric:
     def parse_arguments(args: Optional[List[str]] = None) -> argparse.Namespace:
         if args is None:
             args = sys.argv[1:]
-        desc = """Exchanges the contents of two Diablo 2 characters' Horadric Cubes.
-        
-Consider that Barbarian finding the 'sacred globe of divine world domination' that the sorceress has been
-looking for all these years. The poor brute does not even know how to equip it to bash a zombie's head in.
-And there is just no way to give it to the Sorceress. Sad. Really sad.
+        desc = """Tool script for doing small scale changes to Diablo II .d2s save game files.
 
-No more! The Barbarian may just put the sacred globe into his Horadric Cube!
-If she is of the corteous type, the Sorceress may put some glass perls into her Horadric Cube.
-Then exit the game and call this Horadric script on the Sorceress' and Barbarian's .d2s save game files.
-(Required level not quite known. Python 3.13 should do nicely though.)
-The Horadric code lines in this script will then exchange both Horadric Cubes' contents.
-Putting the Barbarian's cube's contents into the Sorceress' cube and vice versa."""
+Motivating example is the --exchange function. Have two characters stuff items into their Horadric cubes.
+Apply this script to both their .d2s files, using the --exchange flag. Then this script will attempt to alter
+both files thus, that the Horadric Cube contents of both players switch places."""
         epilog = f"""Example call:
 $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
         parser = argparse.ArgumentParser(prog='Horadric Exchange', description=desc, epilog=epilog, formatter_class=RawTextHelpFormatter)
         parser.add_argument('--omit_backup', action='store_true',
-            help="Per default, both .d2s target files will be backupped to .backup files. For safety. This option will disable that safety.")
-        parser.add_argument('pfnames', nargs=2, type=str, help='Two positional arguments: Path and filename to first and to second character file.')
+            help="Per default, target files will be backupped to .backup files. For safety. This option will disable that safety.")
+        parser.add_argument('--exchange', action='store_true', help="Flag. Requires that there are precisely 2 character pfnames given. This will exchange their Horadric Cube contents.")
+        parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")
+        parser.add_argument('--softcore', action='store_true', help="Flag. Set target characters to soft core mode.")
+        parser.add_argument('--info', action='store_true', help="Flag. Show some statistics to each input file.")
+        parser.add_argument('pfnames', nargs='+', type=str, help='List of path and filenames to target .d2s character files.')
         parsed = parser.parse_args(sys.argv[1:])  # type: argparse.Namespace
         return parsed
 
