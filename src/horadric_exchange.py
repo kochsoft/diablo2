@@ -20,6 +20,7 @@ v1.12, which is the one I am interested in has version code "96". More precisely
 Markus-Hermann Koch, mhk@markuskoch.eu, 2025/01/29.
 """
 
+from __future__ import annotations
 import os
 import re
 import sys
@@ -93,26 +94,112 @@ class E_ItemEquipment(Enum):
 
 
 class Item:
-    """Specialized class for managing the entirety of blocks concerned with items."""
-    def __init__(self, data: bytes, index_item: int, item_block: E_ItemBlock = E_ItemBlock.IB_UNSPECIFIED):
+    """Specialized class for managing the entirety of blocks concerned with items.
+    This class serves two purposes. It may act as an actual item with properties attached to one item.
+    Lists of such Items may be built. And it may serve as a monolithic analysis class for reading data
+    from the master self.data bytes array."""
+    def __init__(self,
+                 data: bytes,
+                 index_start: Optional[int] = None,
+                 index_end: Optional[int] = None,
+                 item_block: E_ItemBlock = E_ItemBlock.IB_UNSPECIFIED,
+                 index_item_block: Optional[int] = None):
         """Initialization of the item.
         :param data: Binary block describing the entirety of a .d2s file.
-        :param index_item: Index of the item within the given block. I.e. the occurrence index of the item.
+        :param index_start
+        :param index_end
         :param item_block: Item block this item is part of.
-        :raises IndexError if index_item is <0 or requires an item that would not exist."""
+        :param index_item_block: Index of the item within the given block. I.e. the occurrence index of the item.
+        [Note: This class does little sanity checks.]"""
         self.data = data
+        self.index_start = index_start
+        self.index_end = index_end
         self.item_block = item_block
-        self.index_item = index_item
+        self.index_item_block = index_item_block
 
     @property
-    def index_start(self) -> int:
-        index_start, index_end = self.get_item_index()
-        return index_start
+    def data_item(self) -> Optional[bytes]:
+        if self.index_start is None or self.index_end is None:
+            return None
+        else:
+            return self.data[self.index_start:self.index_end]
 
     @property
-    def index_end(self) -> int:
-        index_start, index_end = self.get_item_index()
-        return index_end
+    def item_parent(self) -> Optional[E_ItemParent]:
+        """Simple items Version 96: Bits 58-60"""
+        data_item = self.data_item
+        if (not data_item) or (len(data_item) < 8):
+            return None
+        # From 56,..,63 Bits 58-60
+        val = (data_item[7] >> 2) & 7
+        if val == 0:
+            return E_ItemParent.IP_STORED
+        elif val == 1:
+            return E_ItemParent.IP_EQUIPPED
+        elif val == 2:
+            return E_ItemParent.IP_BELT
+        elif val == 4:
+            return E_ItemParent.IP_CURSOR
+        elif val == 6:
+            return E_ItemParent.IP_ITEM
+        else:
+            _log.warning(f"Encountered weird parent code {val}.")
+            return E_ItemParent.IP_UNSPECIFIED
+
+    @property
+    def item_equipped(self) -> Optional[E_ItemEquipment]:
+        """61-64"""
+        data_item = self.data_item
+        if (not data_item) or (len(data_item) < 9):
+            return None
+        # From 56-63 Bits 61-63 and bit 64.
+        val = (data_item[7] >> 5) & 7
+        val += data_item[8] & 1
+        if val == 1:
+            return E_ItemEquipment.IE_HELMET
+        elif val == 2:
+            return E_ItemEquipment.IE_AMULET
+        elif val == 3:
+            return E_ItemEquipment.IE_ARMOR
+        elif val == 4:
+            return E_ItemEquipment.IE_WEAPON_RIGHT
+        elif val == 5:
+            return E_ItemEquipment.IE_WEAPON_LEFT
+        elif val == 6:
+            return E_ItemEquipment.IE_RING_RIGHT
+        elif val == 7:
+            return E_ItemEquipment.IE_RING_LEFT
+        elif val == 8:
+            return E_ItemEquipment.IE_BELT
+        elif val == 9:
+            return E_ItemEquipment.IE_BOOTS
+        elif val == 10:
+            return E_ItemEquipment.IE_GLOVES
+        elif val == 11:
+            return E_ItemEquipment.IE_WEAPON_ALT_RIGHT
+        elif val == 12:
+            return E_ItemEquipment.IE_WEAPON_ALT_LEFT
+        else:
+            _log.warning(f"Encountered weird equipment code {val}.")
+            return E_ItemEquipment.IE_UNSPECIFIED
+
+    @property
+    def item_stored(self) -> Optional[E_ItemStorage]:
+        data_item = self.data_item
+        if (not data_item) or (len(data_item) < 10):
+            return None
+        # 73-75
+        # Bits 72-79 reduced to bits 73-75
+        val = (data_item[9] >> 1) & 7
+        if val == 1:
+            return E_ItemStorage.IS_INVENTORY
+        elif val == 4:
+            return E_ItemStorage.IS_CUBE
+        elif val == 5:
+            return E_ItemStorage.IS_STASH
+        else:
+            _log.warning(f"Encountered weird storage code {val}.")
+            return  E_ItemStorage.IS_UNSPECIFIED
 
     def get_block_index(self) -> Dict[E_ItemBlock, Tuple[int, int]]:
         """:param block: Target block.
@@ -165,7 +252,10 @@ class Item:
         # < ----------------------------------------------------------
         return res
 
-    def get_block_items(self) -> Dict[E_ItemBlock, List[Tuple[int, int]]]:
+    def get_block_item_index(self) -> Dict[E_ItemBlock, List[Tuple[int, int]]]:
+        """:returns for each block a list of index-2-tuples for self.data.
+        Each 3 tuple. Entries 0 and 1 index one item, thus that data[indexs_start:index_end] encompasses the entire
+        item. The third entry is a copy of that binary blob."""
         block_index = self.get_block_index()
         keys_relevant = [E_ItemBlock.IB_PLAYER, E_ItemBlock.IB_CORPSE, E_ItemBlock.IB_MERCENARY, E_ItemBlock.IB_IRONGOLEM]
         res = dict()  # type: Dict[E_ItemBlock, List[Tuple[int, int]]]
@@ -188,17 +278,38 @@ class Item:
                     res[key].append((index_start, index_end))
         return res
 
-    def get_parent(self) -> E_ItemParent:
-        pass
-
-    def get_storage(self) -> E_ItemStorage:
-        pass
-
-    def get_equipment(self) -> E_ItemEquipment:
-        pass
+    def get_block_items(self, *, block: E_ItemBlock = E_ItemBlock.IB_UNSPECIFIED,
+                          parent: E_ItemParent = E_ItemParent.IP_UNSPECIFIED,
+                          equipped: E_ItemEquipment = E_ItemEquipment.IE_UNSPECIFIED,
+                          stored: E_ItemStorage = E_ItemStorage.IS_UNSPECIFIED) -> List[Item]:
+        """Get a list of items that matches all given filters. If everything is unspecified, all items are returned.
+        :returns a List of tuples. Entries:
+          * Start index within the master data structure.
+          * End index (one point beyond the end) within the master data structure (or len(data) if it goes to EOF).
+          * The bytes data of length (index_end - index_start) that is described by both indices."""
+        index = self.get_block_item_index()  # type: Dict[E_ItemBlock, List[Tuple[int, int]]]
+        blocks_relevant = [E_ItemBlock.IB_PLAYER, E_ItemBlock.IB_CORPSE, E_ItemBlock.IB_MERCENARY, E_ItemBlock.IB_IRONGOLEM] if block == E_ItemBlock.IB_UNSPECIFIED else [block]
+        res = list()  # type: List[Item]
+        for block_relevant in blocks_relevant:
+            if block_relevant not in index:
+                continue
+            lst = index[block_relevant]
+            for j in range(len(lst)):
+                item = Item(self.data, lst[j][0], lst[j][1], block_relevant, j)
+                if (parent in [E_ItemParent.IP_UNSPECIFIED, item.item_parent]) or \
+                   (equipped in [E_ItemEquipment.IE_UNSPECIFIED, item.item_equipped]) or \
+                   (stored in [E_ItemStorage.IS_UNSPECIFIED, item.item_stored]):
+                    res.append(item)
+        return res
 
     def __str__(self) -> str:
-        pass
+        data_item = self.data_item
+        if data_item:
+            return f"Item {self.item_block.name} #{self.index_item_block} index: ({self.index_start}, {self.index_end}): " \
+                f"Parent: {self.item_parent.name}, Storage: {self.item_stored.name}, Equip: {self.item_equipped.name}"
+        else:
+            return "Analytic Item instance."
+
 
 class Data:
     """Data object concerned with the binary content of the entirety of a .d2s save game file."""
@@ -478,6 +589,8 @@ $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
         parser.add_argument('--omit_backup', action='store_true',
             help="Per default, target files will be backupped to .backup files. For safety. This option will disable that safety.")
         parser.add_argument('--exchange', action='store_true', help="Flag. Requires that there are precisely 2 character pfnames given. This will exchange their Horadric Cube contents.")
+        parser.add_argument('--save_horadric', type=str, help="Write the items found in the Horadric Cube to disk.")
+        parser.add_argument('--load_horadric', type=str, help="Drop all contents from the Horadric Cube and replace them with the horadric file content, that had been written using --save_horadric earlier.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")
         parser.add_argument('--softcore', action='store_true', help="Flag. Set target characters to soft core mode.")
         parser.add_argument('--info', action='store_true', help="Flag. Show some statistics to each input file.")
