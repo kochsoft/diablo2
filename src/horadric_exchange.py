@@ -114,52 +114,20 @@ class Item:
         index_start, index_end = self.get_item_index()
         return index_end
 
-
-
-
-
-    def get_item_index(self, index_item: Optional[int] = None, item_block: Optional[E_ItemBlock] = None) -> Tuple[int, int]:
-        """For self.data finds start and end index for the index_item's item in the .d2s file.
-        :param index_item: Index of target item within the given block. If not given, self.index_item will be used.
-        :param index_start_next_block: If given, first byte index of the 'next section', which will also
-          mark the current item byte block's end. If not given, the length of self.data will be used.
-        :returns the item start and end index, thus that self.data[index_start:index_end] contains the entire
-          item code for the item of the given item index.
-        :raises IndexError if an item of index_item does not exist."""
-        if index_item is None:
-            index_item = self.index_item
-        if item_block is None:
-            item_block = self.item_block
-        c = 0
-        index_start, index_end_block = self.get_block_index(item_block)
-        index_end = index_start
-        while c <= self.index_item:
-            index_start = self.data[0:index_end_block].find(b'JM', index_end)
-            if index_start < 0:
-                raise IndexError(f"Item with index {index_item} not available.")
-            index_end = self.data[0:index_end_block].find(b'JM', index_start + 1)
-            if index_end < 0:
-                index_end = index_end_block
-            if index_item == c:
-                return index_start, index_end
-            else:
-                c = c + 1
-        raise RuntimeError(f"This line should be impossible to reach. Final values: (ii, c, is, ie, ieb) == ({index_item}, {c}, {index_start}, {index_end}, {index_end_block})")
-
     def get_block_index(self) -> Dict[E_ItemBlock, Tuple[int, int]]:
         """:param block: Target block.
-        :returns index_start, index_end for the blocks in self.data.
-        :raises ValueError if the block in question is not found."""
+        :returns index_start, index_end for the blocks in self.data. The index_end indices actually point
+          to the first element of the next block (or are len(self.data) if eof is reached)."""
         n = len(self.data)
         res = dict()  # type: Dict[E_ItemBlock, Tuple[int, int]]
 
         # > Iterate through the diverse item blocks in sequence. -----
-        # Mandatory Player Header has only 4 bytes.
+        # Player Header: Has only 4 bytes.
         index_start = self.data.find(b'JM')
         index_end = index_start + 4
         res[E_ItemBlock.IB_PLAYER_HD] = index_start, index_end
 
-        # Player item list is ended by the mandatory Corpse HD, which will also only have 4 bytes.
+        # Player Items, Corpse Hd: Player item list is ended by the mandatory Corpse HD, which has 4 bytes.
         while True:
             index_start = self.data.find(b'JM', index_end)
             if index_start == -1:
@@ -168,42 +136,57 @@ class Item:
             if index_end == -1:
                 index_end = n
             if index_start - index_end == 4:
-                res[E_ItemBlock.IB_PLAYER] = res[E_ItemBlock.IB_PLAYER_HD][0], index_start
+                res[E_ItemBlock.IB_PLAYER] = res[E_ItemBlock.IB_PLAYER_HD][1], index_start
                 res[E_ItemBlock.IB_CORPSE_HD] = index_start, index_end
                 break
 
-        # Corpse item list is ended by the b'jf' prefix of the mercenary block.
-        # TODO! Hier war ich.
-
-
-
-        
-        # < ----------------------------------------------------------
-
-        if item_block == E_ItemBlock.IB_PLAYER_HD:
-            # Is followed up by EOF or corpse header, which will have only 4 bytes.
-            pass
-        elif item_block == E_ItemBlock.IB_CORPSE_HD:
-            pass
-        elif item_block == E_ItemBlock.IB_CORPSE:
-            pass
-        elif item_block == E_ItemBlock.IB_MERCENARY_HD:
-            pass
-        elif item_block == E_ItemBlock.IB_MERCENARY:
-            pass
-        elif item_block == E_ItemBlock.IB_IRONGOLEM_HD:
-            pass
-        elif item_block == E_ItemBlock.IB_IRONGOLEM:
-            pass
-        elif item_block == E_ItemBlock.IB_UNSPECIFIED:
-            raise ValueError("Unable to find block index for UNSPECIFIED block.")
+        # Corpse Items, Mercenary Hd. index_end still points at the end of Corpse Header == start of Corpse Items.
+        index_start_mercenary_hd = self.data.find(b'jf', index_end)
+        if index_start_mercenary_hd >= 0:
+            res[E_ItemBlock.IB_CORPSE] = index_end, index_start_mercenary_hd
+            res[E_ItemBlock.IB_MERCENARY_HD] = index_start_mercenary_hd, index_start_mercenary_hd + 2
+            index_start = res[E_ItemBlock.IB_MERCENARY_HD][1]
         else:
-            raise RuntimeError(f"Unsupported item block value type encountered: {item_block}")
+            res[E_ItemBlock.IB_CORPSE] = index_end, n
+            return res
 
-        if index_start < 0:
-            raise ValueError("")
-        if index_end < 0:
-            index_end = len(self.data)
+        # Mercenary Items, Iron Golem Header.
+        index_start_golem_hd = self.data.find(b'kf', index_start)
+        if index_start_golem_hd >= 0:
+            res[E_ItemBlock.IB_MERCENARY] = index_start, index_start_golem_hd
+            res[E_ItemBlock.IB_IRONGOLEM_HD] = index_start_golem_hd, index_start_golem_hd + 3
+            index_start = res[E_ItemBlock.IB_IRONGOLEM_HD][1]
+        else:
+            res[E_ItemBlock.IB_MERCENARY] = index_start, n
+            return res
+
+        # Iron Golem Item. The remainder of the file.
+        res[E_ItemBlock.IB_IRONGOLEM] = index_start, n
+        # < ----------------------------------------------------------
+        return res
+
+    def get_block_items(self) -> Dict[E_ItemBlock, List[Tuple[int, int]]]:
+        block_index = self.get_block_index()
+        keys_relevant = [E_ItemBlock.IB_PLAYER, E_ItemBlock.IB_CORPSE, E_ItemBlock.IB_MERCENARY, E_ItemBlock.IB_IRONGOLEM]
+        res = dict()  # type: Dict[E_ItemBlock, List[Tuple[int, int]]]
+        for key in block_index:
+            if key not in keys_relevant:
+                continue
+            index_start_block, index_end_block = block_index[key]
+            index_start = index_start_block
+            item_end_item = index_start
+            res[key] = list()
+            while index_start >= 0:
+                item_start = self.data[0:index_end_block].find(b'JM', index_start_block)
+                if index_start < 0:
+                    break
+                index_end = self.data[0:index_end_block].find(b'JM', item_start + 1)
+                if index_end < 0:
+                    res[key].append((index_start, index_end_block))
+                    break
+                else:
+                    res[key].append((index_start, index_end))
+        return res
 
     def get_parent(self) -> E_ItemParent:
         pass
