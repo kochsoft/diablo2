@@ -41,7 +41,8 @@ _log = logging.getLogger()
 
 class E_ItemBlock(Enum):
     """Convenience enum for handling the major item organisation sites.
-    https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#items """
+    https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#items
+    [Note: The Header (HD) items are special. They are only treated as items, since they start b'JM', too.]"""
     IB_PLAYER_HD = 0
     IB_PLAYER = 1
     IB_CORPSE_HD = 2
@@ -93,19 +94,116 @@ class E_ItemEquipment(Enum):
 
 class Item:
     """Specialized class for managing the entirety of blocks concerned with items."""
-    def __init__(self, data: bytes, index_item: int):
+    def __init__(self, data: bytes, index_item: int, item_block: E_ItemBlock = E_ItemBlock.IB_UNSPECIFIED):
         """Initialization of the item.
         :param data: Binary block describing the entirety of a .d2s file.
-        :param index_item: Index of the item within the .d2s file. I.e. the occurrence index of the item.
-          In essence, the index of the repetition of byte str 'JM' associated with this item.
+        :param index_item: Index of the item within the given block. I.e. the occurrence index of the item.
+        :param item_block: Item block this item is part of.
         :raises IndexError if index_item is <0 or requires an item that would not exist."""
         self.data = data
+        self.item_block = item_block
         self.index_item = index_item
-        #parts = data.split(b'JM', index_item+2)
-        #if len(parts) < index_item + 1:
 
-    def get_item_index(self) -> bytes:
-        pass
+    @property
+    def index_start(self) -> int:
+        index_start, index_end = self.get_item_index()
+        return index_start
+
+    @property
+    def index_end(self) -> int:
+        index_start, index_end = self.get_item_index()
+        return index_end
+
+
+
+
+
+    def get_item_index(self, index_item: Optional[int] = None, item_block: Optional[E_ItemBlock] = None) -> Tuple[int, int]:
+        """For self.data finds start and end index for the index_item's item in the .d2s file.
+        :param index_item: Index of target item within the given block. If not given, self.index_item will be used.
+        :param index_start_next_block: If given, first byte index of the 'next section', which will also
+          mark the current item byte block's end. If not given, the length of self.data will be used.
+        :returns the item start and end index, thus that self.data[index_start:index_end] contains the entire
+          item code for the item of the given item index.
+        :raises IndexError if an item of index_item does not exist."""
+        if index_item is None:
+            index_item = self.index_item
+        if item_block is None:
+            item_block = self.item_block
+        c = 0
+        index_start, index_end_block = self.get_block_index(item_block)
+        index_end = index_start
+        while c <= self.index_item:
+            index_start = self.data[0:index_end_block].find(b'JM', index_end)
+            if index_start < 0:
+                raise IndexError(f"Item with index {index_item} not available.")
+            index_end = self.data[0:index_end_block].find(b'JM', index_start + 1)
+            if index_end < 0:
+                index_end = index_end_block
+            if index_item == c:
+                return index_start, index_end
+            else:
+                c = c + 1
+        raise RuntimeError(f"This line should be impossible to reach. Final values: (ii, c, is, ie, ieb) == ({index_item}, {c}, {index_start}, {index_end}, {index_end_block})")
+
+    def get_block_index(self) -> Dict[E_ItemBlock, Tuple[int, int]]:
+        """:param block: Target block.
+        :returns index_start, index_end for the blocks in self.data.
+        :raises ValueError if the block in question is not found."""
+        n = len(self.data)
+        res = dict()  # type: Dict[E_ItemBlock, Tuple[int, int]]
+
+        # > Iterate through the diverse item blocks in sequence. -----
+        # Mandatory Player Header has only 4 bytes.
+        index_start = self.data.find(b'JM')
+        index_end = index_start + 4
+        res[E_ItemBlock.IB_PLAYER_HD] = index_start, index_end
+
+        # Player item list is ended by the mandatory Corpse HD, which will also only have 4 bytes.
+        while True:
+            index_start = self.data.find(b'JM', index_end)
+            if index_start == -1:
+                return res
+            index_end = self.data.find(b'JM', index_start + 1)
+            if index_end == -1:
+                index_end = n
+            if index_start - index_end == 4:
+                res[E_ItemBlock.IB_PLAYER] = res[E_ItemBlock.IB_PLAYER_HD][0], index_start
+                res[E_ItemBlock.IB_CORPSE_HD] = index_start, index_end
+                break
+
+        # Corpse item list is ended by the b'jf' prefix of the mercenary block.
+        # TODO! Hier war ich.
+
+
+
+        
+        # < ----------------------------------------------------------
+
+        if item_block == E_ItemBlock.IB_PLAYER_HD:
+            # Is followed up by EOF or corpse header, which will have only 4 bytes.
+            pass
+        elif item_block == E_ItemBlock.IB_CORPSE_HD:
+            pass
+        elif item_block == E_ItemBlock.IB_CORPSE:
+            pass
+        elif item_block == E_ItemBlock.IB_MERCENARY_HD:
+            pass
+        elif item_block == E_ItemBlock.IB_MERCENARY:
+            pass
+        elif item_block == E_ItemBlock.IB_IRONGOLEM_HD:
+            pass
+        elif item_block == E_ItemBlock.IB_IRONGOLEM:
+            pass
+        elif item_block == E_ItemBlock.IB_UNSPECIFIED:
+            raise ValueError("Unable to find block index for UNSPECIFIED block.")
+        else:
+            raise RuntimeError(f"Unsupported item block value type encountered: {item_block}")
+
+        if index_start < 0:
+            raise ValueError("")
+        if index_end < 0:
+            index_end = len(self.data)
 
     def get_parent(self) -> E_ItemParent:
         pass
