@@ -128,8 +128,10 @@ class Item:
     def item_parent(self) -> Optional[E_ItemParent]:
         """Simple items Version 96: Bits 58-60"""
         data_item = self.data_item
-        if (not data_item) or (len(data_item) < 8):
+        if not data_item:
             return None
+        if len(data_item) < 8:
+            return E_ItemParent.IP_UNSPECIFIED
         # From 56,..,63 Bits 58-60
         val = (data_item[7] >> 2) & 7
         if val == 0:
@@ -150,8 +152,10 @@ class Item:
     def item_equipped(self) -> Optional[E_ItemEquipment]:
         """61-64"""
         data_item = self.data_item
-        if (not data_item) or (len(data_item) < 9):
+        if not data_item:
             return None
+        if len(data_item) < 9:
+            return E_ItemEquipment.IE_UNSPECIFIED
         # From 56-63 Bits 61-63 and bit 64.
         val = (data_item[7] >> 5) & 7
         val += data_item[8] & 1
@@ -180,14 +184,17 @@ class Item:
         elif val == 12:
             return E_ItemEquipment.IE_WEAPON_ALT_LEFT
         else:
-            _log.warning(f"Encountered weird equipment code {val}.")
+            if val != 0:
+                _log.warning(f"Encountered weird equipment code {val}.")
             return E_ItemEquipment.IE_UNSPECIFIED
 
     @property
     def item_stored(self) -> Optional[E_ItemStorage]:
         data_item = self.data_item
-        if (not data_item) or (len(data_item) < 10):
+        if not data_item:
             return None
+        if len(data_item) < 10:
+            return E_ItemStorage.IS_UNSPECIFIED
         # 73-75
         # Bits 72-79 reduced to bits 73-75
         val = (data_item[9] >> 1) & 7
@@ -198,7 +205,8 @@ class Item:
         elif val == 5:
             return E_ItemStorage.IS_STASH
         else:
-            _log.warning(f"Encountered weird storage code {val}.")
+            if val != 0:
+                _log.warning(f"Encountered weird storage code {val}.")
             return  E_ItemStorage.IS_UNSPECIFIED
 
     def get_block_index(self) -> Dict[E_ItemBlock, Tuple[int, int]]:
@@ -214,6 +222,7 @@ class Item:
         index_end = index_start + 4
         res[E_ItemBlock.IB_PLAYER_HD] = index_start, index_end
 
+        index_start_mercenary_hd = self.data.find(b'jf', index_end)
         # Player Items, Corpse Hd: Player item list is ended by the mandatory Corpse HD, which has 4 bytes.
         while True:
             index_start = self.data.find(b'JM', index_end)
@@ -222,13 +231,14 @@ class Item:
             index_end = self.data.find(b'JM', index_start + 1)
             if index_end == -1:
                 index_end = n
-            if index_start - index_end == 4:
+            #if index_start - index_end == 4:
+            if index_end >= index_start_mercenary_hd:
+                index_end = index_start_mercenary_hd
                 res[E_ItemBlock.IB_PLAYER] = res[E_ItemBlock.IB_PLAYER_HD][1], index_start
                 res[E_ItemBlock.IB_CORPSE_HD] = index_start, index_end
                 break
 
         # Corpse Items, Mercenary Hd. index_end still points at the end of Corpse Header == start of Corpse Items.
-        index_start_mercenary_hd = self.data.find(b'jf', index_end)
         if index_start_mercenary_hd >= 0:
             res[E_ItemBlock.IB_CORPSE] = index_end, index_start_mercenary_hd
             res[E_ItemBlock.IB_MERCENARY_HD] = index_start_mercenary_hd, index_start_mercenary_hd + 2
@@ -264,18 +274,18 @@ class Item:
                 continue
             index_start_block, index_end_block = block_index[key]
             index_start = index_start_block
-            item_end_item = index_start
             res[key] = list()
             while index_start >= 0:
-                item_start = self.data[0:index_end_block].find(b'JM', index_start_block)
+                index_start = self.data[0:index_end_block].find(b'JM', index_start)
                 if index_start < 0:
                     break
-                index_end = self.data[0:index_end_block].find(b'JM', item_start + 1)
+                index_end = self.data[0:index_end_block].find(b'JM', index_start + 1)
                 if index_end < 0:
                     res[key].append((index_start, index_end_block))
                     break
                 else:
                     res[key].append((index_start, index_end))
+                    index_start = index_end
         return res
 
     def get_block_items(self, *, block: E_ItemBlock = E_ItemBlock.IB_UNSPECIFIED,
@@ -423,6 +433,9 @@ class Data:
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.checksum_compute(), 'little')}, "\
               f"file size: {len(self.data)}"
+        item_analysis = Item(self.data)
+        for item in item_analysis.get_block_items():
+            print(item)
         return msg
 
 
@@ -437,15 +450,19 @@ class Horadric:
                 Horadric.do_backup(pfname)
         else:
             print("Omitting backups.")
-        data = [Data(Horadric.read_binary_file(pfname)) for pfname in pfnames_in]
+        data_all = [Data(Horadric.read_binary_file(pfname)) for pfname in pfnames_in]
         # < ----------------------------------------------------------
-        contents_binary_out = Horadric.do_the_exchange(data[0].data, data[1].data)
-        contents_binary_out = [Horadric.update_file_size(content) for content in contents_binary_out]
-        contents_binary_out = [Horadric.update_checksum(content) for content in contents_binary_out]
-        for j in range(2):
-            print(data[j])
-            Horadric.print_statistics(contents_binary_out[j])
-            #Horadric.write_binary_file(pfnames_in[j], contents_binary_out[j])
+        if parsed.info:
+            for data in data_all:
+                print(data)
+                print("====================")
+        if parsed.exchange:
+            contents_binary_out = Horadric.do_the_exchange(data_all[0].data, data_all[1].data)
+            contents_binary_out = [Horadric.update_file_size(content) for content in contents_binary_out]
+            contents_binary_out = [Horadric.update_checksum(content) for content in contents_binary_out]
+            for j in range(2):
+                print(data_all[j])
+                #Horadric.write_binary_file(pfnames_in[j], contents_binary_out[j])
         pass
 
     @staticmethod
@@ -569,10 +586,6 @@ class Horadric:
                 res[True].append(item)
         print(f"For '{name}' found {len(res[True])} horadric cube items and {len(res[False])} otherwisely stored items.")
         return res
-
-    @staticmethod
-    def print_statistics(data: bytes):
-        print(f"Input file size for '{Horadric.get_character_name(data)}' is {Horadric.get_file_size(data)} bytes. Checksum: {int.from_bytes(Horadric.get_checksum(data))}")
 
     @staticmethod
     def parse_arguments(args: Optional[List[str]] = None) -> argparse.Namespace:
