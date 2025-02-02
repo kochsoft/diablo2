@@ -613,7 +613,8 @@ class Horadric:
             self.set_hardcore(parsed.hardcore)
 
         if parsed.drop_horadric:
-            self.drop_horadric()
+            for data in self.data_all:
+                self.drop_horadric(data)
 
         if parsed.save_horadric:
             if len(pfnames_in) == 1:
@@ -627,9 +628,11 @@ class Horadric:
             else:
                 _log.warning("Loading of Horadric Cube content requires 1 target character exactly.")
 
-        if parsed.exchange:
-            pass
-        pass
+        if parsed.exchange_horadric:
+            if len(pfnames_in) == 2:
+                self.exchange_horadric()
+            else:
+                _log.warning("Exchanging Horadric Cube contents requires 2 target characters exactly.")
 
     def backup(self):
         _log.warning("Backups deactivated during active development. TODO: Do backups!")
@@ -648,20 +651,19 @@ class Horadric:
             data.update_all()
             data.save2disk()
 
-    def drop_horadric(self):
-        for data in self.data_all:
-            items = Item(data.data).get_cube_contents()  # type: List[Item]
-            # [Note: Iterate in reversed order, so that dropping front items will not destroy indices for back items.]
-            for item in reversed(items):
-                data.drop_item(item)
-            data.update_all()
-            data.save2disk()
-            print(f"Dropped {len(items)} items from the Horadric cube.")
+    def drop_horadric(self, data: Data):
+        items = Item(data.data).get_cube_contents()  # type: List[Item]
+        # [Note: Iterate in reversed order, so that dropping front items will not destroy indices for back items.]
+        for item in reversed(items):
+            data.drop_item(item)
+        data.update_all()
+        data.save2disk()
+        print(f"Dropped {len(items)} items from the Horadric cube.")
 
-    def save_horadric(self, pfname_out: str):
-        """Writes the horadric cube raw contents to disk. Employs that these contents are in order.
-        Target file structure: Number of main items, bytes block of all cube items."""
-        data = self.data_all[0]
+    @staticmethod
+    def grep_horadric(data: Data) -> bytes:
+        """:returns a one-byte prefix with the number of counting items and then the
+        block of item byte code."""
         items = Item(data.data).get_cube_contents()  # type: List[Item]
         res = b''
         count = 0
@@ -669,10 +671,26 @@ class Horadric:
             res += item.data_item
             if item.item_parent != E_ItemParent.IP_ITEM:
                 count = count + 1
+        print(f"Grepped {len(items)} items ({count} counting).")
+        return count.to_bytes(1, 'little') + res
+
+    def save_horadric(self, pfname_out: str):
+        """Writes the horadric cube raw contents to disk. Employs that these contents are in order.
+        Target file structure: Number of main items, bytes block of all cube items."""
+        data = self.data_all[0]
+        res = self.grep_horadric(data)
         with open(pfname_out, 'wb') as OUT:
-            OUT.write(count.to_bytes(1, 'little'))
             OUT.write(res)
-        print(f"Saved {len(items)} items ({count} counting) to file '{pfname_out}'.")
+        print(f"Wrote file '{pfname_out}'.")
+
+    def insert_horadric(self, data: Data, items: bytes):
+        """Takes a byte block of Horadric cube player items and moves it into the players Horadric Cube.
+        Replaces old contents.
+        After this is done the character file is saved automatically."""
+        self.drop_horadric(data)
+        if not data.add_items_to_player(items):
+            data.update_all()
+            data.save2disk()
 
     def load_horadric(self, pfname_in) -> int:
         if len(self.data_all) != 1:
@@ -684,10 +702,18 @@ class Horadric:
         with open(pfname_in, 'rb') as IN:
             code = IN.read()
         data = self.data_all[0]
-        self.drop_horadric()
-        if not data.add_items_to_player(code):
-            data.update_all()
-            data.save2disk()
+        self.insert_horadric(data, code)
+        return 0
+
+    def exchange_horadric(self) -> int:
+        if not len(self.data_all) == 2:
+            _log.warning("The Horadric Exchange requires two Character files precisely!")
+            return 1
+        horadric0 = self.grep_horadric(self.data_all[0])
+        horadric1 = self.grep_horadric(self.data_all[1])
+        self.insert_horadric(self.data_all[0], horadric1)
+        self.insert_horadric(self.data_all[1], horadric0)
+        print("Horadric exchange complete.")
         return 0
 
     @staticmethod
@@ -704,7 +730,7 @@ $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
         parser = argparse.ArgumentParser(prog='Horadric Exchange', description=desc, epilog=epilog, formatter_class=RawTextHelpFormatter)
         parser.add_argument('--omit_backup', action='store_true',
             help="Per default, target files will be backupped to .backup files. For safety. This option will disable that safety.")
-        parser.add_argument('--exchange', action='store_true', help="Flag. Requires that there are precisely 2 character pfnames given. This will exchange their Horadric Cube contents.")
+        parser.add_argument('--exchange_horadric', action='store_true', help="Flag. Requires that there are precisely 2 character pfnames given. This will exchange their Horadric Cube contents.")
         parser.add_argument('--drop_horadric', action='store_true', help="Flag. If given, the Horardric Cube contents of the targetted character will be removed.")
         parser.add_argument('--save_horadric', type=str, help="Write the items found in the Horadric Cube to disk with the given pfname. Only one character allowed.")
         parser.add_argument('--load_horadric', type=str, help="Drop all contents from the Horadric Cube and replace them with the horadric file content, that had been written using --save_horadric earlier.")
