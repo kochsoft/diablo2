@@ -360,6 +360,7 @@ class Data:
         :returns the checksum in a 4-byte binary string. Also updates the self.data accordingly."""
         csum = self.checksum_compute()
         self.data = self.data[0:12] + csum + self.data[16:]
+        print("Updated checksum.")
         return csum
 
     def get_checksum(self) -> bytes:
@@ -417,7 +418,8 @@ class Data:
             val |= 4
         else:
             val &= 251
-        self.data[0:36] + val.to_bytes(1, 'little') + self.data[37:]
+        self.data = self.data[0:36] + val.to_bytes(1, 'little') + self.data[37:]
+        print(f"Set {self.get_name(True)} to {'hard' if to_hardcore else 'soft'}core.")
 
     @staticmethod
     def get_time(frmt: str = "%y%m%d_%H%M%S", unix_time_s: Optional[int] = None) -> str:
@@ -425,8 +427,10 @@ class Data:
         unix_time_s = int(time.time()) if unix_time_s is None else int(unix_time_s)
         return time.strftime(frmt, time.localtime(unix_time_s))
 
-    def save2disk(self, pfname: str, prefix_timestamp: bool = False):
+    def save2disk(self, pfname: str = None, prefix_timestamp: bool = False):
         """Write this data structure's current state to disk. As is. E.g., no checksums are updated automatically."""
+        if pfname is None:
+            pfname = self.pfname
         if prefix_timestamp:
             parts = os.path.split(pfname)
             pname = parts[0]
@@ -437,7 +441,8 @@ class Data:
         print(f"Wrote {self.get_class(True)} {self.get_name(True)} to disk: {pfname}")
 
     def __str__(self) -> str:
-        msg = f"{self.get_name(True)}, a level {self.data[43]} {self.get_class(True)}. "\
+        core = 'hardcore' if self.is_hardcore() else 'softcore'
+        msg = f"{self.get_name(True)}, a level {self.data[43]} {core} {self.get_class(True)}. "\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.checksum_compute(), 'little')}, "\
               f"file size: {len(self.data)}"
@@ -460,12 +465,18 @@ class Horadric:
             pass
         else:
             print("Omitting backups.")
-        data_all = [Data(Horadric.read_binary_file(pfname)) for pfname in pfnames_in]
+        data_all = [Data(pfname) for pfname in pfnames_in]
         # < ----------------------------------------------------------
-        if parsed.info:
-            for data in data_all:
+        for data in data_all:
+            if parsed.info:
                 print(data)
                 print("====================")
+            if parsed.softcore and parsed.hardcore:
+                print("Both, set to hardcore and set to softcore has been requested. Ignoring both.")
+            elif parsed.softcore or parsed.hardcore:
+                data.set_hardcore(parsed.hardcore)
+                data.checksum_update()
+                data.save2disk()
         if parsed.exchange:
             contents_binary_out = Horadric.do_the_exchange(data_all[0].data, data_all[1].data)
             contents_binary_out = [Horadric.update_file_size(content) for content in contents_binary_out]
