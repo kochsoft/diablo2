@@ -344,7 +344,7 @@ class Item:
                     index_start = index_end
         return res
 
-    def get_block_items(self, *, block: E_ItemBlock = E_ItemBlock.IB_UNSPECIFIED,
+    def get_block_items(self, block: E_ItemBlock = E_ItemBlock.IB_UNSPECIFIED,
                           parent: E_ItemParent = E_ItemParent.IP_UNSPECIFIED,
                           equipped: E_ItemEquipment = E_ItemEquipment.IE_UNSPECIFIED,
                           stored: E_ItemStorage = E_ItemStorage.IS_UNSPECIFIED) -> List[Item]:
@@ -354,11 +354,9 @@ class Item:
           * End index (one point beyond the end) within the master data structure (or len(data) if it goes to EOF).
           * The bytes data of length (index_end - index_start) that is described by both indices."""
         index = self.get_block_item_index()  # type: Dict[E_ItemBlock, List[Tuple[int, int]]]
-        #blocks_relevant = [E_ItemBlock.IB_PLAYER, E_ItemBlock.IB_CORPSE, E_ItemBlock.IB_MERCENARY, E_ItemBlock.IB_IRONGOLEM] if block == E_ItemBlock.IB_UNSPECIFIED else [block]
         res = list()  # type: List[Item]
-        #for block_relevant in blocks_relevant:
         for block_relevant in index:
-            if block_relevant not in index:
+            if (block != E_ItemBlock.IB_UNSPECIFIED) and block_relevant != block:
                 continue
             lst = index[block_relevant]
             for j in range(len(lst)):
@@ -367,6 +365,22 @@ class Item:
                    (equipped in [E_ItemEquipment.IE_UNSPECIFIED, item.item_equipped]) or \
                    (stored in [E_ItemStorage.IS_UNSPECIFIED, item.item_stored]):
                     res.append(item)
+        return res
+
+    def get_cube_contents(self) -> List[Item]:
+        """:returns list of items and socketed items found in the Horadric Cube."""
+        items = self.get_block_items(E_ItemBlock.IB_PLAYER)
+        found_cube = False
+        res = list()  # type: List[Item]
+        for item in items:
+            if item.item_stored == E_ItemStorage.IS_CUBE:
+                found_cube = True
+            if not found_cube:
+                continue
+            if item.item_stored == E_ItemStorage.IS_CUBE or item.item_parent == E_ItemParent.IP_ITEM:
+                res.append(item)
+            else:
+                break
         return res
 
     def __str__(self) -> str:
@@ -391,7 +405,8 @@ class Data:
         else:
             raise ValueError(f"Given parameter data is of unusable type '{type(data).__name__}'.")
 
-    def checksum_compute(self) -> bytes:
+    def compute_checksum(self) -> bytes:
+        """:returns a newly computed checksum for self.data."""
         csum = 0
         for j in range(len(self.data)):
             elt = 0 if 12 <= j < 16 else self.data[j]
@@ -399,17 +414,35 @@ class Data:
         csum = csum.to_bytes(4, 'little')
         return csum
 
-    def checksum_update(self) -> bytes:
+    def update_checksum(self) -> bytes:
         """Important function! Will update the checksum entry. This is important to be done as final
         step before saving. If the checksum does not reflect the save game file, the game will not accept it.
         :returns the checksum in a 4-byte binary string. Also updates the self.data accordingly."""
-        csum = self.checksum_compute()
+        csum = self.compute_checksum()
         self.data = self.data[0:12] + csum + self.data[16:]
         print("Updated checksum.")
         return csum
 
     def get_checksum(self) -> bytes:
+        """:returns the checksum as it is written within the current self.data byte block."""
         return self.data[12:16]
+
+    def update_file_size(self) -> int:
+        """Updates this self.data block with the correct file-size.
+        :returns the actual size of self.data in bytes."""
+        n = len(self.data)
+        sz = n.to_bytes(4, 'little')
+        self.data = self.data[0:8] + sz + self.data[12:]
+        return n
+
+    def update_all(self):
+        """Convenience shortcut doing all updates that are necessary prior to writing a valid file to disk."""
+        self.update_file_size()
+        self.update_checksum()
+
+    def get_file_size(self) -> int:
+        """:returns the file size as it is written within self.data."""
+        return int.from_bytes(self.data[8:12], 'little')
 
     def get_item_count_mercenary(self, as_int = False) -> Union[int, bytes]:
         index_hd = self.data.find(b'jfJM', 765)
@@ -433,6 +466,14 @@ class Data:
                 return val
             else:
                 return int.from_bytes(val, 'little')
+
+    def set_item_count(self, block: E_ItemBlock, val: int):
+        if block == E_ItemBlock.IB_PLAYER_HD:
+            index_begin = self.data.find(b'JM', 765) + 2
+            index_end = index_begin + 2
+            self.data = self.data[0:index_begin] + int.to_bytes(val, 2, 'little') + self.data[index_end:]
+        else:
+            _log.warning(f"Failure to set item count for hitherto unsupported block '{block.name}'.")
 
     def get_name(self, as_str: bool = False) -> Union[bytes, str]:
         """:returns the character name. Either as str or as the 16 byte bytes array."""
@@ -489,6 +530,24 @@ class Data:
         self.data = self.data[0:36] + val.to_bytes(1, 'little') + self.data[37:]
         print(f"Set {self.get_name(True)} to {'hard' if to_hardcore else 'soft'}core.")
 
+    def drop_item(self, item: Item) -> int:
+        """Removes target item from this data object. Does no deeper checks and does no updates of stuff like the checksum."""
+        index_start = item.index_start
+        index_end = item.index_end
+        if index_start >= index_end:
+            _log.warning(f"Will refrain from dropping weird item '{item}'.")
+        else:
+            if item.item_parent != E_ItemParent.IP_ITEM:
+                if item.item_block == E_ItemBlock.IB_PLAYER:
+                    self.set_item_count(E_ItemBlock.IB_PLAYER_HD, self.get_item_count_player(True) - 1)
+                elif item.item_block == E_ItemBlock.IB_MERCENARY:
+                    self.set_item_count(E_ItemBlock.IB_MERCENARY_HD, self.get_item_count_mercenary(True) - 1)
+                else:
+                    _log.warning(f"Unsupported drop target block: {item.item_block.name}. Doing nothing.")
+                    return 1
+            self.data = self.data[0:index_start] + self.data[index_end:]
+        return 0
+
     @staticmethod
     def get_time(frmt: str = "%y%m%d_%H%M%S", unix_time_s: Optional[int] = None) -> str:
         """":return Time string aiming to become part of a backup pfname."""
@@ -512,8 +571,8 @@ class Data:
         core = 'hardcore' if self.is_hardcore() else 'softcore'
         msg = f"{self.get_name(True)}, a level {self.data[43]} {core} {self.get_class(True)}. "\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
-              f"Checksum (computed): '{int.from_bytes(self.checksum_compute(), 'little')}, "\
-              f"file size: {len(self.data)}, \n" \
+              f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}, "\
+              f"file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
               f"direct player item count: {self.get_item_count_player(True)}, is dead: {self.is_dead()}, direct mercenary item count: {self.get_item_count_mercenary(True)}"
         item_analysis = Item(self.data)
         for item in item_analysis.get_block_items():
@@ -526,156 +585,56 @@ class Horadric:
         # > Setting up the data. -------------------------------------
         parsed = self.parse_arguments(args)
         pfnames_in = parsed.pfnames  # type: List[str]
+        self.data_all = [Data(pfname) for pfname in pfnames_in]
+        #< -----------------------------------------------------------
+        #> Backups. --------------------------------------------------
         do_backup = not parsed.omit_backup  # type: bool
         if do_backup:
-            _log.warning("Backups deactivated during active development. TODO: Reactivate that line!")
-            #for pfname in pfnames_in:
-            #    Horadric.do_backup(pfname)
-            pass
+            self.backup()
         else:
             print("Omitting backups.")
-        data_all = [Data(pfname) for pfname in pfnames_in]
         # < ----------------------------------------------------------
-        for data in data_all:
-            if parsed.info:
-                print(data)
-                print("====================")
-            if parsed.softcore and parsed.hardcore:
-                print("Both, set to hardcore and set to softcore has been requested. Ignoring both.")
-            elif parsed.softcore or parsed.hardcore:
-                data.set_hardcore(parsed.hardcore)
-                data.checksum_update()
-                data.save2disk()
+        if parsed.info:
+            self.print_info()
+
+        if parsed.softcore and parsed.hardcore:
+            print("Both, set to hardcore and set to softcore has been requested. Ignoring both.")
+        elif parsed.softcore or parsed.hardcore:
+            self.set_hardcore(parsed.hardcore)
+
+        if parsed.drop_horadric:
+            self.drop_horadric()
+
         if parsed.exchange:
-            contents_binary_out = Horadric.do_the_exchange(data_all[0].data, data_all[1].data)
-            contents_binary_out = [Horadric.update_file_size(content) for content in contents_binary_out]
-            contents_binary_out = [Horadric.update_checksum(content) for content in contents_binary_out]
-            for j in range(2):
-                print(data_all[j])
-                #Horadric.write_binary_file(pfnames_in[j], contents_binary_out[j])
+            pass
         pass
 
-    @staticmethod
-    def die(msg: str, status: int = 0):
-        """Tool function for exiting the script if something goes wrong."""
-        print(f"{msg} ({status})")
-        sys.exit(status)
+    def backup(self):
+        _log.warning("Backups deactivated during active development. TODO: Do backups!")
 
-    @staticmethod
-    def do_backup(pfname: str):
-        pfname_backup = pfname + '.backup'
-        print(f"Doing backup: '{pfname}' -> '{pfname_backup}'.")
-        copyfile(pfname, pfname_backup)
+    def print_info(self):
+        """Print various info to all files to the console."""
+        n = len(self.data_all)
+        for j in range(n):
+            print(self.data_all[j])
+            if j < (n-1):
+                print("====================")
 
-    @staticmethod
-    def read_binary_file(pfname: str) -> bytes:
-        """Load the entirety of the target file's contents into a byte string."""
-        path = Path(pfname)
-        if not path.is_file():
-            Horadric.die(f"Character file '{pfname}' could not be opened for reading.", 1)
-        with open(pfname, mode='rb') as IN:
-            return IN.read()
+    def set_hardcore(self, hardcore: bool):
+        for data in self.data_all:
+            data.set_hardcore(hardcore)
+            data.update_all()
+            data.save2disk()
 
-    @staticmethod
-    def write_binary_file(pfname: str, data: bytes):
-        with open(pfname, mode='wb') as OUT:
-            OUT.write(data)
-        print(f"Wrote file '{pfname}'.")
-
-    @staticmethod
-    def get_checksum(data) -> bytes:
-        return data[12:16]
-
-    @staticmethod
-    def compute_checksum(data_in: bytes):
-        data = data_in[0:12] + b'\x00\x00\x00\x00' + data_in[16:]
-        csum = 0
-        for elt in data:
-            csum = ((csum << 1) + elt) % 0xffffffff
-        return csum.to_bytes(4, 'little')
-
-    @staticmethod
-    def update_checksum(data_in: bytes) -> bytes:
-        csum = Horadric.compute_checksum(data_in)
-        data = data_in[0:12] + csum + data_in[16:]
-        return data
-
-    @staticmethod
-    def get_file_size(data_in: bytes) -> int:
-        return int.from_bytes(data_in[8:12], 'little')
-
-    @staticmethod
-    def update_file_size(data_in: bytes) -> bytes:
-        sz = len(data_in).to_bytes(4, 'little')
-        return data_in[0:8] + sz + data_in[12:]
-
-    @staticmethod
-    def get_character_name(data_in: bytes) -> str:
-        return data_in[20:36].decode().replace('\x00', '')
-
-    @staticmethod
-    def set_character_name(data_in: bytes, name: str) -> bytes:
-        bname = name.encode('ISO-8859-1')
-        bname = bname + b'\x00' * (16 - len(bname))
-        return data_in[0:20] + bname + data_in[36:]
-
-    @staticmethod
-    def do_the_exchange(data0: bytes, data1: bytes) -> List[bytes]:
-        hsi0 = Horadric.get_headerskills_and_items(data0)
-        hsi1 = Horadric.get_headerskills_and_items(data1)
-        res0 = hsi0[0]
-        res1 = hsi1[0]
-        # Corpse and https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#items
-        return [res0 + b'JM\x00\x00JM\x00\x00', res1 + b'JM\x00\x00JM\x00\x00']
-        items0_prior = Horadric.parse_items(data0)
-        items1_prior = Horadric.parse_items(data1)
-        items0 = items0_prior[False]
-        #items0.extend(items1_prior[True])
-        items1 = items1_prior[False]
-        #items1.extend(items0_prior[True])
-        for item in items0:
-            res0 += item
-        for item in items1:
-            res1 += item
-        return [res0, res1]
-
-    @staticmethod
-    def get_headerskills_and_items(data:bytes) -> List[bytes]:
-        """:param data: The entirety of a binary .d2s file content.
-        :returns A split version of the data block. First entry is the header and skills section.
-          Second entry holds the items section."""
-        # The file has a header of size 765 bytes. Then 281 bytes for skills. Items may come after that header.
-        #return [deepcopy(data[0:(765+281)]), deepcopy(data[(765+281):])]
-        #return [deepcopy(data[0:(765+32)]), deepcopy(data[(765+32):])]
-        res = data.split(b'JM', 1)
-        return [deepcopy(res[0]), deepcopy(b'JM' + res[1])] if len(res) > 1 else [deepcopy(res[0]), list()]
-
-    @staticmethod
-    def parse_items(data: bytes) -> Dict[bool, List[bytes]]:
-        """Parses for items in the given data blob.
-        :param data: Binary string holding the entirety of a .d2s file.
-        :returns a dict of True, False. Both entries hold a list of items each.
-          False items are non-horadric. True items have been found within the Horadric Cube."""
-        res = list()  # type: List[bytes]
-        name = data[20:36].decode().replace('\x00', '') # type: str
-        # The file has a header of size 765 bytes. Then 281 bytes for skills. Items may come after that header.
-        split = Horadric.get_headerskills_and_items(data)
-        main = split[1]
-        items = main.split(b'JM')
-        items = [(b'JM' + item) for item in items]
-        # For items that are "stored" a 3-bit integer encoded starting at bit 73 describes where to store the item:
-        # Horadric cube: '001' AKA 4 in little endian.
-        # [Note: Since the header 'JM' is already dropped, we are looking for bits (57,58,59)
-        #  Hence, the following line: The 7th byte leads us to Bit 56. Shift >>1 to reach Bit 57.
-        #  Finally bitwise AND the mask 111 to discard all but the first three bits.]
-        res = {False: list(), True: list()}  # type: Dict[bool, List[bytes]]
-        for item in items:
-            if (len(item) <= 9) or (7 & (item[9] >> 1) != 4):
-                res[False].append(item)
-            else:
-                res[True].append(item)
-        print(f"For '{name}' found {len(res[True])} horadric cube items and {len(res[False])} otherwisely stored items.")
-        return res
+    def drop_horadric(self):
+        for data in self.data_all:
+            items = Item(data.data).get_cube_contents()  # type: List[Item]
+            # [Note: Iterate in reversed order, so that dropping front items will not destroy indices for back items.]
+            for item in reversed(items):
+                data.drop_item(item)
+            data.update_all()
+            data.save2disk()
+            print(f"Dropped {len(items)} items from the Horadric cube.")
 
     @staticmethod
     def parse_arguments(args: Optional[List[str]] = None) -> argparse.Namespace:
@@ -692,7 +651,8 @@ $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
         parser.add_argument('--omit_backup', action='store_true',
             help="Per default, target files will be backupped to .backup files. For safety. This option will disable that safety.")
         parser.add_argument('--exchange', action='store_true', help="Flag. Requires that there are precisely 2 character pfnames given. This will exchange their Horadric Cube contents.")
-        parser.add_argument('--save_horadric', type=str, help="Write the items found in the Horadric Cube to disk.")
+        parser.add_argument('--drop_horadric', action='store_true', help="Flag. If given, the Horardric Cube contents of the targetted character will be removed.")
+        parser.add_argument('--save_horadric', type=str, help="Write the items found in the Horadric Cube to disk with the given pfname. Only one character allowed.")
         parser.add_argument('--load_horadric', type=str, help="Drop all contents from the Horadric Cube and replace them with the horadric file content, that had been written using --save_horadric earlier.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")
         parser.add_argument('--softcore', action='store_true', help="Flag. Set target characters to soft core mode.")
