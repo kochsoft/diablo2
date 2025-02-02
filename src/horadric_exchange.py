@@ -221,8 +221,8 @@ class Item:
         res = dict()  # type: Dict[E_ItemBlock, Tuple[int, int]]
 
         # > Iterate through the diverse item blocks in sequence. -----
-        # Player Header: Has only 4 bytes.
-        index_start = self.data.find(b'JM')
+        # Player Header: Has only 4 bytes. Main file header is of 765 bytes length.
+        index_start = self.data.find(b'JM', 765)
         index_end = index_start + 4
         res[E_ItemBlock.IB_PLAYER_HD] = index_start, index_end
 
@@ -245,7 +245,9 @@ class Item:
         # Corpse Items, Mercenary Hd. index_end still points at the end of Corpse Header == start of Corpse Items.
         if index_start_mercenary_hd >= 0:
             res[E_ItemBlock.IB_CORPSE] = index_end, index_start_mercenary_hd
-            res[E_ItemBlock.IB_MERCENARY_HD] = index_start_mercenary_hd, index_start_mercenary_hd + 2
+            # Mercenary Header: "jfJM<2 byte-direct item count>"
+            index_delta_mercenary_hd = 6 if (index_start_mercenary_hd + 6) <= n else 2
+            res[E_ItemBlock.IB_MERCENARY_HD] = index_start_mercenary_hd, (index_start_mercenary_hd + index_delta_mercenary_hd)
             index_start = res[E_ItemBlock.IB_MERCENARY_HD][1]
         else:
             res[E_ItemBlock.IB_CORPSE] = index_end, n
@@ -366,6 +368,29 @@ class Data:
     def get_checksum(self) -> bytes:
         return self.data[12:16]
 
+    def get_item_count_mercenary(self, as_int = False) -> Union[int, bytes]:
+        index_hd = self.data.find(b'jfJM', 765)
+        if index_hd < 0:
+            return 0 if as_int else b'\x00\x00'
+        else:
+            val = self.data[(index_hd + 4):(index_hd + 5)]
+            if not as_int:
+                return val
+            else:
+                return int.from_bytes(val, 'little')
+
+    def get_item_count_player(self, as_int = False) -> Union[int, bytes]:
+        """TODO! Improve code redundancy to get_item_count_mercenary(..)"""
+        index_hd = self.data.find(b'JM', 765)
+        if index_hd < 0:
+            return 0 if as_int else b'\x00\x00'
+        else:
+            val = self.data[(index_hd + 2):(index_hd + 3)]
+            if not as_int:
+                return val
+            else:
+                return int.from_bytes(val, 'little')
+
     def get_name(self, as_str: bool = False) -> Union[bytes, str]:
         """:returns the character name. Either as str or as the 16 byte bytes array."""
         b_name = self.data[20:36]
@@ -445,7 +470,8 @@ class Data:
         msg = f"{self.get_name(True)}, a level {self.data[43]} {core} {self.get_class(True)}. "\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.checksum_compute(), 'little')}, "\
-              f"file size: {len(self.data)}"
+              f"file size: {len(self.data)}, \n" \
+              f"direct player item count: {self.get_item_count_player(True)}, is dead: {self.is_dead()}, direct mercenary item count: {self.get_item_count_mercenary(True)}"
         item_analysis = Item(self.data)
         for item in item_analysis.get_block_items():
             msg += f"\n{item}"
