@@ -22,6 +22,7 @@ Markus-Hermann Koch, mhk@markuskoch.eu, 2025/01/29.
 
 from __future__ import annotations
 import os
+import pathlib
 import re
 import sys
 import time
@@ -548,6 +549,15 @@ class Data:
             self.data = self.data[0:index_start] + self.data[index_end:]
         return 0
 
+    def add_items_to_player(self, items: bytes) -> int:
+        """Warning: Be sure to add multiple items in a sensible order!"""
+        index_start = Item(self.data).get_block_index()[E_ItemBlock.IB_PLAYER][0]
+        self.data = self.data[0:index_start] + items[1:] + self.data[index_start:]
+        count = int.from_bytes(items[0:1], 'little')
+        self.set_item_count(E_ItemBlock.IB_PLAYER_HD, self.get_item_count_player(True) + count)
+        print(f"Attempting to add {count} new items to the player's inventory.")
+        return 0
+
     @staticmethod
     def get_time(frmt: str = "%y%m%d_%H%M%S", unix_time_s: Optional[int] = None) -> str:
         """":return Time string aiming to become part of a backup pfname."""
@@ -605,6 +615,18 @@ class Horadric:
         if parsed.drop_horadric:
             self.drop_horadric()
 
+        if parsed.save_horadric:
+            if len(pfnames_in) == 1:
+                self.save_horadric(parsed.save_horadric)
+            else:
+                _log.warning("Saving of Horadric Cube content requires 1 target character exactly.")
+
+        if parsed.load_horadric:
+            if len(pfnames_in) == 1:
+                self.load_horadric(parsed.load_horadric)
+            else:
+                _log.warning("Loading of Horadric Cube content requires 1 target character exactly.")
+
         if parsed.exchange:
             pass
         pass
@@ -635,6 +657,38 @@ class Horadric:
             data.update_all()
             data.save2disk()
             print(f"Dropped {len(items)} items from the Horadric cube.")
+
+    def save_horadric(self, pfname_out: str):
+        """Writes the horadric cube raw contents to disk. Employs that these contents are in order.
+        Target file structure: Number of main items, bytes block of all cube items."""
+        data = self.data_all[0]
+        items = Item(data.data).get_cube_contents()  # type: List[Item]
+        res = b''
+        count = 0
+        for item in items:
+            res += item.data_item
+            if item.item_parent != E_ItemParent.IP_ITEM:
+                count = count + 1
+        with open(pfname_out, 'wb') as OUT:
+            OUT.write(count.to_bytes(1, 'little'))
+            OUT.write(res)
+        print(f"Saved {len(items)} items ({count} counting) to file '{pfname_out}'.")
+
+    def load_horadric(self, pfname_in) -> int:
+        if len(self.data_all) != 1:
+            _log.warning(f"Horadric cube content loading requires one target character exactly.")
+            return 1
+        if not os.path.isfile(pfname_in):
+            _log.warning(f"File '{pfname_in}' could not be opened for reading,")
+            return 2
+        with open(pfname_in, 'rb') as IN:
+            code = IN.read()
+        data = self.data_all[0]
+        self.drop_horadric()
+        if not data.add_items_to_player(code):
+            data.update_all()
+            data.save2disk()
+        return 0
 
     @staticmethod
     def parse_arguments(args: Optional[List[str]] = None) -> argparse.Namespace:
