@@ -28,9 +28,11 @@ import time
 import logging
 import argparse
 from argparse import RawTextHelpFormatter
-from idlelib.stackviewer import VariablesTreeItem
+# from idlelib.stackviewer import VariablesTreeItem
+from math import floor, ceil
 from pathlib import Path
 from copy import deepcopy
+from platform import android_ver
 from shutil import copyfile
 from typing import List, Dict, Optional, Union, Tuple
 from enum import Enum
@@ -91,6 +93,38 @@ class E_ItemEquipment(Enum):
     IE_GLOVES = 10
     IE_WEAPON_ALT_RIGHT = 11
     IE_WEAPON_ALT_LEFT = 12
+
+
+def reverse_bit_order(val: int, width: int):
+    """Some values are in bit reverse order. Guess, the powers that be at Blizzard North did that on purpose.
+    :param val: Value to reverse.
+    :param width: Width of the value to reverse in bits.
+        About bit lengths of attributes: https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#attribute-bit-lengths
+    :return: Reversed value."""
+    return int('{:0{width}b}'.format(val, width=width)[::-1], 2)
+
+
+def read_bitfield(data: bytes, bit0: int = 0, n_bits: Optional[int] = None, *, reverse = False) -> int:
+    """Free function for reading or writing a bit field value.
+    :param data: some bytes block.
+    :param bit0: First bit index to read. 0-starting index, of course.
+    :param n_bits: Number of bits to be read.
+    :param reverse: Should the bit order of the result be reversed prior to returning?
+    :returns the unsigned int value associated with the given bit-set. Or 0 in case of failure."""
+    if n_bits is None:
+        n_bits = len(data) * 8
+    res = 0  # type: int
+    n = len(data)
+    offset_byte_left = int(floor(bit0) / 8)
+    n_bytes = int(ceil(n_bits / 8))
+    offset_bit_left = bit0 % 8
+    sb_raw = int.from_bytes(data[offset_byte_left:(offset_byte_left + n_bytes)], 'little')
+    b0 = '{:0{width}b}'.format(sb_raw, width=n_bytes*8)
+    b1 = b0[offset_bit_left:(offset_bit_left + n_bits)]
+    res = int(b1, 2)
+    if reverse:
+        res = reverse_bit_order(res, n_bits)
+    return res
 
 
 class Item:
@@ -213,9 +247,19 @@ class Item:
                 _log.warning(f"Encountered weird storage code {val}.")
             return  E_ItemStorage.IS_UNSPECIFIED
 
+    @staticmethod
+    def drop_empty_block_indices(block_indices: Dict[E_ItemBlock, Tuple[int, int]]) -> Dict[E_ItemBlock, Tuple[int, int]]:
+        # Drop empty blocks.
+        deletees = list()  # type: List[E_ItemBlock]
+        for key in block_indices:
+            if block_indices[key][0] == block_indices[key][1]:
+                deletees.append(key)
+        for key in deletees:
+            del block_indices[key]
+        return block_indices
+
     def get_block_index(self) -> Dict[E_ItemBlock, Tuple[int, int]]:
-        """:param block: Target block.
-        :returns index_start, index_end for the blocks in self.data. The index_end indices actually point
+        """:returns index_start, index_end for the blocks in self.data. The index_end indices actually point
           to the first element of the next block (or are len(self.data) if eof is reached)."""
         n = len(self.data)
         res = dict()  # type: Dict[E_ItemBlock, Tuple[int, int]]
@@ -226,32 +270,39 @@ class Item:
         index_end = index_start + 4
         res[E_ItemBlock.IB_PLAYER_HD] = index_start, index_end
 
-        index_start_mercenary_hd = self.data.find(b'jf', index_end)
-        # Player Items, Corpse Hd: Player item list is ended by the mandatory Corpse HD, which has 4 bytes.
+        # Player Items, Corpse Hd: Player item list is ended by the mandatory Corpse HD, which starts 'JM' and has 16 bytes.
+        index_start_player = index_end
         while True:
             index_start = self.data.find(b'JM', index_end)
             if index_start == -1:
-                return res
+                return Item.drop_empty_block_indices(res)
             index_end = self.data.find(b'JM', index_start + 1)
-            if index_end == -1:
-                index_end = n
-            #if index_start - index_end == 4:
-            if index_end >= index_start_mercenary_hd:
-                index_end = index_start_mercenary_hd
-                res[E_ItemBlock.IB_PLAYER] = res[E_ItemBlock.IB_PLAYER_HD][1], index_start
-                res[E_ItemBlock.IB_CORPSE_HD] = index_start, index_end
+            if (index_end == -1) or ((index_end - index_start) == 16) or (self.data[(index_end-2):index_end] in [b'jf', b'kf']):
+                # We have found the corpse header.
+                delta_corpse_hd = 16 if ((index_end - index_start) == 16) else 4
+                res[E_ItemBlock.IB_CORPSE_HD] = index_start, (index_start + delta_corpse_hd)
                 break
+            else:
+                res[E_ItemBlock.IB_PLAYER] = index_start_player, index_end
 
-        # Corpse Items, Mercenary Hd. index_end still points at the end of Corpse Header == start of Corpse Items.
+        # Corpse Items, Mercenary Header. Mercenary Hd begins 'jf' followed by 'JM' and a 2-byte item count.
+        index_end = res[E_ItemBlock.IB_CORPSE_HD][1]
+        index_start_mercenary_hd = self.data.find(b'jf', index_end)
+        index_start_golem_hd = self.data.find(b'kf', index_end)
+        index_end_corpse = index_start_mercenary_hd if index_start_mercenary_hd >= 0 else index_start_golem_hd
+        if index_end_corpse < 0:
+            index_end_corpse = n
+        if res[E_ItemBlock.IB_CORPSE_HD][1] != index_end_corpse:
+            res[E_ItemBlock.IB_CORPSE] = res[E_ItemBlock.IB_CORPSE_HD][1], index_end_corpse
+
         if index_start_mercenary_hd >= 0:
-            res[E_ItemBlock.IB_CORPSE] = index_end, index_start_mercenary_hd
             # Mercenary Header: "jfJM<2 byte-direct item count>"
-            index_delta_mercenary_hd = 6 if (index_start_mercenary_hd + 6) <= n else 2
-            res[E_ItemBlock.IB_MERCENARY_HD] = index_start_mercenary_hd, (index_start_mercenary_hd + index_delta_mercenary_hd)
+            mercenary_hd_is_large = (self.data.find(b'JM', index_start_mercenary_hd) == (index_start_mercenary_hd + 2)) and \
+                                    (self.data.find(b'JM', index_start_mercenary_hd + 3) == (index_start_mercenary_hd + 6))
+            res[E_ItemBlock.IB_MERCENARY_HD] = index_start_mercenary_hd, (index_start_mercenary_hd + (6 if mercenary_hd_is_large else 2))
             index_start = res[E_ItemBlock.IB_MERCENARY_HD][1]
         else:
-            res[E_ItemBlock.IB_CORPSE] = index_end, n
-            return res
+            return Item.drop_empty_block_indices(res)
 
         # Mercenary Items, Iron Golem Header.
         index_start_golem_hd = self.data.find(b'kf', index_start)
@@ -261,20 +312,12 @@ class Item:
             index_start = res[E_ItemBlock.IB_IRONGOLEM_HD][1]
         else:
             res[E_ItemBlock.IB_MERCENARY] = index_start, n
-            return res
+            return Item.drop_empty_block_indices(res)
 
         # Iron Golem Item. The remainder of the file.
         res[E_ItemBlock.IB_IRONGOLEM] = index_start, n
         # < ----------------------------------------------------------
-        # Drop empty blocks.
-        deletees = list()  # type: List[E_ItemBlock]
-        for key in res:
-            if res[key][0] == res[key][1]:
-                deletees.append(key)
-        for key in deletees:
-            del res[key]
-
-        return res
+        return Item.drop_empty_block_indices(res)
 
     def get_block_item_index(self) -> Dict[E_ItemBlock, List[Tuple[int, int]]]:
         """:returns for each block a list of index-2-tuples for self.data.
