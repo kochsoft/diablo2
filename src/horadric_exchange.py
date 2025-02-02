@@ -118,8 +118,12 @@ class Item:
         self.index_item_block = index_item_block
 
     @property
+    def is_analytical(self) -> bool:
+        return self.index_start is None or self.index_end is None
+
+    @property
     def data_item(self) -> Optional[bytes]:
-        if self.index_start is None or self.index_end is None:
+        if self.is_analytical:
             return None
         else:
             return self.data[self.index_start:self.index_end]
@@ -127,9 +131,9 @@ class Item:
     @property
     def item_parent(self) -> Optional[E_ItemParent]:
         """Simple items Version 96: Bits 58-60"""
-        data_item = self.data_item
-        if not data_item:
+        if self.is_analytical:
             return None
+        data_item = self.data_item
         if len(data_item) < 8:
             return E_ItemParent.IP_UNSPECIFIED
         # From 56,..,63 Bits 58-60
@@ -151,9 +155,9 @@ class Item:
     @property
     def item_equipped(self) -> Optional[E_ItemEquipment]:
         """61-64"""
-        data_item = self.data_item
-        if not data_item:
+        if self.is_analytical:
             return None
+        data_item = self.data_item
         if len(data_item) < 9:
             return E_ItemEquipment.IE_UNSPECIFIED
         # From 56-63 Bits 61-63 and bit 64.
@@ -190,9 +194,9 @@ class Item:
 
     @property
     def item_stored(self) -> Optional[E_ItemStorage]:
-        data_item = self.data_item
-        if not data_item:
+        if self.is_analytical:
             return None
+        data_item = self.data_item
         if len(data_item) < 10:
             return E_ItemStorage.IS_UNSPECIFIED
         # 73-75
@@ -260,6 +264,14 @@ class Item:
         # Iron Golem Item. The remainder of the file.
         res[E_ItemBlock.IB_IRONGOLEM] = index_start, n
         # < ----------------------------------------------------------
+        # Drop empty blocks.
+        deletees = list()  # type: List[E_ItemBlock]
+        for key in res:
+            if res[key][0] == res[key][1]:
+                deletees.append(key)
+        for key in deletees:
+            del res[key]
+
         return res
 
     def get_block_item_index(self) -> Dict[E_ItemBlock, List[Tuple[int, int]]]:
@@ -267,17 +279,16 @@ class Item:
         Each 3 tuple. Entries 0 and 1 index one item, thus that data[indexs_start:index_end] encompasses the entire
         item. The third entry is a copy of that binary blob."""
         block_index = self.get_block_index()
-        keys_relevant = [E_ItemBlock.IB_PLAYER, E_ItemBlock.IB_CORPSE, E_ItemBlock.IB_MERCENARY, E_ItemBlock.IB_IRONGOLEM]
         res = dict()  # type: Dict[E_ItemBlock, List[Tuple[int, int]]]
         for key in block_index:
-            if key not in keys_relevant:
-                continue
             index_start_block, index_end_block = block_index[key]
             index_start = index_start_block
             res[key] = list()
             while index_start >= 0:
                 index_start = self.data[0:index_end_block].find(b'JM', index_start)
                 if index_start < 0:
+                    if not res[key]:
+                        res[key].append((index_start_block, index_end_block))
                     break
                 index_end = self.data[0:index_end_block].find(b'JM', index_start + 1)
                 if index_end < 0:
@@ -298,9 +309,10 @@ class Item:
           * End index (one point beyond the end) within the master data structure (or len(data) if it goes to EOF).
           * The bytes data of length (index_end - index_start) that is described by both indices."""
         index = self.get_block_item_index()  # type: Dict[E_ItemBlock, List[Tuple[int, int]]]
-        blocks_relevant = [E_ItemBlock.IB_PLAYER, E_ItemBlock.IB_CORPSE, E_ItemBlock.IB_MERCENARY, E_ItemBlock.IB_IRONGOLEM] if block == E_ItemBlock.IB_UNSPECIFIED else [block]
+        #blocks_relevant = [E_ItemBlock.IB_PLAYER, E_ItemBlock.IB_CORPSE, E_ItemBlock.IB_MERCENARY, E_ItemBlock.IB_IRONGOLEM] if block == E_ItemBlock.IB_UNSPECIFIED else [block]
         res = list()  # type: List[Item]
-        for block_relevant in blocks_relevant:
+        #for block_relevant in blocks_relevant:
+        for block_relevant in index:
             if block_relevant not in index:
                 continue
             lst = index[block_relevant]
@@ -313,12 +325,11 @@ class Item:
         return res
 
     def __str__(self) -> str:
-        data_item = self.data_item
-        if data_item:
+        if self.is_analytical:
+            return "Analytic Item instance."
+        else:
             return f"Item {self.item_block.name} #{self.index_item_block} index: ({self.index_start}, {self.index_end}): " \
                 f"Parent: {self.item_parent.name}, Storage: {self.item_stored.name}, Equip: {self.item_equipped.name}"
-        else:
-            return "Analytic Item instance."
 
 
 class Data:
@@ -408,9 +419,6 @@ class Data:
             val &= 251
         self.data[0:36] + val.to_bytes(1, 'little') + self.data[37:]
 
-    #def get_items(self) -> Dict[E_ItemSites]:
-    #    pass
-
     @staticmethod
     def get_time(frmt: str = "%y%m%d_%H%M%S", unix_time_s: Optional[int] = None) -> str:
         """":return Time string aiming to become part of a backup pfname."""
@@ -435,7 +443,7 @@ class Data:
               f"file size: {len(self.data)}"
         item_analysis = Item(self.data)
         for item in item_analysis.get_block_items():
-            print(item)
+            msg += f"\n{item}"
         return msg
 
 
@@ -446,8 +454,10 @@ class Horadric:
         pfnames_in = parsed.pfnames  # type: List[str]
         do_backup = not parsed.omit_backup  # type: bool
         if do_backup:
-            for pfname in pfnames_in:
-                Horadric.do_backup(pfname)
+            _log.warning("Backups deactivated during active development. TODO: Reactivate that line!")
+            #for pfname in pfnames_in:
+            #    Horadric.do_backup(pfname)
+            pass
         else:
             print("Omitting backups.")
         data_all = [Data(Horadric.read_binary_file(pfname)) for pfname in pfnames_in]
