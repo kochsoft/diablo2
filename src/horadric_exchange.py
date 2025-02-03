@@ -22,19 +22,14 @@ Markus-Hermann Koch, mhk@markuskoch.eu, 2025/01/29.
 
 from __future__ import annotations
 import os
-import pathlib
 import re
 import sys
 import time
 import logging
 import argparse
 from argparse import RawTextHelpFormatter
-# from idlelib.stackviewer import VariablesTreeItem
 from math import floor, ceil
 from pathlib import Path
-from copy import deepcopy
-from platform import android_ver
-from shutil import copyfile
 from typing import List, Dict, Optional, Union, Tuple
 from enum import Enum
 
@@ -96,36 +91,63 @@ class E_ItemEquipment(Enum):
     IE_WEAPON_ALT_LEFT = 12
 
 
-def reverse_bit_order(val: int, width: int):
-    """Some values are in bit reverse order. Guess, the powers that be at Blizzard North did that on purpose.
-    :param val: Value to reverse.
-    :param width: Width of the value to reverse in bits.
-        About bit lengths of attributes: https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#attribute-bit-lengths
-    :return: Reversed value."""
-    return int('{:0{width}b}'.format(val, width=width)[::-1], 2)
+def bytes2bitmap(data: bytes) -> str:
+    return '{:0{width}b}'.format(int.from_bytes(data, 'little'), width = len(data) * 8)
+
+def bitmap2bytes(bitmap: str) -> bytes:
+    n = len(bitmap)
+    if (n % 8) != 0:
+        raise ValueError(f"Invalid bitmap length {n} not being a multiple of 8.")
+    return int(bitmap,2).to_bytes(round(n/8), 'little')
+
+def get_range_from_bitmap(bitmap: str, index_start: int, index_end: int, *, do_invert: bool = False) -> int:
+    return int(bitmap[index_start:index_end][::-1] if do_invert else bitmap[index_start:index_end], 2)
+
+def set_range_to_bitmap(bitmap: str, index_start: int, index_end: int, val: int, *, do_invert: bool = False) -> str:
+    width = index_end - index_start
+    rg = '{:0{width}b}'.format(val, width=width)
+    if do_invert:
+        rg = rg[::-1]
+    return bitmap[0:index_start] + rg + bitmap[index_end:]
+
+def get_bitrange_value_from_bytes(data: bytes, index_start: int, index_end: int, *, do_invert: bool = False):
+    bm = bytes2bitmap(data)
+    return get_range_from_bitmap(bm, index_start, index_end, do_invert=do_invert)
+
+def set_bitrange_value_to_bytes(data: bytes, index_start: int, index_end: int, val: int, *, do_invert: bool = False) -> bytes:
+    bm = bytes2bitmap(data)
+    set_range_to_bitmap(bm, index_start, index_end, val, do_invert=do_invert)
+    return bitmap2bytes(bm)
 
 
-def read_bitfield(data: bytes, bit0: int = 0, n_bits: Optional[int] = None, *, reverse = False) -> int:
-    """Free function for reading or writing a bit field value.
-    :param data: some bytes block.
-    :param bit0: First bit index to read. 0-starting index, of course.
-    :param n_bits: Number of bits to be read.
-    :param reverse: Should the bit order of the result be reversed prior to returning?
-    :returns the unsigned int value associated with the given bit-set. Or 0 in case of failure."""
-    if n_bits is None:
-        n_bits = len(data) * 8
-    res = 0  # type: int
-    n = len(data)
-    offset_byte_left = int(floor(bit0) / 8)
-    n_bytes = int(ceil(n_bits / 8))
-    offset_bit_left = bit0 % 8
-    sb_raw = int.from_bytes(data[offset_byte_left:(offset_byte_left + n_bytes)], 'little')
-    b0 = '{:0{width}b}'.format(sb_raw, width=n_bytes*8)
-    b1 = b0[offset_bit_left:(offset_bit_left + n_bits)]
-    res = int(b1, 2)
-    if reverse:
-        res = reverse_bit_order(res, n_bits)
-    return res
+class BitMaster:
+    """Class for reading and writing arbitrary, bitty sites in the bytes code that is a .d2s file.
+    :param index_start_bit: 0-starting index that will count the BITs within a given data structure.
+      Marks the first bit of consequence.
+    :param index_end_bit: BIT-counting index marking the end of the target sequence.
+      Note: It is legal to have index_end_bit < index_start_bit. The constructor will remedy this
+      and set a flag 'is_reversed'. If that is set bits will be interpreted in reversed order. E.g., 0100 -> 2.
+    :param name: An optional name string. Human-readable. To name and qualify this object."""
+    def __init__(self, index_start_bit: int, index_end_bit: int, name: str = 'nameless'):
+        self.name = name
+        self.index_start_bit = index_start_bit
+        self.index_end_bit = index_end_bit
+        self.is_reversed = False
+        if index_end_bit < index_start_bit:
+            self.is_reversed = True
+            h = self.index_start_bit
+            self.index_start_bit = self.index_end_bit
+            self.index_end_bit = h
+
+    def get_value(self, data: bytes) -> int:
+        return get_bitrange_value_from_bytes(data, self.index_start_bit, self.index_end_bit, do_invert=self.is_reversed)
+
+    def set_value(self, data: bytes, val: int):
+        return set_bitrange_value_to_bytes(data, self.index_start_bit, self.index_end_bit, val, do_invert=self.is_reversed)
+
+    def __str__(self) -> str:
+        direction = 'Inverted' if self.is_reversed else 'Forward'
+        return f"{direction} BitMaster '{self.name}' ranging in bits [{self.index_start_bit}, {self.index_end_bit}]."
 
 
 class Item:
