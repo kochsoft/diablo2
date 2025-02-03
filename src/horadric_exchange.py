@@ -28,7 +28,6 @@ import time
 import logging
 import argparse
 from argparse import RawTextHelpFormatter
-from math import floor, ceil
 from pathlib import Path
 from typing import List, Dict, Optional, Union, Tuple
 from enum import Enum
@@ -101,14 +100,21 @@ def bitmap2bytes(bitmap: str) -> bytes:
     return int(bitmap,2).to_bytes(round(n/8), 'little')
 
 def get_range_from_bitmap(bitmap: str, index_start: int, index_end: int, *, do_invert: bool = False) -> int:
-    return int(bitmap[index_start:index_end][::-1] if do_invert else bitmap[index_start:index_end], 2)
+    # [Note: Being numerals the left-most entries in the bitmap are the most significant!
+    #  However, our indexing schema asks for little endian. Hence, when accessing the bitmap,
+    #  we have to invert the indices to start on the right side of the numeral.
+    #  Thus, the index [start:end] becomes [n-end:n-start].]
+    n = len(bitmap)
+    bm = bitmap[n-index_end:n-index_start]
+    return int(bm[::-1] if do_invert else bm, 2)
 
 def set_range_to_bitmap(bitmap: str, index_start: int, index_end: int, val: int, *, do_invert: bool = False) -> str:
     width = index_end - index_start
     rg = '{:0{width}b}'.format(val, width=width)
     if do_invert:
         rg = rg[::-1]
-    return bitmap[0:index_start] + rg + bitmap[index_end:]
+    n = len(bitmap)
+    return bitmap[0:n-index_end] + rg + bitmap[n-index_start:]
 
 def get_bitrange_value_from_bytes(data: bytes, index_start: int, index_end: int, *, do_invert: bool = False):
     bm = bytes2bitmap(data)
@@ -116,7 +122,7 @@ def get_bitrange_value_from_bytes(data: bytes, index_start: int, index_end: int,
 
 def set_bitrange_value_to_bytes(data: bytes, index_start: int, index_end: int, val: int, *, do_invert: bool = False) -> bytes:
     bm = bytes2bitmap(data)
-    set_range_to_bitmap(bm, index_start, index_end, val, do_invert=do_invert)
+    bm = set_range_to_bitmap(bm, index_start, index_end, val, do_invert=do_invert)
     return bitmap2bytes(bm)
 
 
@@ -428,6 +434,9 @@ class Data:
         else:
             raise ValueError(f"Given parameter data is of unusable type '{type(data).__name__}'.")
 
+    def get_file_version(self) -> int:
+        return BitMaster(32,64,'file version').get_value(self.data[0:8])
+
     def compute_checksum(self) -> bytes:
         """:returns a newly computed checksum for self.data."""
         csum = 0
@@ -604,7 +613,7 @@ class Data:
         msg = f"{self.get_name(True)}, a level {self.data[43]} {core} {self.get_class(True)}. "\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}, "\
-              f"file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
+              f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
               f"direct player item count: {self.get_item_count_player(True)}, is dead: {self.is_dead()}, direct mercenary item count: {self.get_item_count_mercenary(True)}"
         item_analysis = Item(self.data)
         for item in item_analysis.get_block_items():
