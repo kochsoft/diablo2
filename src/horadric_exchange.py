@@ -472,6 +472,12 @@ class Data:
             self.pfname = self.get_name(True) + '.d2s'
         else:
             raise ValueError(f"Given parameter data is of unusable type '{type(data).__name__}'.")
+        ver = self.get_file_version()
+        if ver != 96:
+            print(f"""Invalid save game version '{ver}'. Sorry. This script so far only supports version code '96' (v1.10-v1.14d) save game files.
+Fixing this is mostly updating the sites in the .d2s file, where the action takes place. At the time of writing
+this page was an excellent source for that: https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md""")
+            sys.exit(1)
 
     def get_file_version(self) -> int:
         return BitMaster(32,64,'file version').get_value(self.data[0:8])

@@ -1,5 +1,9 @@
-/home/kochmn/PycharmProjects/PyEnv/Py313/bin/python3.13 /home/kochmn/PycharmProjects/diablo2/src/horadric_exchange.py --info --omit_backup examples/Charonson.d2s examples/Alissa.d2s
+/home/kochmn/PycharmProjects/PyEnv/Py313/bin/python3.13 /home/kochmn/PycharmProjects/diablo2/src/horadric_exchange.py --info --omit_backup examples/Charonson.d2s examples/Alissa.d2s examples/Lancelot.d2s 
 Omitting backups.
+Charonson, a level 30 hardcore Necromancer. Checksum (current): '2563207000', Checksum (computed): '2563207000, file version: 96, file size: 2821, file size in file: 2821, 
+direct player item count: 85, is dead: False, direct mercenary item count: 3, 
+attributes: {<E_Attributes.AT_STRENGTH: 0>: 71, <E_Attributes.AT_ENERGY: 1>: 50, <E_Attributes.AT_DEXTERITY: 2>: 43, <E_Attributes.AT_VITALITY: 3>: 66, <E_Attributes.AT_CURRENT_HP: 6>: 61824, <E_Attributes.AT_MAX_HP: 7>: 53888, <E_Attributes.AT_CURRENT_MANA: 8>: 45056, <E_Attributes.AT_MAX_MANA: 9>: 34048, <E_Attributes.AT_CURRENT_STAMINA: 10>: 44544, <E_Attributes.AT_MAX_STAMINA: 11>: 40704, <E_Attributes.AT_LEVEL: 12>: 30, <E_Attributes.AT_EXPERIENCE: 13>: 5055606, <E_Attributes.AT_GOLD: 14>: 123498, <E_Attributes.AT_STASHED_GOLD: 15>: 200000}
+Item IB_PLAYER_HD #0 index: (848, 852): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
 Item IB_PLAYER #0 index: (852, 875): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
 Item IB_PLAYER #1 index: (875, 898): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
 Item IB_PLAYER #2 index: (898, 924): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
@@ -92,17 +96,22 @@ Item IB_PLAYER #88 index: (2516, 2557): Parent: IP_EQUIPPED, Storage: IS_UNSPECI
 Item IB_PLAYER #89 index: (2557, 2571): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
 Item IB_PLAYER #90 index: (2571, 2585): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
 Item IB_PLAYER #91 index: (2585, 2599): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
-Item IB_MERCENARY #0 index: (2605, 2609): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
-Item IB_MERCENARY #1 index: (2609, 2652): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_ARMOR
-Item IB_MERCENARY #2 index: (2652, 2666): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
-Item IB_MERCENARY #3 index: (2666, 2680): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
-Item IB_MERCENARY #4 index: (2680, 2717): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_HELMET
-Item IB_MERCENARY #5 index: (2717, 2760): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_WEAPON_RIGHT
-Item IB_MERCENARY #6 index: (2760, 2774): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
-Item IB_MERCENARY #7 index: (2774, 2788): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_CORPSE_HD #0 index: (2599, 2603): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY_HD #0 index: (2605, 2609): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #0 index: (2609, 2652): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_ARMOR
+Item IB_MERCENARY #1 index: (2652, 2666): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #2 index: (2666, 2680): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #3 index: (2680, 2717): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_HELMET
+Item IB_MERCENARY #4 index: (2717, 2760): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_WEAPON_RIGHT
+Item IB_MERCENARY #5 index: (2760, 2774): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #6 index: (2774, 2788): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_IRONGOLEM_HD #0 index: (2788, 2791): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
 Item IB_IRONGOLEM #0 index: (2791, 2821): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_WEAPON_RIGHT
-Charonson, a level 30 Necromancer. Checksum (current): '2563207000', Checksum (computed): '2563207000, file size: 2821
 ====================
+Alissa, a level 68 hardcore Assassin. Checksum (current): '2148658874', Checksum (computed): '2148658874, file version: 96, file size: 2856, file size in file: 2856, 
+direct player item count: 82, is dead: False, direct mercenary item count: 3, 
+attributes: {<E_Attributes.AT_STRENGTH: 0>: 95, <E_Attributes.AT_ENERGY: 1>: 68, <E_Attributes.AT_DEXTERITY: 2>: 128, <E_Attributes.AT_VITALITY: 3>: 139, <E_Attributes.AT_CURRENT_HP: 6>: 156672, <E_Attributes.AT_MAX_HP: 7>: 148736, <E_Attributes.AT_CURRENT_MANA: 8>: 61760, <E_Attributes.AT_MAX_MANA: 9>: 51392, <E_Attributes.AT_CURRENT_STAMINA: 10>: 89728, <E_Attributes.AT_MAX_STAMINA: 11>: 83840, <E_Attributes.AT_LEVEL: 12>: 68, <E_Attributes.AT_EXPERIENCE: 13>: 239769374, <E_Attributes.AT_GOLD: 14>: 313396, <E_Attributes.AT_STASHED_GOLD: 15>: 1700000}
+Item IB_PLAYER_HD #0 index: (848, 852): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
 Item IB_PLAYER #0 index: (852, 866): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
 Item IB_PLAYER #1 index: (866, 880): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
 Item IB_PLAYER #2 index: (880, 894): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
@@ -190,18 +199,39 @@ Item IB_PLAYER #83 index: (2520, 2534): Parent: IP_ITEM, Storage: IS_UNSPECIFIED
 Item IB_PLAYER #84 index: (2534, 2548): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
 Item IB_PLAYER #85 index: (2548, 2579): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_WEAPON_RIGHT
 Item IB_PLAYER #86 index: (2579, 2629): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_WEAPON_LEFT
-Item IB_MERCENARY #0 index: (2635, 2639): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
-Item IB_MERCENARY #1 index: (2639, 2664): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_ARMOR
-Item IB_MERCENARY #2 index: (2664, 2678): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
-Item IB_MERCENARY #3 index: (2678, 2692): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
-Item IB_MERCENARY #4 index: (2692, 2706): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
-Item IB_MERCENARY #5 index: (2706, 2741): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_HELMET
-Item IB_MERCENARY #6 index: (2741, 2755): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
-Item IB_MERCENARY #7 index: (2755, 2769): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
-Item IB_MERCENARY #8 index: (2769, 2811): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_WEAPON_RIGHT
-Item IB_MERCENARY #9 index: (2811, 2825): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
-Item IB_MERCENARY #10 index: (2825, 2839): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
-Item IB_MERCENARY #11 index: (2839, 2853): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
-Alissa, a level 68 Assassin. Checksum (current): '2148658874', Checksum (computed): '2148658874, file size: 2856
+Item IB_CORPSE_HD #0 index: (2629, 2633): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY_HD #0 index: (2635, 2639): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #0 index: (2639, 2664): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_ARMOR
+Item IB_MERCENARY #1 index: (2664, 2678): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #2 index: (2678, 2692): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #3 index: (2692, 2706): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #4 index: (2706, 2741): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_HELMET
+Item IB_MERCENARY #5 index: (2741, 2755): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #6 index: (2755, 2769): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #7 index: (2769, 2811): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_WEAPON_RIGHT
+Item IB_MERCENARY #8 index: (2811, 2825): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #9 index: (2825, 2839): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #10 index: (2839, 2853): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_IRONGOLEM_HD #0 index: (2853, 2856): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
 ====================
+Lancelot, a level 2 softcore Paladin. Checksum (current): '2469504298', Checksum (computed): '2469504298, file version: 96, file size: 1059, file size in file: 1059, 
+direct player item count: 11, is dead: False, direct mercenary item count: 0, 
+attributes: {<E_Attributes.AT_STRENGTH: 0>: 25, <E_Attributes.AT_ENERGY: 1>: 15, <E_Attributes.AT_DEXTERITY: 2>: 20, <E_Attributes.AT_VITALITY: 3>: 25, <E_Attributes.AT_UNUSED_STATS: 4>: 5, <E_Attributes.AT_UNUSED_SKILLS: 5>: 1, <E_Attributes.AT_CURRENT_HP: 6>: 14592, <E_Attributes.AT_MAX_HP: 7>: 14592, <E_Attributes.AT_CURRENT_MANA: 8>: 4224, <E_Attributes.AT_MAX_MANA: 9>: 4224, <E_Attributes.AT_CURRENT_STAMINA: 10>: 23040, <E_Attributes.AT_MAX_STAMINA: 11>: 23040, <E_Attributes.AT_LEVEL: 12>: 2, <E_Attributes.AT_EXPERIENCE: 13>: 522, <E_Attributes.AT_GOLD: 14>: 6}
+Item IB_PLAYER_HD #0 index: (848, 852): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #0 index: (852, 866): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #1 index: (866, 880): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #2 index: (880, 894): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #3 index: (894, 908): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #4 index: (908, 922): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #5 index: (922, 936): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #6 index: (936, 961): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_HELMET
+Item IB_PLAYER #7 index: (961, 988): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #8 index: (988, 1002): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #9 index: (1002, 1025): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_WEAPON_RIGHT
+Item IB_PLAYER #10 index: (1025, 1050): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_WEAPON_LEFT
+Item IB_CORPSE_HD #0 index: (1050, 1054): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY_HD #0 index: (1054, 1056): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_IRONGOLEM_HD #0 index: (1056, 1059): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
 Done.
+
+Process finished with exit code 0
