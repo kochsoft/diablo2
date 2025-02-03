@@ -37,6 +37,44 @@ logging.basicConfig(level=logging.INFO, format= '[%(asctime)s] {%(lineno)d} %(le
 _log = logging.getLogger()
 
 
+class E_Attributes(Enum):
+    AT_STRENGTH = 0
+    AT_ENERGY = 1
+    AT_DEXTERITY = 2
+    AT_VITALITY = 3
+    AT_UNUSED_STATS = 4
+    AT_UNUSED_SKILLS = 5
+    AT_CURRENT_HP = 6
+    AT_MAX_HP = 7
+    AT_CURRENT_MANA = 8
+    AT_MAX_MANA = 9
+    AT_CURRENT_STAMINA = 10
+    AT_MAX_STAMINA = 11
+    AT_LEVEL = 12
+    AT_EXPERIENCE = 13
+    AT_GOLD = 14
+    AT_STASHED_GOLD = 15
+
+    @staticmethod
+    def get_attr_sz_bits(attr: E_Attributes) -> int:
+        val = attr.value
+        if val <= 4:
+            return 10
+        elif val == 5:
+            return 8
+        elif val <= 11:
+            return 21
+        elif val == 12:
+            return 7
+        elif val == 13:
+            return 32
+        elif val <= 15:
+            return 25
+        else:
+            _log.warning(f"Unknown attribute ID {val} encountered! Returning -1.")
+            return -1
+
+
 class E_ItemBlock(Enum):
     """Convenience enum for handling the major item organisation sites.
     https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#items
@@ -201,6 +239,7 @@ class Item:
             return E_ItemParent.IP_UNSPECIFIED
         # From 56,..,63 Bits 58-60
         val = (data_item[7] >> 2) & 7
+        # val0 = BitMaster(58, 61, 'alternate code using BitMaster. Working, too.').get_value(data_item)
         if val == 0:
             return E_ItemParent.IP_STORED
         elif val == 1:
@@ -481,19 +520,18 @@ class Data:
         if index_hd < 0:
             return 0 if as_int else b'\x00\x00'
         else:
-            val = self.data[(index_hd + 4):(index_hd + 5)]
+            val = self.data[(index_hd + 4):(index_hd + 6)]
             if not as_int:
                 return val
             else:
                 return int.from_bytes(val, 'little')
 
     def get_item_count_player(self, as_int = False) -> Union[int, bytes]:
-        """TODO! Improve code redundancy to get_item_count_mercenary(..)"""
         index_hd = self.data.find(b'JM', 765)
         if index_hd < 0:
             return 0 if as_int else b'\x00\x00'
         else:
-            val = self.data[(index_hd + 2):(index_hd + 3)]
+            val = self.data[(index_hd + 2):(index_hd + 4)]
             if not as_int:
                 return val
             else:
@@ -529,7 +567,7 @@ class Data:
         elif len(name) < 15:
             name += '\x00' * (15 - len(name))
         bname = name.encode() + b'\x00'
-        self.data = self.data[0:20] + name.encode() + self.data[36:]
+        self.data = self.data[0:20] + bname + self.data[36:]
 
     def get_class(self, as_str: bool = False) -> Union[bytes, str]:
         """:returns this character's class as a byte or string."""
@@ -543,13 +581,42 @@ class Data:
         elif val == 5: return "Druid"
         elif val == 6: return "Assassin"
 
-    def is_hardcore(self) -> bool:
-        """The bit of index 2 in status byte 36  decides if a character is hardcore."""
-        return self.data[36] & 4 > 0
-
     def is_dead(self) -> bool:
         """The bit of index 3 in status byte 36 decides if a character is dead."""
         return self.data[36] & 8 > 0
+
+    def attributes(self, new_vals: Optional[Dict[E_Attributes, int]] = None) -> Dict[E_Attributes, int]:
+        if new_vals is None:
+            new_vals = dict()
+        index_start = self.data.find(b'gf', 765) + 2
+        if index_start < 0:
+            _log.warning("No attributes have been found.")
+            return dict()
+        res = dict()
+        c = 0
+        index_current = index_start * 8
+        while c < 16:
+            c = c + 1
+            key = get_bitrange_value_from_bytes(self.data, index_current, index_current + 9, do_invert=False)
+            if 0 <= key < 16:
+                attr = E_Attributes(key)
+                res[attr] = get_bitrange_value_from_bytes(self.data,
+                               index_current + 9, index_current + 9 + attr.get_attr_sz_bits(attr), do_invert=False)
+                if attr in new_vals:
+                    self.data = set_bitrange_value_to_bytes(self.data, index_current + 9, index_current + 9 + attr.get_attr_sz_bits(attr), new_vals[attr])
+                    del new_vals[attr]
+                index_current = index_current + 9 + attr.get_attr_sz_bits(attr)
+            else:
+                if key != 511:
+                    _log.warning(f"Unsupported key type {key} encountered.")
+                for key in new_vals:
+                    _log.warning(f"Failure to set attribute '{key.name}' to new value of {new_vals[key]}. Probable cause is that entry not being != 0 at this time, which is necessary for it to exist.")
+                break
+        return res
+
+    def is_hardcore(self) -> bool:
+        """The bit of index 2 in status byte 36  decides if a character is hardcore."""
+        return self.data[36] & 4 > 0
 
     def set_hardcore(self, to_hardcore: bool):
         """Sets the character to hardcore or non-hardcore.
@@ -596,7 +663,10 @@ class Data:
         return time.strftime(frmt, time.localtime(unix_time_s))
 
     def save2disk(self, pfname: str = None, prefix_timestamp: bool = False):
-        """Write this data structure's current state to disk. As is. E.g., no checksums are updated automatically."""
+        """:param pfname: Target pfname. If not given, will use the original pfname, overwriting the original file.
+        :param prefix_timestamp: If False, no effect. If True, the fname wil lbe prefixed with a timestamp
+          and suffixed with '.backup'.
+        Write this data structure's current state to disk. As is. E.g., no checksums are updated automatically."""
         if pfname is None:
             pfname = self.pfname
         if prefix_timestamp:
@@ -614,7 +684,8 @@ class Data:
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}, "\
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
-              f"direct player item count: {self.get_item_count_player(True)}, is dead: {self.is_dead()}, direct mercenary item count: {self.get_item_count_mercenary(True)}"
+              f"direct player item count: {self.get_item_count_player(True)}, is dead: {self.is_dead()}, direct mercenary item count: {self.get_item_count_mercenary(True)}, \n" \
+              f"attributes: {self.attributes()}"
         item_analysis = Item(self.data)
         for item in item_analysis.get_block_items():
             msg += f"\n{item}"
@@ -631,7 +702,7 @@ class Horadric:
         #> Backups. --------------------------------------------------
         do_backup = not parsed.omit_backup  # type: bool
         if do_backup:
-            self.backup()
+            self.backup(parsed.pfname_backup)
         else:
             print("Omitting backups.")
         # < ----------------------------------------------------------
@@ -665,8 +736,18 @@ class Horadric:
             else:
                 _log.warning("Exchanging Horadric Cube contents requires 2 target characters exactly.")
 
-    def backup(self):
-        _log.warning("Backups deactivated during active development. TODO: Do backups!")
+        if parsed.boost_attributes:
+            self.boost(E_Attributes.AT_UNUSED_STATS, parsed.boost_attributes)
+
+        if parsed.boost_skills:
+            self.boost(E_Attributes.AT_UNUSED_SKILLS, parsed.boost_skills)
+
+    def backup(self, pfname_backup: Optional[str] = None):
+        for data in self.data_all:
+            pfname_b = pfname_backup
+            if pfname_b and (len(self.data_all) > 1):
+                data.get_name() + '_' + pfname_b
+            data.save2disk(pfname_b, pfname_backup is None)
 
     def print_info(self):
         """Print various info to all files to the console."""
@@ -682,7 +763,15 @@ class Horadric:
             data.update_all()
             data.save2disk()
 
-    def drop_horadric(self, data: Data):
+    def boost(self, attr: E_Attributes, val: int):
+        for data in self.data_all:
+            print(f"Attempting to boost '{attr.name}' to the value of {val}")
+            data.attributes({attr: val})
+            data.update_all()
+            data.save2disk()
+
+    @staticmethod
+    def drop_horadric(data: Data):
         items = Item(data.data).get_cube_contents()  # type: List[Item]
         # [Note: Iterate in reversed order, so that dropping front items will not destroy indices for back items.]
         for item in reversed(items):
@@ -761,12 +850,15 @@ $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
         parser = argparse.ArgumentParser(prog='Horadric Exchange', description=desc, epilog=epilog, formatter_class=RawTextHelpFormatter)
         parser.add_argument('--omit_backup', action='store_true',
             help="Per default, target files will be backupped to .backup files. For safety. This option will disable that safety.")
+        parser.add_argument('--pfname_backup', type=str, help='State a pfname to the backup file. Per default a timestamped name will be used. If there are multiple files to backup, the given name will be prefixed with each character\'s name.')
         parser.add_argument('--exchange_horadric', action='store_true', help="Flag. Requires that there are precisely 2 character pfnames given. This will exchange their Horadric Cube contents.")
         parser.add_argument('--drop_horadric', action='store_true', help="Flag. If given, the Horardric Cube contents of the targetted character will be removed.")
         parser.add_argument('--save_horadric', type=str, help="Write the items found in the Horadric Cube to disk with the given pfname. Only one character allowed.")
         parser.add_argument('--load_horadric', type=str, help="Drop all contents from the Horadric Cube and replace them with the horadric file content, that had been written using --save_horadric earlier.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")
         parser.add_argument('--softcore', action='store_true', help="Flag. Set target characters to soft core mode.")
+        parser.add_argument('--boost_attributes', type=int, help='Given that there is at least one available new stat point: Set this number to the given value.')
+        parser.add_argument('--boost_skills', type=int, help='Given that there is at least one available new skill point: Set this number to the given value.')
         parser.add_argument('--info', action='store_true', help="Flag. Show some statistics to each input file.")
         parser.add_argument('pfnames', nargs='+', type=str, help='List of path and filenames to target .d2s character files.')
         parsed = parser.parse_args(sys.argv[1:])  # type: argparse.Namespace
