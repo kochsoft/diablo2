@@ -55,9 +55,8 @@ class E_Attributes(Enum):
     AT_GOLD = 14
     AT_STASHED_GOLD = 15
 
-    @staticmethod
-    def get_attr_sz_bits(attr: E_Attributes) -> int:
-        val = attr.value
+    def get_attr_sz_bits(self) -> int:
+        val = self.value
         if val <= 4:
             return 10
         elif val == 5:
@@ -73,6 +72,38 @@ class E_Attributes(Enum):
         else:
             _log.warning(f"Unknown attribute ID {val} encountered! Returning -1.")
             return -1
+
+
+class E_Characters(Enum):
+    EC_AMAZON = 0
+    EC_SORCERESS = 1
+    EC_NECROMANCER = 2
+    EC_PALADIN = 3
+    EC_BARBARIAN = 4
+    EC_DRUID = 5
+    EC_ASSASSIN = 6
+    EC_UNSPECIFIED = 7
+
+    def is_female(self) -> bool:
+        return (self == E_Characters.EC_AMAZON) or (self == E_Characters.EC_SORCERESS) or (self == E_Characters.EC_ASSASSIN)
+
+    def __str__(self) -> str:
+        if self == E_Characters.EC_AMAZON:
+            return "Amazon"
+        elif self == E_Characters.EC_SORCERESS:
+            return "Sorceress"
+        elif self == E_Characters.EC_NECROMANCER:
+            return "Necromancer"
+        elif self == E_Characters.EC_PALADIN:
+            return "Paladin"
+        elif self == E_Characters.EC_BARBARIAN:
+            return "Barbarian"
+        elif self == E_Characters.EC_DRUID:
+            return "Druid"
+        elif self == E_Characters.EC_ASSASSIN:
+            return "Assassin"
+        else:
+            return "Unspecified"
 
 
 class E_ItemBlock(Enum):
@@ -192,6 +223,23 @@ class BitMaster:
     def __str__(self) -> str:
         direction = 'Inverted' if self.is_reversed else 'Forward'
         return f"{direction} BitMaster '{self.name}' ranging in bits [{self.index_start_bit}, {self.index_end_bit}]."
+
+
+class Attributes:
+    def __init__(self, data: bytes):
+        self.data = data
+
+    def get_skills(self):
+        pass
+
+    def set_skills(self, skills):
+        pass
+
+    def get_attributes(self):
+        pass
+
+    def set_attributes(self):
+        pass
 
 
 class Item:
@@ -578,14 +626,10 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
     def get_class(self, as_str: bool = False) -> Union[bytes, str]:
         """:returns this character's class as a byte or string."""
         val = int(self.data[40])
-        if not as_str: return val.to_bytes(1, 'little')
-        elif val == 0: return "Amazon"
-        elif val == 1: return "Sorceress"
-        elif val == 2: return "Necromancer"
-        elif val == 3: return "Paladin"
-        elif val == 4: return "Barbarian"
-        elif val == 5: return "Druid"
-        elif val == 6: return "Assassin"
+        if as_str:
+            return str(E_Characters(val))
+        else:
+            return val.to_bytes(1, 'little')
 
     def is_dead(self) -> bool:
         """The bit of index 3 in status byte 36 decides if a character is dead."""
@@ -607,11 +651,11 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             if 0 <= key < 16:
                 attr = E_Attributes(key)
                 res[attr] = get_bitrange_value_from_bytes(self.data,
-                               index_current + 9, index_current + 9 + attr.get_attr_sz_bits(attr), do_invert=False)
+                               index_current + 9, index_current + 9 + attr.get_attr_sz_bits(), do_invert=False)
                 if attr in new_vals:
-                    self.data = set_bitrange_value_to_bytes(self.data, index_current + 9, index_current + 9 + attr.get_attr_sz_bits(attr), new_vals[attr])
+                    self.data = set_bitrange_value_to_bytes(self.data, index_current + 9, index_current + 9 + attr.get_attr_sz_bits(), new_vals[attr])
                     del new_vals[attr]
-                index_current = index_current + 9 + attr.get_attr_sz_bits(attr)
+                index_current = index_current + 9 + attr.get_attr_sz_bits()
             else:
                 if key != 511:
                     _log.warning(f"Unsupported key type {key} encountered.")
