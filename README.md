@@ -51,7 +51,7 @@ leave it to you, to employ the scripts `--help` function to find out more.
 ```
 $ python horadric_exchange.py --help
 usage: Horadric Exchange [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP] [--exchange_horadric] [--drop_horadric] [--save_horadric SAVE_HORADRIC] [--load_horadric LOAD_HORADRIC]
-                         [--hardcore] [--softcore] [--boost_attributes BOOST_ATTRIBUTES] [--boost_skills BOOST_SKILLS] [--info]
+                         [--hardcore] [--softcore] [--boost_attributes BOOST_ATTRIBUTES] [--boost_skills BOOST_SKILLS] [--reset_skills] [--info]
                          pfnames [pfnames ...]
 
 Tool script for doing small scale changes to Diablo II .d2s save game files.
@@ -77,12 +77,13 @@ options:
   --hardcore            Flag. Set target characters to hard core mode.
   --softcore            Flag. Set target characters to soft core mode.
   --boost_attributes BOOST_ATTRIBUTES
-                        Given that there is at least one available new stat point: Set this number to the given value.
+                        Set this number to the given value.
   --boost_skills BOOST_SKILLS
-                        Given that there is at least one available new skill point: Set this number to the given value.
+                        Set this number to the given value.
+  --reset_skills        Flag. Unlearns all skills, returning them as free skill points.
   --info                Flag. Show some statistics to each input file.
 
 Example call:
-$ python3 horadric_exchange.py --exchange_horadric conan.d2s ormaline.d2s
+$ python3 horadric_exchange.py conan.d2s ormaline.d2s
 ```
 
