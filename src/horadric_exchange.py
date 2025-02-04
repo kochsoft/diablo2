@@ -29,6 +29,7 @@ import logging
 import argparse
 from argparse import RawTextHelpFormatter
 from pathlib import Path
+from math import ceil
 from typing import List, Dict, Optional, Union, Tuple
 from enum import Enum
 
@@ -223,23 +224,6 @@ class BitMaster:
     def __str__(self) -> str:
         direction = 'Inverted' if self.is_reversed else 'Forward'
         return f"{direction} BitMaster '{self.name}' ranging in bits [{self.index_start_bit}, {self.index_end_bit}]."
-
-
-class Attributes:
-    def __init__(self, data: bytes):
-        self.data = data
-
-    def get_skills(self):
-        pass
-
-    def set_skills(self, skills):
-        pass
-
-    def get_attributes(self):
-        pass
-
-    def set_attributes(self):
-        pass
 
 
 class Item:
@@ -605,7 +589,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         return b_name.decode().replace('\x00', '') if as_str else b_name
 
     def set_name(self, name: str):
-        """Sets the given name of maximum length 16."""
+        """Sets the given name of maximum length 16.
+        DISCLAIMER: THIS FUNCTION DOES NOT SEEM TO WORK. PRODUCES INVALID SAVERGAMES."""
         regex = re.compile("^[a-zA-Z_-]{2,}$")
         acceptable = regex.search(name) is not None
         if acceptable:
@@ -635,9 +620,31 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         """The bit of index 3 in status byte 36 decides if a character is dead."""
         return self.data[36] & 8 > 0
 
-    def attributes(self, new_vals: Optional[Dict[E_Attributes, int]] = None) -> Dict[E_Attributes, int]:
-        if new_vals is None:
-            new_vals = dict()
+    def set_attributes(self, vals: Dict[E_Attributes, int]):
+        sz = 0
+        for key in vals:
+            sz = sz + key.get_attr_sz_bits() + 9
+        # [Note: Add 9 more bits for the 0x1ff termination sequence. Then round towards next full byte.]
+        sz = ceil((sz + 9) / 8.0) * 8
+        index = 0
+        bitmap = '0' * sz
+        for j in range(16):
+            key = E_Attributes(j)
+            if key not in vals:
+                continue
+            if vals[key] == 0:
+                continue
+            bitmap = set_range_to_bitmap(bitmap, index, index + 9, key.value)
+            index = index + 9
+            bitmap = set_range_to_bitmap(bitmap, index, index + key.get_attr_sz_bits(), vals[key])
+            index = index + key.get_attr_sz_bits()
+        bitmap = set_range_to_bitmap(bitmap, index, index + 9, 0x1ff)
+        block = bitmap2bytes(bitmap)
+        index_start = self.data.find(b'gf', 765) + 2
+        index_end_old = self.data.find(b'if', index_start)
+        self.data = self.data[0:index_start] + block + self.data[index_end_old:]
+
+    def get_attributes(self) -> Dict[E_Attributes, int]:
         index_start = self.data.find(b'gf', 765) + 2
         if index_start < 0:
             _log.warning("No attributes have been found.")
@@ -652,15 +659,10 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 attr = E_Attributes(key)
                 res[attr] = get_bitrange_value_from_bytes(self.data,
                                index_current + 9, index_current + 9 + attr.get_attr_sz_bits(), do_invert=False)
-                if attr in new_vals:
-                    self.data = set_bitrange_value_to_bytes(self.data, index_current + 9, index_current + 9 + attr.get_attr_sz_bits(), new_vals[attr])
-                    del new_vals[attr]
                 index_current = index_current + 9 + attr.get_attr_sz_bits()
             else:
                 if key != 511:
                     _log.warning(f"Unsupported key type {key} encountered.")
-                for key in new_vals:
-                    _log.warning(f"Failure to set attribute '{key.name}' to new value of {new_vals[key]}. Probable cause is that entry not being != 0 at this time, which is necessary for it to exist.")
                 break
         return res
 
@@ -735,7 +737,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}, "\
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
               f"direct player item count: {self.get_item_count_player(True)}, is dead: {self.is_dead()}, direct mercenary item count: {self.get_item_count_mercenary(True)}, \n" \
-              f"attributes: {self.attributes()}"
+              f"attributes: {self.get_attributes()}"
         item_analysis = Item(self.data)
         for item in item_analysis.get_block_items():
             msg += f"\n{item}"
@@ -786,10 +788,10 @@ class Horadric:
             else:
                 _log.warning("Exchanging Horadric Cube contents requires 2 target characters exactly.")
 
-        if parsed.boost_attributes:
+        if parsed.boost_attributes is not None:
             self.boost(E_Attributes.AT_UNUSED_STATS, parsed.boost_attributes)
 
-        if parsed.boost_skills:
+        if parsed.boost_skills is not None:
             self.boost(E_Attributes.AT_UNUSED_SKILLS, parsed.boost_skills)
 
     def backup(self, pfname_backup: Optional[str] = None):
@@ -816,7 +818,12 @@ class Horadric:
     def boost(self, attr: E_Attributes, val: int):
         for data in self.data_all:
             print(f"Attempting to boost '{attr.name}' to the value of {val}")
-            data.attributes({attr: val})
+            attributes = data.get_attributes()
+            if val:
+                attributes[attr] = val
+            else:
+                del attributes[attr]
+            data.set_attributes(attributes)
             data.update_all()
             data.save2disk()
 
@@ -907,11 +914,11 @@ $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
         parser.add_argument('--load_horadric', type=str, help="Drop all contents from the Horadric Cube and replace them with the horadric file content, that had been written using --save_horadric earlier.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")
         parser.add_argument('--softcore', action='store_true', help="Flag. Set target characters to soft core mode.")
-        parser.add_argument('--boost_attributes', type=int, help='Given that there is at least one available new stat point: Set this number to the given value.')
-        parser.add_argument('--boost_skills', type=int, help='Given that there is at least one available new skill point: Set this number to the given value.')
+        parser.add_argument('--boost_attributes', type=int, help='Set this number to the given value.')
+        parser.add_argument('--boost_skills', type=int, help='Set this number to the given value.')
         parser.add_argument('--info', action='store_true', help="Flag. Show some statistics to each input file.")
         parser.add_argument('pfnames', nargs='+', type=str, help='List of path and filenames to target .d2s character files.')
-        parsed = parser.parse_args(sys.argv[1:])  # type: argparse.Namespace
+        parsed = parser.parse_args(args)  # type: argparse.Namespace
         return parsed
 
 if __name__ == '__main__':
