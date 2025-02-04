@@ -160,6 +160,52 @@ class E_ItemEquipment(Enum):
     IE_WEAPON_ALT_LEFT = 12
 
 
+d_skills = {
+    E_Characters.EC_AMAZON: ["Magic Arrow", "Fire Arrow", "Inner Sight", "Critical Strike", "Jab",
+                             "Cold Arrow", "Multiple Shot", "Dodge", "Power Strike", "Poison Javelin",
+                             "Exploding Arrow", "Slow Missiles", "Avoid", "Impale", "Lightning Bolt",
+                             "Ice Arrow", "Guided Arrow", "Penetrate", "Charged Strike", "Plague Javelin",
+                             "Strafe", "Immolation Arrow", "Decoy", "Evade", "Fend",
+                             "Freezing Arrow", "Valkyrie", "Pierce", "Lightning Strike", "Lightning Fury"],
+    E_Characters.EC_SORCERESS: ["Fire Bolt", "Warmth", "Charged Bolt", "Ice Bolt", "Frozen Armor",
+                                "Inferno", "Static Field", "Telekinesis", "Frost Nova", "Ice Blast",
+                                "Blaze", "Fireball", "Nova", "Lightning", "Shiver Armor",
+                                "Fire Wall", "Enchant", "Chain Lightning", "Teleport", "Glacial Spike",
+                                "Meteor", "Thunder Storm", "Energy Shield", "Blizzard", "Chilling Armor",
+                                "Fire Mastery", "Hydra", "Lightning Mastery", "Frozen Orb", "Cold Mastery"],
+    E_Characters.EC_NECROMANCER: ["Amplify Damage", "Teeth", "Bone Armor", "Skeleton Mastery", "Raise Skeleton",
+                                  "Dim Vision", "Weaken", "Poison Dagger", "Corpse Explosion", "Clay Golem",
+                                  "Iron Maiden", "Terror", "Bone Wall", "Golem Mastery", "Skeletal Mage",
+                                  "Confuse", "Life Tap", "Poison Explosion", "Bone Spear", "Blood Golem",
+                                  "Attract", "Decrepify", "Bone Prison", "Summon Resist", "Iron Golem",
+                                  "Lower Resist", "Poison Nova", "Bone Spirit", "Fire Golem", "Revive"],
+    E_Characters.EC_PALADIN: ["Sacrifice", "Smite", "Might", "Prayer", "Resist Fire",
+                              "Holy Bolt", "Thorns", "Holy Fire", "Defiance", "Resist Cold",
+                              "Zeal", "Charge", "Blessed Aim", "Cleansing", "Resist Lightning",
+                              "Vengeance", "Blessed Hammer", "Concentration", "Holy Freeze", "Vigor",
+                              "Conversion", "Holy Shield", "Holy Shock", "Sanctuary", "Meditation",
+                              "Fist of the Heavens", "Fanaticism", "Conviction", "Redemption", "Salvation"],
+    E_Characters.EC_BARBARIAN: ["Bash", "Sword Mastery", "Axe Mastery", "Mace Mastery", "Howl", "Find Potion",
+                                "Leap", "Double Swing", "Polearm Mastery", "Throwing Mastery", "Spear Mastery", "Taunt", "Shout",
+                                "Stun", "Double Throw", "Increased Stamina", "Find Item",
+                                "Leap Attack", "Concentrate", "Iron Skin", "Battle Cry",
+                                "Frenzy", "Increased Speed", "Battle Orders", "Grim Ward",
+                                "Whirlwind", "Berserk", "Natural Resistance", "War Cry", "Battle Command"],
+    E_Characters.EC_DRUID: ["Raven", "Poison Creeper", "Werewolf", "Lycanthropy", "Firestorm",
+                            "Oak Sage", "Summon Spirit Wolf", "Werebear", "Molten Boulder", "Arctic Blast",
+                            "Carrion Wine", "Feral Rage", "Maul", "Fissure", "Cyclone Armor",
+                            "Heart of Wolverine", "Summon Dire Wolf", "Rabies", "Fire Claws", "Twister",
+                            "Solar Creeper", "Hunger", "Shockwave", "Volcano", "Tornado",
+                            "Spirit of Barbs", "Summon Grizzly", "Fury", "Armageddon", "Hurricane"],
+    E_Characters.EC_ASSASSIN: ["Fire Blast", "Claw Mastery", "Psychic Hammer", "Tiger Strike", "Dragon Talon",
+                               "Shock Web", "Blade Sentinel", "Burst of Speed", "Fists of Fire", "Dragon Claw",
+                               "Charged Bolt Sentry", "Wake of Fire", "Weapon Block", "Cloak of Shadows", "Cobra Strike",
+                               "Blade Fury", "Fade", "Shadow Warrior", "Claws of Thunder", "Dragon Tail",
+                               "Lightning Sentry", "Wake of Inferno", "Mind Blast", "Blades of Ice", "Dragon Flight",
+                               "Death Sentry", "Blade Shield", "Venom", "Shadow Master", "Phoenix Strike"]
+}
+
+
 def bytes2bitmap(data: bytes) -> str:
     return '{:0{width}b}'.format(int.from_bytes(data, 'little'), width = len(data) * 8)
 
@@ -645,6 +691,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         self.data = self.data[0:index_start] + block + self.data[index_end_old:]
 
     def get_attributes(self) -> Dict[E_Attributes, int]:
+        """:returns a dict of all non-zero attribute values."""
         index_start = self.data.find(b'gf', 765) + 2
         if index_start < 0:
             _log.warning("No attributes have been found.")
@@ -665,6 +712,41 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                     _log.warning(f"Unsupported key type {key} encountered.")
                 break
         return res
+
+    def get_skills(self) -> List[int]:
+        index_start = self.data.find(b'if', 765) + 2
+        if index_start < 0:
+            _log.warning("No skills have been found.")
+            return list()
+        # 30 bytes for 30 skills.
+        res = list()  # type: List[int]
+        for j in range(30):
+            res.append(self.data[index_start + j])
+        return res
+
+    def set_skills(self, skills: List[int]):
+        if len(skills) < 30:
+            skills.extend([0 for j in range(30-len(skills))])
+            _log.warning("Skill list is too short (30 entries are needed). Padding with zeros.")
+        block = bytes(skills)
+        index_start = self.data.find(b'if', 765) + 2
+        index_end = index_start + 30
+        self.data = self.data[0:index_start] + block + self.data[index_end:]
+
+    def skills2str(self) -> str:
+        """:returns Human-readable representation of the skill set."""
+        skills = self.get_skills()
+        if len(skills) < 30:
+            return 'Skill getter failed.'
+        character = E_Characters(int.from_bytes(self.get_class(), 'little'))
+        names = d_skills[character]
+        n = len(names)
+        res = ''
+        for j in range(30):
+            res += f"{names[j]}: {skills[j]}, " if j<n else f'{skills[j]}, '
+            if (j % 5 == 4) and j < 29:
+                res += "\n"
+        return res[:-2]
 
     def is_hardcore(self) -> bool:
         """The bit of index 2 in status byte 36  decides if a character is hardcore."""
@@ -737,7 +819,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}, "\
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
               f"direct player item count: {self.get_item_count_player(True)}, is dead: {self.is_dead()}, direct mercenary item count: {self.get_item_count_mercenary(True)}, \n" \
-              f"attributes: {self.get_attributes()}"
+              f"attributes: {self.get_attributes()}, \n" \
+              f"learned skill-set : {self.skills2str()}"
         item_analysis = Item(self.data)
         for item in item_analysis.get_block_items():
             msg += f"\n{item}"
@@ -794,6 +877,9 @@ class Horadric:
         if parsed.boost_skills is not None:
             self.boost(E_Attributes.AT_UNUSED_SKILLS, parsed.boost_skills)
 
+        if parsed.reset_skills:
+            self.reset_skills()
+
     def backup(self, pfname_backup: Optional[str] = None):
         for data in self.data_all:
             pfname_b = pfname_backup
@@ -826,6 +912,16 @@ class Horadric:
             data.set_attributes(attributes)
             data.update_all()
             data.save2disk()
+
+    def reset_skills(self):
+        for data in self.data_all:
+            n_skills = sum(data.get_skills())
+            print(f"Attempting to reset {data.get_name()}'s {n_skills} learned skills.")
+            skillset = [0 for j in range(30)]
+            #skillset = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,19,18,17,16,15,14,13,12,11]
+            data.set_skills(skillset)
+            # That boost command also does the saving!
+            self.boost(E_Attributes.AT_UNUSED_SKILLS, n_skills)
 
     @staticmethod
     def drop_horadric(data: Data):
@@ -916,6 +1012,7 @@ $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
         parser.add_argument('--softcore', action='store_true', help="Flag. Set target characters to soft core mode.")
         parser.add_argument('--boost_attributes', type=int, help='Set this number to the given value.')
         parser.add_argument('--boost_skills', type=int, help='Set this number to the given value.')
+        parser.add_argument('--reset_skills', action='store_true', help="Flag. Unlearns all skills, returning them as free skill points.")
         parser.add_argument('--info', action='store_true', help="Flag. Show some statistics to each input file.")
         parser.add_argument('pfnames', nargs='+', type=str, help='List of path and filenames to target .d2s character files.')
         parsed = parser.parse_args(args)  # type: argparse.Namespace
