@@ -1,6 +1,6 @@
 # About horadric_exchange.py
 
-This is a home-brew Python 3-script for modifying Diablo v1.10-v1.14d legacy savegame files
+This is a home-brew Python 3-script for modifying Diablo v1.10-v1.14d legacy savegame files.
 It is based on the information provided by Walter Couto on his excellent .d2s save-game
 format analysis:
 
@@ -36,7 +36,7 @@ No more! Using the horadric python script, the Barbarian may just put the sacred
 globe into his Horadric Cube! If she is of the courteous type, the Sorceress may
 put some glass perls into her own Horadric Cube as well.
 
-Then exit the game. I trust you know how to employ the script's --exchange
+Then exit the game. I trust you know how to employ the script's `--exchange_horadric`
 function? It will cause the contents of both characters' Horadric Cubes to
 change places by acting on their `.d2s` character files.
 
@@ -44,10 +44,11 @@ For this, vanilla Python 3 is needed. Required level is not quite known.
 Python >=3.13 should do nicely though.
 
 You may be pleased to read that this script has more capabilities. I have to
-leave it to you, to employ the scripts --help function to find out more.
+leave it to you, to employ the scripts `--help` function to find out more.
 
 # Help Text (February 3rd 2025)
 
+```
 $ python horadric_exchange.py --help
 usage: Horadric Exchange [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP] [--exchange_horadric] [--drop_horadric] [--save_horadric SAVE_HORADRIC] [--load_horadric LOAD_HORADRIC]
                          [--hardcore] [--softcore] [--boost_attributes BOOST_ATTRIBUTES] [--boost_skills BOOST_SKILLS] [--info]
@@ -82,4 +83,6 @@ options:
   --info                Flag. Show some statistics to each input file.
 
 Example call:
-$ python3 horadric_exchange.py conan.d2s ormaline.d2s
+$ python3 horadric_exchange.py --exchange_horadric conan.d2s ormaline.d2s
+```
+
