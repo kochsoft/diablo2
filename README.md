@@ -1,3 +1,28 @@
+# About horadric_exchange.py
+
+This is a home-brew Python 3-script for modifying Diablo v1.10-v1.14d legacy savegame files
+It is based on the information provided by Walter Couto on his excellent .d2s save-game
+format analysis:
+
+https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md
+
+Its leading purpose is to create the ability for single player characters
+to exchange items by echanging the contents of their Horadric Cubes.
+
+As it went along the script added some cheating capabilities as well.
+
+The script runs on vanilla python 3.13, possibly older, and has no special requirements.
+
+However:
+
+**MODIFYING DIABLO II .d2s FILES IS DANGEROUS TO THOSE FILES!**
+
+The default settings of the script will create backups of the modified savegame .d2s files.
+
+Still:
+
+**BE SURE TO BACKUP YOUR .d2s CHARACTER FILES PRIOR TO TAMPERING.**
+
 # About a Use Case and More
 
 Consider the Barbarian finding the **sacred globe of divine world domination**,
