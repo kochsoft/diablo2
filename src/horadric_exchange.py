@@ -215,20 +215,21 @@ d_skills = {
 
 
 # > Properties for the god mode. -------------------------------------
-d_god_skills = [18 for j in range(30)]  # type: List[int]
-sum_god_skills = sum(d_god_skills)
-
 d_god_attr = {
-    E_Attributes.AT_UNUSED_SKILLS: 5,
     #E_Attributes.AT_MAX_HP: 1200, # I fail to find these values in the attributes section.
     #E_Attributes.AT_MAX_MANA: 1200,
     #E_Attributes.AT_MAX_STAMINA: 100,
     E_Attributes.AT_STRENGTH: 400,
     E_Attributes.AT_ENERGY: 400,
     E_Attributes.AT_DEXTERITY: 400,
-    E_Attributes.AT_VITALITY: 400
+    E_Attributes.AT_VITALITY: 400,
+    E_Attributes.AT_UNUSED_STATS: 0,
+    E_Attributes.AT_UNUSED_SKILLS: 5
 }  # type: Dict[E_Attributes, int]
-sum_god_attr = sum(d_god_attr.values())
+# [Note: For restoring purposes skills are handled with skills. They are not counted in the god_attr sum.]
+sum_god_attr = sum(d_god_attr.values()) - d_god_attr[E_Attributes.AT_UNUSED_SKILLS]
+d_god_skills = [18 for j in range(30)]  # type: List[int]
+sum_god_skills = sum(d_god_skills) + d_god_attr[E_Attributes.AT_UNUSED_SKILLS]
 # < ------------------------------------------------------------------
 
 
@@ -565,17 +566,13 @@ class Item:
 
 class Data:
     """Data object concerned with the binary content of the entirety of a .d2s save game file."""
-    def __init__(self, data: Union[bytes, str]):
-        """:param data: Either a string holding a .d2s file name, or a binary data blob of an already read such file."""
-        if isinstance(data, str):
-            with open(data, 'rb') as IN:
-                self.data = IN.read()
-            self.pfname = data
-        elif isinstance(data, bytes):
-            self.data = data
-            self.pfname = self.get_name(True) + '.d2s'
-        else:
-            raise ValueError(f"Given parameter data is of unusable type '{type(data).__name__}'.")
+    def __init__(self, pfname: str):
+        """:param pfname: Path and filename to target .d2s save game file."""
+        if not pfname:
+            raise ValueError("pfname required for Data object.")
+        self.pfname = pfname
+        with open(pfname, 'rb') as IN:
+            self.data = IN.read()
         ver = self.get_file_version()
         if ver != 96:
             print(f"""Invalid save game version '{ver}'. Sorry. This script so far only supports version code '96' (v1.10-v1.14d) save game files.
@@ -694,6 +691,12 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     def set_attributes(self, vals: Dict[E_Attributes, int]):
         sz = 0
+        deletees = list()
+        for key in vals:
+            if vals[key] == 0:
+                deletees.append(key)
+        for key in deletees:
+            del vals[key]
         for key in vals:
             sz = sz + key.get_attr_sz_bits() + 9
         # [Note: Add 9 more bits for the 0x1ff termination sequence. Then round towards next full byte.]
@@ -774,80 +777,73 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 res += "\n"
         return res[:-2]
 
-    def update_godmode_backup(self) -> int:
-        attr = self.get_attributes()
+    @property
+    def pfname_humanity(self) -> str:
+        return self.pfname + '.humanity'
+
+    def _update_godmode_backup(self) -> int:
         skills = self.get_skills()
         if sum(skills) >= sum_god_skills:
             _log.warning("God mode seems to be active already. Cannot backup the gods!")
             return 1
-        # index_start = self.data.find(b'if', 765) + 32 #<< Would be elegant, but leads to corrupt inventory.
-        index_start = len(self.data)
-        if index_start < 0:
-            _log.warning("File ends after skills section? Inconceivable! Anyways: Stopping.")
-            return 2
-        bu_attrs = [
-            #attr[E_Attributes.AT_MAX_HP] if E_Attributes.AT_MAX_HP in attr else 100, # I fail to find these in the attributes.
-            #attr[E_Attributes.AT_MAX_MANA] if E_Attributes.AT_MAX_MANA in attr else 100,
-            #attr[E_Attributes.AT_MAX_STAMINA] if E_Attributes.AT_MAX_STAMINA in attr else 96,
-            attr[E_Attributes.AT_STRENGTH] if E_Attributes.AT_STRENGTH in attr else 100,
-            attr[E_Attributes.AT_ENERGY] if E_Attributes.AT_ENERGY in attr else 100,
-            attr[E_Attributes.AT_DEXTERITY] if E_Attributes.AT_DEXTERITY in attr else 100,
-            attr[E_Attributes.AT_VITALITY] if E_Attributes.AT_VITALITY in attr else 100,
-            (attr[E_Attributes.AT_UNUSED_SKILLS] + 5) if E_Attributes.AT_UNUSED_SKILLS in attr else 5
-        ]
+        attr = self.get_attributes()
+        keys = list(d_god_attr.keys())
+        # Backup data structure following keys in d_god_attr.
+        bu_attr = list()  # type: List[int]
+        for key in keys:
+            bu_attr.append(attr[key] if key in attr else 0)
         a = b''
         # [Note: Since I am making up my own section of save game code I take the luxury of 16 bits per attr und 8 bit per skill.]
-        for val in [int.to_bytes(x,2,'little') for x in bu_attrs]:
+        for val in [int.to_bytes(x,2,'little') for x in bu_attr]:
             a += val
-        backup = b'mf' + a + bytes(skills)
-        #index_end = index_start + len(backup)
-        # Drop a potentially existing old backup.
-        index_old = self.data.find(b'mf')
-        if index_old >= 0:
-            self.data = self.data[0:index_start] #+ self.data[index_end:]
-        self.data = self.data[0:index_start] + backup #+ self.data[index_end:]
+        backup = a + bytes(skills)
+        with open(self.pfname_humanity, 'wb') as OUT:
+            OUT.write(backup)
+            print(f"Wrote humanity backup for {self.get_name()}.")
         return 0
 
-    def restore_godmode_backup(self):
-        index_start = self.data.find(b'mf', 765 + 32) + 2
-        if index_start < 0:
-            _log.warning("Failure to restore humanity. There is no godmode backup available.")
-            return
-        keys = d_god_attr.keys()
-        #index_end = index_start + len(keys)*2 + 30
-        backup = self.data[index_start:] # index_end]
-        attrs = dict()  # type: Dict[E_Attributes, int]
+    def _restore_godmode_backup(self):
+        with open(self.pfname_humanity, 'rb') as IN:
+            backup = IN.read()
+        attrs_restored = dict()  # type: Dict[E_Attributes, int]
+        keys = list(d_god_attr.keys())
         for j in range(len(keys)):
-            attrs[keys[j]] = int.from_bytes(backup[(j*2):((j+1)*2)], 'little')
+            attrs_restored[keys[j]] = int.from_bytes(backup[(j*2):((j+1)*2)], 'little')
 
         skills_human = list()
         for j in range(30):
             # [Note: Singling out a single binary leaves us with an int directly.]
             skills_human.append(backup[len(keys) * 2 + j])
-        final_attrs = self.get_attributes()
-        for key in attrs:
-            final_attrs[key] = attrs[key]
-        # Preserve skill level points that have been earned in god mode.
-        skill_delta = sum(self.get_skills()) - sum_god_skills
-        final_attrs[E_Attributes.AT_UNUSED_SKILLS] += skill_delta
-        self.set_attributes(final_attrs)
+        current_attrs = self.get_attributes()
+        current_unused_skills = current_attrs[E_Attributes.AT_UNUSED_SKILLS]
+        sum_attr = 0
+        for key in [E_Attributes.AT_STRENGTH, E_Attributes.AT_ENERGY, E_Attributes.AT_DEXTERITY, E_Attributes.AT_VITALITY, E_Attributes.AT_UNUSED_STATS]:
+            if key in current_attrs:
+                sum_attr += current_attrs[key]
+        for key in attrs_restored:
+            current_attrs[key] = attrs_restored[key]
+        # Preserve skill and stat level points that have been earned in god mode.
+        attr_delta = sum_attr - sum_god_attr
+        skill_delta = sum(self.get_skills()) + current_unused_skills - sum_god_skills
+        current_attrs[E_Attributes.AT_UNUSED_STATS] += attr_delta
+        current_attrs[E_Attributes.AT_UNUSED_SKILLS] += skill_delta
+        self.set_attributes(current_attrs)
         self.set_skills(skills_human)
 
     def enable_godmode(self):
         attrs = self.get_attributes()
         for key in d_god_attr:
             attrs[key] = d_god_attr[key]
-        self.update_godmode_backup()
+        self._update_godmode_backup()
         self.set_attributes(attrs)
         self.set_skills(d_god_skills)
 
     def disable_godmode(self):
-        self.restore_godmode_backup()
+        self._restore_godmode_backup()
         index_start = self.data.find(b'mf', 765 + 32)
         if index_start < 0:
             return
-        index_end = index_start + 2 + 16 + 30
-        self.data = self.data[0:index_start] + self.data[index_end:]
+        self.data = self.data[0:index_start]
 
     def is_hardcore(self) -> bool:
         """The bit of index 2 in status byte 36  decides if a character is hardcore."""
@@ -981,6 +977,12 @@ class Horadric:
         if parsed.reset_skills:
             self.reset_skills()
 
+        if parsed.enable_godmode:
+            self.enable_godmode()
+
+        if parsed.disable_godmode:
+            self.disable_godmode()
+
     def backup(self, pfname_backup: Optional[str] = None):
         for data in self.data_all:
             pfname_b = pfname_backup
@@ -999,11 +1001,6 @@ class Horadric:
     def set_hardcore(self, hardcore: bool):
         for data in self.data_all:
             data.set_hardcore(hardcore)
-
-            print(f"Enabling GOD MODE for {data.get_name()}.")
-            data.enable_godmode() # TODO! Remove this line.
-
-
             data.update_all()
             data.save2disk()
 
@@ -1028,6 +1025,20 @@ class Horadric:
             data.set_skills(skillset)
             # That boost command also does the saving!
             self.boost(E_Attributes.AT_UNUSED_SKILLS, n_skills)
+
+    def enable_godmode(self):
+        for data in self.data_all:
+            print(f"Enabling GOD MODE for {data.get_name()}.")
+            data.enable_godmode()
+            data.update_all()
+            data.save2disk()
+
+    def disable_godmode(self):
+        for data in self.data_all:
+            print(f"Disabling GOD MODE for {data.get_name()}.")
+            data.disable_godmode()
+            data.update_all()
+            data.save2disk()
 
     @staticmethod
     def drop_horadric(data: Data):
@@ -1119,6 +1130,8 @@ $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
         parser.add_argument('--boost_attributes', type=int, help='Set this number to the given value.')
         parser.add_argument('--boost_skills', type=int, help='Set this number to the given value.')
         parser.add_argument('--reset_skills', action='store_true', help="Flag. Unlearns all skills, returning them as free skill points.")
+        parser.add_argument('--enable_godmode', action='store_true', help="Enables Demigod-mode (so far without high Mana/HP/Stamina). Creates a .humanity stat file alongside the .d2s for later return to normal mode.")
+        parser.add_argument('--disable_godmode', action='store_true', help="Returns to human form (retaining skill points earned in god mode). After all, who wants the stress of being super all the time?")
         parser.add_argument('--info', action='store_true', help="Flag. Show some statistics to each input file.")
         parser.add_argument('pfnames', nargs='+', type=str, help='List of path and filenames to target .d2s character files.')
         parsed = parser.parse_args(args)  # type: argparse.Namespace

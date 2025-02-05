@@ -49,9 +49,8 @@ leave it to you, to employ the scripts `--help` function to find out more.
 # Help Text (February 3rd 2025)
 
 ```
-$ python horadric_exchange.py --help
 usage: Horadric Exchange [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP] [--exchange_horadric] [--drop_horadric] [--save_horadric SAVE_HORADRIC] [--load_horadric LOAD_HORADRIC]
-                         [--hardcore] [--softcore] [--boost_attributes BOOST_ATTRIBUTES] [--boost_skills BOOST_SKILLS] [--reset_skills] [--info]
+                         [--hardcore] [--softcore] [--boost_attributes BOOST_ATTRIBUTES] [--boost_skills BOOST_SKILLS] [--reset_skills] [--enable_godmode] [--disable_godmode] [--info]
                          pfnames [pfnames ...]
 
 Tool script for doing small scale changes to Diablo II .d2s save game files.
@@ -81,9 +80,10 @@ options:
   --boost_skills BOOST_SKILLS
                         Set this number to the given value.
   --reset_skills        Flag. Unlearns all skills, returning them as free skill points.
+  --enable_godmode      Enables Demigod-mode (so far without high Mana/HP/Stamina). Creates a .humanity stat file for later return to normal mode.
+  --disable_godmode     Returns to human form (retaining skill points earned in god mode). After all, who wants the stress of being super all the time?
   --info                Flag. Show some statistics to each input file.
 
 Example call:
 $ python3 horadric_exchange.py conan.d2s ormaline.d2s
 ```
-
