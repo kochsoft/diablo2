@@ -13,6 +13,8 @@ Literature:
   "It appears that all the "sections" (quests "Woo!", waypoints "WS", npc introductions "w4", stats "gf", skills "if",
   items "JM" (with corpse count etc), and mercenary "jf"->"kf" (with "JM" item list))
    are ..."
+[5] Python >=3.6 seems to guarantee key order in dicts.
+  https://discuss.codecademy.com/t/does-the-dictionary-keys-function-return-the-keys-in-any-specific-order/354717
 
 Fun facts:
 v1.12, which is the one I am interested in has version code "96". More precisely, "96" is for "v1.10 - v1.14d"
@@ -74,6 +76,12 @@ class E_Attributes(Enum):
             _log.warning(f"Unknown attribute ID {val} encountered! Returning -1.")
             return -1
 
+    def get_attr_is_reversed(self) -> bool:
+        return False
+        # [Note: Only HP, Mana and Stamina values are problematic. [1] states, that values are bit-reversed.
+        #  They are not for most attributes. However, even looking at raw binary and taking the possibility of bit
+        #  reversal into account, I fail to find the encoding for HP, MANA, and STAMINA, both current and max.]
+        # return self.value in [6,7,8,9,10,11]
 
 class E_Characters(Enum):
     EC_AMAZON = 0
@@ -204,6 +212,24 @@ d_skills = {
                                "Lightning Sentry", "Wake of Inferno", "Mind Blast", "Blades of Ice", "Dragon Flight",
                                "Death Sentry", "Blade Shield", "Venom", "Shadow Master", "Phoenix Strike"]
 }
+
+
+# > Properties for the god mode. -------------------------------------
+d_god_skills = [18 for j in range(30)]  # type: List[int]
+sum_god_skills = sum(d_god_skills)
+
+d_god_attr = {
+    E_Attributes.AT_UNUSED_SKILLS: 5,
+    #E_Attributes.AT_MAX_HP: 1200, # I fail to find these values in the attributes section.
+    #E_Attributes.AT_MAX_MANA: 1200,
+    #E_Attributes.AT_MAX_STAMINA: 100,
+    E_Attributes.AT_STRENGTH: 400,
+    E_Attributes.AT_ENERGY: 400,
+    E_Attributes.AT_DEXTERITY: 400,
+    E_Attributes.AT_VITALITY: 400
+}  # type: Dict[E_Attributes, int]
+sum_god_attr = sum(d_god_attr.values())
+# < ------------------------------------------------------------------
 
 
 def bytes2bitmap(data: bytes) -> str:
@@ -682,7 +708,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 continue
             bitmap = set_range_to_bitmap(bitmap, index, index + 9, key.value)
             index = index + 9
-            bitmap = set_range_to_bitmap(bitmap, index, index + key.get_attr_sz_bits(), vals[key])
+            bitmap = set_range_to_bitmap(bitmap, index, index + key.get_attr_sz_bits(), vals[key], do_invert=key.get_attr_is_reversed())
             index = index + key.get_attr_sz_bits()
         bitmap = set_range_to_bitmap(bitmap, index, index + 9, 0x1ff)
         block = bitmap2bytes(bitmap)
@@ -705,7 +731,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             if 0 <= key < 16:
                 attr = E_Attributes(key)
                 res[attr] = get_bitrange_value_from_bytes(self.data,
-                               index_current + 9, index_current + 9 + attr.get_attr_sz_bits(), do_invert=False)
+                               index_current + 9, index_current + 9 + attr.get_attr_sz_bits(), do_invert=attr.get_attr_is_reversed())
                 index_current = index_current + 9 + attr.get_attr_sz_bits()
             else:
                 if key != 511:
@@ -751,33 +777,35 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
     def update_godmode_backup(self) -> int:
         attr = self.get_attributes()
         skills = self.get_skills()
-        if sum(skills) >= 18*30:
+        if sum(skills) >= sum_god_skills:
             _log.warning("God mode seems to be active already. Cannot backup the gods!")
             return 1
-        index_start = self.data.find(b'if', 765) + 32
+        # index_start = self.data.find(b'if', 765) + 32 #<< Would be elegant, but leads to corrupt inventory.
+        index_start = len(self.data)
         if index_start < 0:
             _log.warning("File ends after skills section? Inconceivable! Anyways: Stopping.")
             return 2
         bu_attrs = [
-            (attr[E_Attributes.AT_UNUSED_SKILLS] + 5) if E_Attributes.AT_VITALITY in attr else 5,
-            attr[E_Attributes.AT_MAX_HP] if E_Attributes.AT_MAX_HP in attr else 100,
-            attr[E_Attributes.AT_MAX_MANA] if E_Attributes.AT_MAX_MANA in attr else 100,
-            attr[E_Attributes.AT_MAX_STAMINA] if E_Attributes.AT_MAX_STAMINA in attr else 96,
+            #attr[E_Attributes.AT_MAX_HP] if E_Attributes.AT_MAX_HP in attr else 100, # I fail to find these in the attributes.
+            #attr[E_Attributes.AT_MAX_MANA] if E_Attributes.AT_MAX_MANA in attr else 100,
+            #attr[E_Attributes.AT_MAX_STAMINA] if E_Attributes.AT_MAX_STAMINA in attr else 96,
             attr[E_Attributes.AT_STRENGTH] if E_Attributes.AT_STRENGTH in attr else 100,
             attr[E_Attributes.AT_ENERGY] if E_Attributes.AT_ENERGY in attr else 100,
             attr[E_Attributes.AT_DEXTERITY] if E_Attributes.AT_DEXTERITY in attr else 100,
-            attr[E_Attributes.AT_VITALITY] if E_Attributes.AT_VITALITY in attr else 100
+            attr[E_Attributes.AT_VITALITY] if E_Attributes.AT_VITALITY in attr else 100,
+            (attr[E_Attributes.AT_UNUSED_SKILLS] + 5) if E_Attributes.AT_UNUSED_SKILLS in attr else 5
         ]
         a = b''
+        # [Note: Since I am making up my own section of save game code I take the luxury of 16 bits per attr und 8 bit per skill.]
         for val in [int.to_bytes(x,2,'little') for x in bu_attrs]:
             a += val
         backup = b'mf' + a + bytes(skills)
-        index_end = index_start + len(backup)
+        #index_end = index_start + len(backup)
         # Drop a potentially existing old backup.
         index_old = self.data.find(b'mf')
         if index_old >= 0:
-            self.data = self.data[0:index_start] + self.data[index_end:]
-        self.data = self.data[0:index_start] + backup + self.data[index_end:]
+            self.data = self.data[0:index_start] #+ self.data[index_end:]
+        self.data = self.data[0:index_start] + backup #+ self.data[index_end:]
         return 0
 
     def restore_godmode_backup(self):
@@ -785,53 +813,33 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         if index_start < 0:
             _log.warning("Failure to restore humanity. There is no godmode backup available.")
             return
-        keys = [
-            E_Attributes.AT_UNUSED_SKILLS,
-            E_Attributes.AT_MAX_HP,
-            E_Attributes.AT_MAX_MANA,
-            E_Attributes.AT_MAX_STAMINA,
-            E_Attributes.AT_STRENGTH,
-            E_Attributes.AT_ENERGY,
-            E_Attributes.AT_DEXTERITY,
-            E_Attributes.AT_VITALITY
-        ]
-        index_end = index_start + len(keys)*2 + 30
-        backup = self.data[index_start:index_end]
+        keys = d_god_attr.keys()
+        #index_end = index_start + len(keys)*2 + 30
+        backup = self.data[index_start:] # index_end]
         attrs = dict()  # type: Dict[E_Attributes, int]
         for j in range(len(keys)):
             attrs[keys[j]] = int.from_bytes(backup[(j*2):((j+1)*2)], 'little')
-        attrs[E_Attributes.AT_CURRENT_HP] = attrs[E_Attributes.AT_MAX_HP]
-        attrs[E_Attributes.AT_CURRENT_MANA] = attrs[E_Attributes.AT_MAX_MANA]
-        skills = list()
+
+        skills_human = list()
         for j in range(30):
-            skills.append(backup[len(keys) * 2 + j])
+            # [Note: Singling out a single binary leaves us with an int directly.]
+            skills_human.append(backup[len(keys) * 2 + j])
         final_attrs = self.get_attributes()
         for key in attrs:
             final_attrs[key] = attrs[key]
+        # Preserve skill level points that have been earned in god mode.
+        skill_delta = sum(self.get_skills()) - sum_god_skills
+        final_attrs[E_Attributes.AT_UNUSED_SKILLS] += skill_delta
         self.set_attributes(final_attrs)
-        self.set_skills(skills)
+        self.set_skills(skills_human)
 
     def enable_godmode(self):
-        god_skills = [18 for j in range(30)]
-        god_attrs = {
-            E_Attributes.AT_UNUSED_SKILLS: 5,
-            #E_Attributes.AT_MAX_HP: 500,
-            #E_Attributes.AT_MAX_MANA: 500,
-            #E_Attributes.AT_MAX_STAMINA: 50,
-            E_Attributes.AT_STRENGTH: 400,
-            E_Attributes.AT_ENERGY: 400,
-            E_Attributes.AT_DEXTERITY: 400,
-            E_Attributes.AT_VITALITY: 400
-        }
-        #god_attrs[E_Attributes.AT_CURRENT_HP] = god_attrs[E_Attributes.AT_MAX_HP]
-        #god_attrs[E_Attributes.AT_CURRENT_MANA] = god_attrs[E_Attributes.AT_MAX_MANA]
-        #god_attrs[E_Attributes.AT_CURRENT_STAMINA] = god_attrs[E_Attributes.AT_MAX_STAMINA]
         attrs = self.get_attributes()
-        for key in god_attrs:
-            attrs[key] = god_attrs[key]
-        #self.update_godmode_backup()
+        for key in d_god_attr:
+            attrs[key] = d_god_attr[key]
+        self.update_godmode_backup()
         self.set_attributes(attrs)
-        self.set_skills(god_skills)
+        self.set_skills(d_god_skills)
 
     def disable_godmode(self):
         self.restore_godmode_backup()
@@ -991,7 +999,11 @@ class Horadric:
     def set_hardcore(self, hardcore: bool):
         for data in self.data_all:
             data.set_hardcore(hardcore)
+
+            print(f"Enabling GOD MODE for {data.get_name()}.")
             data.enable_godmode() # TODO! Remove this line.
+
+
             data.update_all()
             data.save2disk()
 
