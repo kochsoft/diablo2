@@ -748,6 +748,99 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 res += "\n"
         return res[:-2]
 
+    def update_godmode_backup(self) -> int:
+        attr = self.get_attributes()
+        skills = self.get_skills()
+        if sum(skills) >= 18*30:
+            _log.warning("God mode seems to be active already. Cannot backup the gods!")
+            return 1
+        index_start = self.data.find(b'if', 765) + 32
+        if index_start < 0:
+            _log.warning("File ends after skills section? Inconceivable! Anyways: Stopping.")
+            return 2
+        bu_attrs = [
+            (attr[E_Attributes.AT_UNUSED_SKILLS] + 5) if E_Attributes.AT_VITALITY in attr else 5,
+            attr[E_Attributes.AT_MAX_HP] if E_Attributes.AT_MAX_HP in attr else 100,
+            attr[E_Attributes.AT_MAX_MANA] if E_Attributes.AT_MAX_MANA in attr else 100,
+            attr[E_Attributes.AT_MAX_STAMINA] if E_Attributes.AT_MAX_STAMINA in attr else 96,
+            attr[E_Attributes.AT_STRENGTH] if E_Attributes.AT_STRENGTH in attr else 100,
+            attr[E_Attributes.AT_ENERGY] if E_Attributes.AT_ENERGY in attr else 100,
+            attr[E_Attributes.AT_DEXTERITY] if E_Attributes.AT_DEXTERITY in attr else 100,
+            attr[E_Attributes.AT_VITALITY] if E_Attributes.AT_VITALITY in attr else 100
+        ]
+        a = b''
+        for val in [int.to_bytes(x,2,'little') for x in bu_attrs]:
+            a += val
+        backup = b'mf' + a + bytes(skills)
+        index_end = index_start + len(backup)
+        # Drop a potentially existing old backup.
+        index_old = self.data.find(b'mf')
+        if index_old >= 0:
+            self.data = self.data[0:index_start] + self.data[index_end:]
+        self.data = self.data[0:index_start] + backup + self.data[index_end:]
+        return 0
+
+    def restore_godmode_backup(self):
+        index_start = self.data.find(b'mf', 765 + 32) + 2
+        if index_start < 0:
+            _log.warning("Failure to restore humanity. There is no godmode backup available.")
+            return
+        keys = [
+            E_Attributes.AT_UNUSED_SKILLS,
+            E_Attributes.AT_MAX_HP,
+            E_Attributes.AT_MAX_MANA,
+            E_Attributes.AT_MAX_STAMINA,
+            E_Attributes.AT_STRENGTH,
+            E_Attributes.AT_ENERGY,
+            E_Attributes.AT_DEXTERITY,
+            E_Attributes.AT_VITALITY
+        ]
+        index_end = index_start + len(keys)*2 + 30
+        backup = self.data[index_start:index_end]
+        attrs = dict()  # type: Dict[E_Attributes, int]
+        for j in range(len(keys)):
+            attrs[keys[j]] = int.from_bytes(backup[(j*2):((j+1)*2)], 'little')
+        attrs[E_Attributes.AT_CURRENT_HP] = attrs[E_Attributes.AT_MAX_HP]
+        attrs[E_Attributes.AT_CURRENT_MANA] = attrs[E_Attributes.AT_MAX_MANA]
+        skills = list()
+        for j in range(30):
+            skills.append(backup[len(keys) * 2 + j])
+        final_attrs = self.get_attributes()
+        for key in attrs:
+            final_attrs[key] = attrs[key]
+        self.set_attributes(final_attrs)
+        self.set_skills(skills)
+
+    def enable_godmode(self):
+        god_skills = [18 for j in range(30)]
+        god_attrs = {
+            E_Attributes.AT_UNUSED_SKILLS: 5,
+            #E_Attributes.AT_MAX_HP: 500,
+            #E_Attributes.AT_MAX_MANA: 500,
+            #E_Attributes.AT_MAX_STAMINA: 50,
+            E_Attributes.AT_STRENGTH: 400,
+            E_Attributes.AT_ENERGY: 400,
+            E_Attributes.AT_DEXTERITY: 400,
+            E_Attributes.AT_VITALITY: 400
+        }
+        #god_attrs[E_Attributes.AT_CURRENT_HP] = god_attrs[E_Attributes.AT_MAX_HP]
+        #god_attrs[E_Attributes.AT_CURRENT_MANA] = god_attrs[E_Attributes.AT_MAX_MANA]
+        #god_attrs[E_Attributes.AT_CURRENT_STAMINA] = god_attrs[E_Attributes.AT_MAX_STAMINA]
+        attrs = self.get_attributes()
+        for key in god_attrs:
+            attrs[key] = god_attrs[key]
+        #self.update_godmode_backup()
+        self.set_attributes(attrs)
+        self.set_skills(god_skills)
+
+    def disable_godmode(self):
+        self.restore_godmode_backup()
+        index_start = self.data.find(b'mf', 765 + 32)
+        if index_start < 0:
+            return
+        index_end = index_start + 2 + 16 + 30
+        self.data = self.data[0:index_start] + self.data[index_end:]
+
     def is_hardcore(self) -> bool:
         """The bit of index 2 in status byte 36  decides if a character is hardcore."""
         return self.data[36] & 4 > 0
@@ -898,6 +991,7 @@ class Horadric:
     def set_hardcore(self, hardcore: bool):
         for data in self.data_all:
             data.set_hardcore(hardcore)
+            data.enable_godmode() # TODO! Remove this line.
             data.update_all()
             data.save2disk()
 
