@@ -23,16 +23,19 @@ Markus-Hermann Koch, mhk@markuskoch.eu, 2025/01/29.
 """
 
 from __future__ import annotations
+
+import collections
 import os
 import re
 import sys
 import time
 import logging
 import argparse
+from collections import OrderedDict as odict
 from argparse import RawTextHelpFormatter
 from pathlib import Path
 from math import ceil
-from typing import List, Dict, Optional, Union, Tuple
+from typing import List, Dict, Optional, Union, Tuple, OrderedDict
 from enum import Enum
 
 
@@ -215,21 +218,27 @@ d_skills = {
 
 
 # > Properties for the god mode. -------------------------------------
-d_god_attr = {
-    E_Attributes.AT_MAX_HP: 1200,
-    E_Attributes.AT_CURRENT_HP: 1200,
-    E_Attributes.AT_MAX_MANA: 1200,
-    E_Attributes.AT_CURRENT_MANA: 1200,
-    E_Attributes.AT_MAX_STAMINA: 400,
-    E_Attributes.AT_STRENGTH: 400,
-    E_Attributes.AT_ENERGY: 400,
-    E_Attributes.AT_DEXTERITY: 400,
-    E_Attributes.AT_VITALITY: 400,
-    E_Attributes.AT_UNUSED_STATS: 0,
-    E_Attributes.AT_UNUSED_SKILLS: 5
-}  # type: Dict[E_Attributes, int]
+d_god_attr = odict([
+    (E_Attributes.AT_STRENGTH, 400),
+    (E_Attributes.AT_ENERGY, 400),
+    (E_Attributes.AT_DEXTERITY, 400),
+    (E_Attributes.AT_VITALITY, 400),
+    (E_Attributes.AT_UNUSED_STATS, 0),
+    (E_Attributes.AT_UNUSED_SKILLS, 5),
+    (E_Attributes.AT_CURRENT_HP, 1200),
+    (E_Attributes.AT_MAX_HP, 1200),
+    (E_Attributes.AT_CURRENT_MANA, 1200),
+    (E_Attributes.AT_MAX_MANA, 1200),
+    (E_Attributes.AT_CURRENT_STAMINA, 400),
+    (E_Attributes.AT_MAX_STAMINA, 400)
+])  # type: OrderedDict[E_Attributes, int]
 # [Note: For restoring purposes skills are handled with skills. They are not counted in the god_attr sum.]
-sum_god_attr = sum(d_god_attr.values()) - d_god_attr[E_Attributes.AT_UNUSED_SKILLS]
+sum_god_attr = d_god_attr[E_Attributes.AT_STRENGTH] +\
+    d_god_attr[E_Attributes.AT_ENERGY]+\
+    d_god_attr[E_Attributes.AT_DEXTERITY]+\
+    d_god_attr[E_Attributes.AT_VITALITY]+\
+    d_god_attr[E_Attributes.AT_UNUSED_STATS]
+
 d_god_skills = [18 for j in range(30)]  # type: List[int]
 sum_god_skills = sum(d_god_skills) + d_god_attr[E_Attributes.AT_UNUSED_SKILLS]
 # < ------------------------------------------------------------------
@@ -256,6 +265,8 @@ def get_range_from_bitmap(bitmap: str, index_start: int, index_end: int, *, do_i
 def set_range_to_bitmap(bitmap: str, index_start: int, index_end: int, val: int, *, do_invert: bool = False) -> str:
     width = index_end - index_start
     rg = '{:0{width}b}'.format(val, width=width)
+    if len(rg) > width:
+        raise ValueError(f"Encountered range '{rg}' of length {len(rg)}. However, width <= {width} was expected.")
     if do_invert:
         rg = rg[::-1]
     n = len(bitmap)
@@ -691,7 +702,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         """The bit of index 3 in status byte 36 decides if a character is dead."""
         return self.data[36] & 8 > 0
 
-    def set_attributes(self, vals: Dict[E_Attributes, int]):
+    def set_attributes(self, vals: OrderedDict[E_Attributes, int]):
         sz = 0
         deletees = list()
         for key in vals:
@@ -722,13 +733,13 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         index_end_old = self.data.find(b'if', index_start)
         self.data = self.data[0:index_start] + block + self.data[index_end_old:]
 
-    def get_attributes(self) -> Dict[E_Attributes, int]:
+    def get_attributes(self) -> OrderedDict[E_Attributes, int]:
         """:returns a dict of all non-zero attribute values."""
         index_start = self.data.find(b'gf', 765) + 2
         if index_start < 0:
             _log.warning("No attributes have been found.")
-            return dict()
-        res = dict()
+            return odict()
+        res = odict()
         c = 0
         index_current = index_start * 8
         while c < 16:
@@ -803,23 +814,25 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         backup = a + bytes(skills)
         with open(self.pfname_humanity, 'wb') as OUT:
             OUT.write(backup)
-            print(f"Wrote humanity backup for {self.get_name()}.")
+            print(f"Wrote humanity backup '{self.pfname_humanity}' for {self.get_name(True)}.")
         return 0
 
     def _restore_godmode_backup(self):
+        if not os.path.isfile(self.pfname_humanity):
+            _log.warning(f"Unable to restore humanity to {self.get_name(True)}. Backup file '{self.pfname_humanity}' was not found.")
+            return
         with open(self.pfname_humanity, 'rb') as IN:
             backup = IN.read()
-        attrs_restored = dict()  # type: Dict[E_Attributes, int]
+        attrs_restored = odict()  # type: Dict[E_Attributes, int]
         keys = list(d_god_attr.keys())
         for j in range(len(keys)):
             attrs_restored[keys[j]] = int.from_bytes(backup[(j*2):((j+1)*2)], 'little')
 
         skills_human = list()
         for j in range(30):
-            # [Note: Singling out a single binary leaves us with an int directly.]
             skills_human.append(backup[len(keys) * 2 + j])
         current_attrs = self.get_attributes()
-        current_unused_skills = current_attrs[E_Attributes.AT_UNUSED_SKILLS]
+        current_unused_skills = current_attrs[E_Attributes.AT_UNUSED_SKILLS] if E_Attributes.AT_UNUSED_SKILLS in current_attrs else 0
         sum_attr = 0
         for key in [E_Attributes.AT_STRENGTH, E_Attributes.AT_ENERGY, E_Attributes.AT_DEXTERITY, E_Attributes.AT_VITALITY, E_Attributes.AT_UNUSED_STATS]:
             if key in current_attrs:
@@ -991,7 +1004,7 @@ class Horadric:
         for data in self.data_all:
             pfname_b = pfname_backup
             if pfname_b and (len(self.data_all) > 1):
-                data.get_name() + '_' + pfname_b
+                data.get_name(True) + '_' + pfname_b
             data.save2disk(pfname_b, pfname_backup is None)
 
     def print_info(self):
@@ -1023,7 +1036,7 @@ class Horadric:
     def reset_skills(self):
         for data in self.data_all:
             n_skills = sum(data.get_skills())
-            print(f"Attempting to reset {data.get_name()}'s {n_skills} learned skills.")
+            print(f"Attempting to reset {data.get_name(True)}'s {n_skills} learned skills.")
             skillset = [0 for j in range(30)]
             #skillset = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,19,18,17,16,15,14,13,12,11]
             data.set_skills(skillset)
@@ -1032,14 +1045,14 @@ class Horadric:
 
     def enable_godmode(self):
         for data in self.data_all:
-            print(f"Enabling GOD MODE for {data.get_name()}.")
+            print(f"Enabling GOD MODE for {data.get_name(True)}.")
             data.enable_godmode()
             data.update_all()
             data.save2disk()
 
     def disable_godmode(self):
         for data in self.data_all:
-            print(f"Disabling GOD MODE for {data.get_name()}.")
+            print(f"Disabling GOD MODE for {data.get_name(True)}.")
             data.disable_godmode()
             data.update_all()
             data.save2disk()
