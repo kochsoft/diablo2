@@ -1134,7 +1134,7 @@ Apply this script to both their .d2s files, using the --exchange flag. Then this
 both files thus, that the Horadric Cube contents of both players switch places."""
         epilog = f"""Example call:
 $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
-        parser = argparse.ArgumentParser(prog='Horadric Exchange', description=desc, epilog=epilog, formatter_class=RawTextHelpFormatter)
+        parser = argparse.ArgumentParser(prog='horazons_folly.py', description=desc, epilog=epilog, formatter_class=RawTextHelpFormatter)
         parser.add_argument('--omit_backup', action='store_true',
             help="Per default, target files will be backupped to .backup files. For safety. This option will disable that safety.")
         parser.add_argument('--pfname_backup', type=str, help='State a pfname to the backup file. Per default a timestamped name will be used. If there are multiple files to backup, the given name will be prefixed with each character\'s name.')
