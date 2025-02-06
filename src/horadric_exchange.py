@@ -216,9 +216,11 @@ d_skills = {
 
 # > Properties for the god mode. -------------------------------------
 d_god_attr = {
-    #E_Attributes.AT_MAX_HP: 1200, # I fail to find these values in the attributes section.
-    #E_Attributes.AT_MAX_MANA: 1200,
-    #E_Attributes.AT_MAX_STAMINA: 100,
+    E_Attributes.AT_MAX_HP: 1200,
+    E_Attributes.AT_CURRENT_HP: 1200,
+    E_Attributes.AT_MAX_MANA: 1200,
+    E_Attributes.AT_CURRENT_MANA: 1200,
+    E_Attributes.AT_MAX_STAMINA: 400,
     E_Attributes.AT_STRENGTH: 400,
     E_Attributes.AT_ENERGY: 400,
     E_Attributes.AT_DEXTERITY: 400,
@@ -711,7 +713,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 continue
             bitmap = set_range_to_bitmap(bitmap, index, index + 9, key.value)
             index = index + 9
-            bitmap = set_range_to_bitmap(bitmap, index, index + key.get_attr_sz_bits(), vals[key], do_invert=key.get_attr_is_reversed())
+            twenty_one_bit_ignore_bits = 8 if (key.get_attr_sz_bits() == 21) else 0
+            bitmap = set_range_to_bitmap(bitmap, index + twenty_one_bit_ignore_bits, index + key.get_attr_sz_bits(), vals[key], do_invert=key.get_attr_is_reversed())
             index = index + key.get_attr_sz_bits()
         bitmap = set_range_to_bitmap(bitmap, index, index + 9, 0x1ff)
         block = bitmap2bytes(bitmap)
