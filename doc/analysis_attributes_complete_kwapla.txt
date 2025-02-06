@@ -1,0 +1,67 @@
+        if True:
+            _log.info("Debugging in progress!")
+            index_end = self.data.find(b'if', index_start)
+            bm = bytes2bitmap(self.data[index_start:index_end])
+            print(self.get_name())
+            print("Forward:")
+            print(bm)
+            print("Reversed:")
+            print(bm[::-1])
+
+
+
+Life Max: 7
+Life Current: 6
+
+Life: 1021  -> 1111111101 .. 110      These 0b111111110100001110 == 261390
+Life MAX: 1040  -> 10000010000    Code 6: 110
+Stamina: 574  -> 1000111110
+Vit: 510 -> 111111110
+
+
+Tinka, a level 1 hardcore Sorceress. Checksum (current): '3009626566', Checksum (computed): '3009626566, file version: 96, file size: 958, file size in file: 958, 
+direct player item count: 7, is dead: False, direct mercenary item count: 0, 
+attributes: {<E_Attributes.AT_STRENGTH: 0>: 10, <E_Attributes.AT_ENERGY: 1>: 35, <E_Attributes.AT_DEXTERITY: 2>: 25, <E_Attributes.AT_VITALITY: 3>: 510, <E_Attributes.AT_CURRENT_HP: 6>: 261390, <E_Attributes.AT_MAX_HP: 7>: 266240, <E_Attributes.AT_CURRENT_MANA: 8>: 8960, <E_Attributes.AT_MAX_MANA: 9>: 8960, <E_Attributes.AT_CURRENT_STAMINA: 10>: 146944, <E_Attributes.AT_MAX_STAMINA: 11>: 146944, <E_Attributes.AT_LEVEL: 12>: 1}, 
+
+
+Forward:
+0000000111111111 << End code 0x1ff.
+
+0000001 "7 bit level==1"
+000001100 == 12
+
+0001000111110 (574) 00000000 (8bit!)
+000001011 == 11 (Max Stamina)
+
+0001000111110 (574!)  00000000 (8bit!)
+000001010 == 10 (Current Stamina)
+
+0000000100011 (== 35)  00000000 (8 bit!)
+000001001 == 9 Max Mana
+
+0000000100011 (35! :-D) 00000000 (8 bit!)
+000001000 == (8: Current Mana)
+
+0010000010000 (13 bit == MaxHP == 1040(!)) 00000000 (8 bit==0)
+000000111 == (Max HP 7)
+
+0001111111101 (1021(!) in 13 bits) 00001110 (11 in acht bits)  => 21 Bits!!! Die letzten 8 Bit ignorieren.
+000000110 == (Current HP) 6
+
+0111111110 == 510 :-)
+000000011 == Vitality (3)
+
+0000011001 == 25
+000000010 == Dexterity (2)
+
+0000100011 == 35
+000000001 == Energy (1)
+
+0000001010 == 10
+000000000 == Strength (0)
+
+
+
+Original bit-code:
+Forward:
+000000011111111100000010000011000001000111110000000000000010110001000111110000000000000010100000000100011000000000000010010000000100011000000000000010000010000010000000000000000001110001111111101000011100000001100111111110000000011000001100100000001000001000110000000010000001010000000000

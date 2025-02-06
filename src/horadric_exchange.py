@@ -65,7 +65,7 @@ class E_Attributes(Enum):
         elif val == 5:
             return 8
         elif val <= 11:
-            return 21
+            return 21 # << This is True! However: Only the most significant 13 bit are used. The other 8 are ignored.
         elif val == 12:
             return 7
         elif val == 13:
@@ -733,8 +733,9 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             key = get_bitrange_value_from_bytes(self.data, index_current, index_current + 9, do_invert=False)
             if 0 <= key < 16:
                 attr = E_Attributes(key)
+                twenty_one_bit_ignore_bits = 8 if (attr.get_attr_sz_bits() == 21) else 0
                 res[attr] = get_bitrange_value_from_bytes(self.data,
-                               index_current + 9, index_current + 9 + attr.get_attr_sz_bits(), do_invert=attr.get_attr_is_reversed())
+                               index_current + 9 + twenty_one_bit_ignore_bits, index_current + 9 + attr.get_attr_sz_bits(), do_invert=attr.get_attr_is_reversed())
                 index_current = index_current + 9 + attr.get_attr_sz_bits()
             else:
                 if key != 511:
