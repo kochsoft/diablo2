@@ -35,7 +35,7 @@ return.
 <p>
 However, the task was not simple. It took me more than a week's evenings
 and almost all the knowledge that is to be had from this site:
-<a href=".."></a>
+<a href="https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md">D2CE</a>
 to finally reach this goal. The results of this chore are two python 3 scripts. 
 </p>
 
@@ -67,12 +67,17 @@ python. Under Linux this varies depending on your distribution.</li>
 
 <h2>Some Erratas and other Comments</h2>
 <p>
-Concerning <a href=>..</a> I found some points that are noteworthy.
-Again, not that my perspective is on save game file version <b>96</b> only!
+Concerning <a href=https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md>D2CE</a> I found some points that are noteworthy.
+Keep in mind that my perspective is on legacy save game file version <b>96</b> only!
 </p>
 <p>
 While it is true, that attributes come with individual IDs, taking up 9 bits
 each, I cannot confirm that they or the values they precede are bit-order-inverted.
+</p><p>
+However, I found that reading the large values for <b>HP, Mana, and Stamina</b>
+presents a problem. They are indeed of length 21 bit. However, it would seem
+that only the most 13 significant little endian bits carry the information.
+The other 8 bit may also have a function, but that eludes me.
 </p><p>
 The variable length of the section seems to stem from the fact that values that
 are 0 are not listed, but missing. It appears that 0 values are even illegal.

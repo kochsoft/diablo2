@@ -3,4 +3,5 @@
 tmp
 factory
 doc_local
-
+PyEnv
+__pycache__

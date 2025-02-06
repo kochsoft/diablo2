@@ -1,0 +1,115 @@
+horadric_exchange.py --info --omit_backup examples/Alissa.d2s 
+
+Omitting backups.
+Alissa, a level 68 hardcore Assassin. Checksum (current): '2148658874', Checksum (computed): '2148658874, file version: 96, file size: 2856, file size in file: 2856, 
+direct player item count: 82, is dead: False, direct mercenary item count: 3, 
+attributes: OrderedDict({<E_Attributes.AT_STRENGTH: 0>: 95, <E_Attributes.AT_ENERGY: 1>: 68, <E_Attributes.AT_DEXTERITY: 2>: 128, <E_Attributes.AT_VITALITY: 3>: 139, <E_Attributes.AT_CURRENT_HP: 6>: 612, <E_Attributes.AT_MAX_HP: 7>: 581, <E_Attributes.AT_CURRENT_MANA: 8>: 241, <E_Attributes.AT_MAX_MANA: 9>: 200, <E_Attributes.AT_CURRENT_STAMINA: 10>: 350, <E_Attributes.AT_MAX_STAMINA: 11>: 327, <E_Attributes.AT_LEVEL: 12>: 68, <E_Attributes.AT_EXPERIENCE: 13>: 239769374, <E_Attributes.AT_GOLD: 14>: 313396, <E_Attributes.AT_STASHED_GOLD: 15>: 1700000}), 
+learned skill-set : Fire Blast: 3, Claw Mastery: 6, Psychic Hammer: 1, Tiger Strike: 2, Dragon Talon: 2, 
+Shock Web: 1, Blade Sentinel: 1, Burst of Speed: 2, Fists of Fire: 0, Dragon Claw: 0, 
+Charged Bolt Sentry: 1, Wake of Fire: 1, Weapon Block: 5, Cloak of Shadows: 4, Cobra Strike: 0, 
+Blade Fury: 1, Fade: 7, Shadow Warrior: 1, Claws of Thunder: 0, Dragon Tail: 0, 
+Lightning Sentry: 8, Wake of Inferno: 1, Mind Blast: 0, Blades of Ice: 0, Dragon Flight: 0, 
+Death Sentry: 20, Blade Shield: 1, Venom: 1, Shadow Master: 6, Phoenix Strike: 0
+Item IB_PLAYER_HD #0 index: (848, 852): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #0 index: (852, 866): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #1 index: (866, 880): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #2 index: (880, 894): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #3 index: (894, 935): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_AMULET
+Item IB_PLAYER #4 index: (935, 958): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #5 index: (958, 972): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #6 index: (972, 986): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #7 index: (986, 1000): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #8 index: (1000, 1023): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #9 index: (1023, 1037): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #10 index: (1037, 1082): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_AMULET
+Item IB_PLAYER #11 index: (1082, 1126): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_ARMOR
+Item IB_PLAYER #12 index: (1126, 1140): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #13 index: (1140, 1187): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_HELMET
+Item IB_PLAYER #14 index: (1187, 1201): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #15 index: (1201, 1215): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #16 index: (1215, 1229): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #17 index: (1229, 1243): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #18 index: (1243, 1257): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #19 index: (1257, 1271): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #20 index: (1271, 1285): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #21 index: (1285, 1325): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_ARMOR
+Item IB_PLAYER #22 index: (1325, 1339): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #23 index: (1339, 1353): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #24 index: (1353, 1367): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #25 index: (1367, 1397): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #26 index: (1397, 1428): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #27 index: (1428, 1442): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #28 index: (1442, 1456): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #29 index: (1456, 1470): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #30 index: (1470, 1484): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #31 index: (1484, 1513): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #32 index: (1513, 1541): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #33 index: (1541, 1567): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #34 index: (1567, 1596): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #35 index: (1596, 1641): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_RING_RIGHT
+Item IB_PLAYER #36 index: (1641, 1655): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #37 index: (1655, 1669): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #38 index: (1669, 1683): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #39 index: (1683, 1697): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #40 index: (1697, 1711): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #41 index: (1711, 1745): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #42 index: (1745, 1774): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #43 index: (1774, 1788): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #44 index: (1788, 1802): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #45 index: (1802, 1816): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #46 index: (1816, 1848): Parent: IP_STORED, Storage: IS_INVENTORY, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #47 index: (1848, 1862): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #48 index: (1862, 1876): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #49 index: (1876, 1890): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #50 index: (1890, 1944): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_RING_LEFT
+Item IB_PLAYER #51 index: (1944, 1958): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #52 index: (1958, 1972): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #53 index: (1972, 1986): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #54 index: (1986, 2012): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #55 index: (2012, 2026): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #56 index: (2026, 2040): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #57 index: (2040, 2054): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #58 index: (2054, 2068): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #59 index: (2068, 2082): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #60 index: (2082, 2096): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #61 index: (2096, 2110): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #62 index: (2110, 2124): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #63 index: (2124, 2138): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #64 index: (2138, 2152): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #65 index: (2152, 2166): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #66 index: (2166, 2180): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #67 index: (2180, 2194): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #68 index: (2194, 2208): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #69 index: (2208, 2229): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #70 index: (2229, 2243): Parent: IP_STORED, Storage: IS_STASH, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #71 index: (2243, 2257): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #72 index: (2257, 2271): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #73 index: (2271, 2285): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #74 index: (2285, 2299): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #75 index: (2299, 2313): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #76 index: (2313, 2327): Parent: IP_BELT, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #77 index: (2327, 2357): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_WEAPON_RIGHT
+Item IB_PLAYER #78 index: (2357, 2401): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_WEAPON_LEFT
+Item IB_PLAYER #79 index: (2401, 2427): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #80 index: (2427, 2456): Parent: IP_STORED, Storage: IS_CUBE, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #81 index: (2456, 2478): Parent: IP_STORED, Storage: IS_CUBE, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #82 index: (2478, 2520): Parent: IP_STORED, Storage: IS_CUBE, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #83 index: (2520, 2534): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #84 index: (2534, 2548): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_PLAYER #85 index: (2548, 2579): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_WEAPON_RIGHT
+Item IB_PLAYER #86 index: (2579, 2629): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_WEAPON_LEFT
+Item IB_CORPSE_HD #0 index: (2629, 2633): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY_HD #0 index: (2635, 2639): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #0 index: (2639, 2664): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_ARMOR
+Item IB_MERCENARY #1 index: (2664, 2678): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #2 index: (2678, 2692): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #3 index: (2692, 2706): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #4 index: (2706, 2741): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_HELMET
+Item IB_MERCENARY #5 index: (2741, 2755): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #6 index: (2755, 2769): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #7 index: (2769, 2811): Parent: IP_EQUIPPED, Storage: IS_UNSPECIFIED, Equip: IE_WEAPON_RIGHT
+Item IB_MERCENARY #8 index: (2811, 2825): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #9 index: (2825, 2839): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_MERCENARY #10 index: (2839, 2853): Parent: IP_ITEM, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Item IB_IRONGOLEM_HD #0 index: (2853, 2856): Parent: IP_UNSPECIFIED, Storage: IS_UNSPECIFIED, Equip: IE_UNSPECIFIED
+Done.
