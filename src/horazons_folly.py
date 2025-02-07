@@ -695,7 +695,10 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         """The bit of index 3 in status byte 36 decides if a character is dead."""
         return self.data[36] & 8 > 0
 
-    def set_attributes(self, vals: OrderedDict[E_Attributes, int]):
+    def set_attributes(self, vals: OrderedDict[E_Attributes, int], *, apply_preserved_8bit_HMS_appendix = False):
+        """:param vals: Dictionary with values to be set to the character sheet.
+        :param apply_preserved_8bit_HMS_appendix: If the respective preservation parameter from get_attributes(..)
+        (see details there) has been used as True, this parameter should be True, too, to preserve data consistence."""
         sz = 0
         deletees = list()
         for key in vals:
@@ -717,8 +720,11 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 continue
             bitmap = set_range_to_bitmap(bitmap, index, index + 9, key.value)
             index = index + 9
-            twenty_one_bit_ignore_bits = 8 if (key.get_attr_sz_bits() == 21) else 0
-            bitmap = set_range_to_bitmap(bitmap, index + twenty_one_bit_ignore_bits, index + key.get_attr_sz_bits(), vals[key], do_invert=False)
+            if apply_preserved_8bit_HMS_appendix or (key.get_attr_sz_bits() != 21):
+                bitmap = set_range_to_bitmap(bitmap, index, index + key.get_attr_sz_bits(), vals[key], do_invert=False)
+            else:
+                bitmap = set_range_to_bitmap(bitmap, index, index + 8, 0, do_invert=False)
+                bitmap = set_range_to_bitmap(bitmap, index + 8, index + key.get_attr_sz_bits(), vals[key], do_invert=False)
             index = index + key.get_attr_sz_bits()
         bitmap = set_range_to_bitmap(bitmap, index, index + 9, 0x1ff)
         block = bitmap2bytes(bitmap)
@@ -726,13 +732,20 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         index_end_old = self.data.find(b'if', index_start)
         self.data = self.data[0:index_start] + block + self.data[index_end_old:]
 
-    def get_attributes(self) -> OrderedDict[E_Attributes, int]:
-        """:returns a dict of all non-zero attribute values."""
+    def get_attributes(self, *, preserve_8bit_HMS_appendix=False) -> OrderedDict[E_Attributes, int]:
+        """
+        :param preserve_8bit_HMS_appendix: If given as True the 8bit appendix to HP, Mana, and Stamina values will be
+          included inta a full 21bit data structure. Else only the most significant 13 bits are taken.
+          This is relevant, and the 13 bit version is the default, because it is there, that the HP, Mana, and Stamina
+          values are recorded. However, the remaining 8 bit are not uniform 0. If they do have a function, this
+          function is unknown to me. As it stands, this parameter allows to preserve the entire data structure,
+          for the purpose of writing, e.g., humanity backup files.
+        :returns a dict of all non-zero attribute values."""
         index_start = self.data.find(b'gf', 765) + 2
         if index_start < 0:
             _log.warning("No attributes have been found.")
             return odict()
-        res = odict()
+        res = odict()  # type: OrderedDict[E_Attributes, int]
         c = 0
         index_current = index_start * 8
         while c < 16:
@@ -740,7 +753,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             key = get_bitrange_value_from_bytes(self.data, index_current, index_current + 9, do_invert=False)
             if 0 <= key < 16:
                 attr = E_Attributes(key)
-                twenty_one_bit_ignore_bits = 8 if (attr.get_attr_sz_bits() == 21) else 0
+                twenty_one_bit_ignore_bits = 8 if ((not preserve_8bit_HMS_appendix) and (attr.get_attr_sz_bits() == 21)) else 0
                 res[attr] = get_bitrange_value_from_bytes(self.data,
                                index_current + 9 + twenty_one_bit_ignore_bits, index_current + 9 + attr.get_attr_sz_bits(), do_invert=False)
                 index_current = index_current + 9 + attr.get_attr_sz_bits()
@@ -794,7 +807,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         if sum(skills) >= sum_god_skills:
             _log.warning("God mode seems to be active already. Cannot backup the gods!")
             return 1
-        attr = self.get_attributes()
+        attr = self.get_attributes(preserve_8bit_HMS_appendix=True)
         keys = list(d_god_attr.keys())
         # Backup data structure following keys in d_god_attr.
         bu_attr = list()  # type: List[int]
@@ -802,7 +815,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             bu_attr.append(attr[key] if key in attr else 0)
         a = b''
         # [Note: Since I am making up my own section of save game code I take the luxury of 16 bits per attr und 8 bit per skill.]
-        for val in [int.to_bytes(x,2,'little') for x in bu_attr]:
+        for val in [int.to_bytes(x,3,'little') for x in bu_attr]:
             a += val
         backup = a + bytes(skills)
         with open(self.pfname_humanity, 'wb') as OUT:
@@ -819,12 +832,12 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         attrs_restored = odict()  # type: Dict[E_Attributes, int]
         keys = list(d_god_attr.keys())
         for j in range(len(keys)):
-            attrs_restored[keys[j]] = int.from_bytes(backup[(j*2):((j+1)*2)], 'little')
+            attrs_restored[keys[j]] = int.from_bytes(backup[(j*3):((j+1)*3)], 'little')
 
         skills_human = list()
         for j in range(30):
-            skills_human.append(backup[len(keys) * 2 + j])
-        current_attrs = self.get_attributes()
+            skills_human.append(backup[len(keys) * 3 + j])
+        current_attrs = self.get_attributes(preserve_8bit_HMS_appendix=True)
         current_unused_skills = current_attrs[E_Attributes.AT_UNUSED_SKILLS] if E_Attributes.AT_UNUSED_SKILLS in current_attrs else 0
         sum_attr = 0
         for key in [E_Attributes.AT_STRENGTH, E_Attributes.AT_ENERGY, E_Attributes.AT_DEXTERITY, E_Attributes.AT_VITALITY, E_Attributes.AT_UNUSED_STATS]:
@@ -837,7 +850,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         skill_delta = sum(self.get_skills()) + current_unused_skills - sum_god_skills
         current_attrs[E_Attributes.AT_UNUSED_STATS] += attr_delta
         current_attrs[E_Attributes.AT_UNUSED_SKILLS] += skill_delta
-        self.set_attributes(current_attrs)
+        self.set_attributes(current_attrs, apply_preserved_8bit_HMS_appendix=True)
         self.set_skills(skills_human)
 
     def enable_godmode(self):
@@ -938,7 +951,7 @@ class Horadric:
     def __init__(self, args: Optional[List[str]] = None):
         # > Setting up the data. -------------------------------------
         parsed = self.parse_arguments(args)
-        pfnames_in = parsed.pfnames  # type: List[str]
+        pfnames_in = parsed.pfnames if parsed.pfnames else list()  # type: List[str]
         self.data_all = [Data(pfname) for pfname in pfnames_in]
         #< -----------------------------------------------------------
         #> Backups. --------------------------------------------------
@@ -1001,7 +1014,6 @@ class Horadric:
             index_start = data.data.find(b'gf', 765) + 2
             index_end = data.data.find(b'if', index_start)
             bm = bytes2bitmap(data.data[index_start:index_end])
-            nb = len(data.data)
             print(f"{data.get_name(True)} from '{data.pfname}'.")
             print("Bitmap:")
             print(bm)
