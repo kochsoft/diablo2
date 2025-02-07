@@ -24,7 +24,6 @@ Markus-Hermann Koch, mhk@markuskoch.eu, 2025/01/29.
 
 from __future__ import annotations
 
-import collections
 import os
 import re
 import sys
@@ -78,13 +77,6 @@ class E_Attributes(Enum):
         else:
             _log.warning(f"Unknown attribute ID {val} encountered! Returning -1.")
             return -1
-
-    def get_attr_is_reversed(self) -> bool:
-        return False
-        # [Note: Only HP, Mana and Stamina values are problematic. [1] states, that values are bit-reversed.
-        #  They are not for most attributes. However, even looking at raw binary and taking the possibility of bit
-        #  reversal into account, I fail to find the encoding for HP, MANA, and STAMINA, both current and max.]
-        # return self.value in [6,7,8,9,10,11]
 
 class E_Characters(Enum):
     EC_AMAZON = 0
@@ -252,6 +244,7 @@ def bitmap2bytes(bitmap: str) -> bytes:
     if (n % 8) != 0:
         raise ValueError(f"Invalid bitmap length {n} not being a multiple of 8.")
     return int(bitmap,2).to_bytes(round(n/8), 'little')
+
 
 def get_range_from_bitmap(bitmap: str, index_start: int, index_end: int, *, do_invert: bool = False) -> int:
     # [Note: Being numerals the left-most entries in the bitmap are the most significant!
@@ -725,7 +718,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             bitmap = set_range_to_bitmap(bitmap, index, index + 9, key.value)
             index = index + 9
             twenty_one_bit_ignore_bits = 8 if (key.get_attr_sz_bits() == 21) else 0
-            bitmap = set_range_to_bitmap(bitmap, index + twenty_one_bit_ignore_bits, index + key.get_attr_sz_bits(), vals[key], do_invert=key.get_attr_is_reversed())
+            bitmap = set_range_to_bitmap(bitmap, index + twenty_one_bit_ignore_bits, index + key.get_attr_sz_bits(), vals[key], do_invert=False)
             index = index + key.get_attr_sz_bits()
         bitmap = set_range_to_bitmap(bitmap, index, index + 9, 0x1ff)
         block = bitmap2bytes(bitmap)
@@ -749,7 +742,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 attr = E_Attributes(key)
                 twenty_one_bit_ignore_bits = 8 if (attr.get_attr_sz_bits() == 21) else 0
                 res[attr] = get_bitrange_value_from_bytes(self.data,
-                               index_current + 9 + twenty_one_bit_ignore_bits, index_current + 9 + attr.get_attr_sz_bits(), do_invert=attr.get_attr_is_reversed())
+                               index_current + 9 + twenty_one_bit_ignore_bits, index_current + 9 + attr.get_attr_sz_bits(), do_invert=False)
                 index_current = index_current + 9 + attr.get_attr_sz_bits()
             else:
                 if key != 511:
@@ -1000,6 +993,43 @@ class Horadric:
         if parsed.disable_godmode:
             self.disable_godmode()
 
+        if parsed.info_stats:
+            self.info_stats()
+
+    def info_stats(self):
+        for data in self.data_all:
+            index_start = data.data.find(b'gf', 765) + 2
+            index_end = data.data.find(b'if', index_start)
+            bm = bytes2bitmap(data.data[index_start:index_end])
+            nb = len(data.data)
+            print(f"{data.get_name(True)} from '{data.pfname}'.")
+            print("Bitmap:")
+            print(bm)
+            print("Byte Stream:")
+            print(data.data[(index_start-2):index_end].hex(' '))
+            print("Decoded:")
+            bm_reversed = bm[::-1]
+            index = 0
+            for j in range(16):
+                key = bm_reversed[index:(index+9)]
+                if not key:
+                    break
+                val_key = get_range_from_bitmap(key[::-1], 0, len(key))
+                if val_key > 15:
+                    print(f"Remainder: {bm_reversed[index:][::-1]}")
+                    break
+                attr = E_Attributes(val_key)
+                index_end = index + 9 + attr.get_attr_sz_bits()
+                print(f"ID: {key[::-1]} ({attr.name}), value: {val_key}")
+                twenty_one_bit_ignore_bits = 8 if attr.get_attr_sz_bits() == 21 else 0
+                part0 = bm_reversed[(index+9):(index+9+twenty_one_bit_ignore_bits)]
+                part1 = bm_reversed[(index+9+twenty_one_bit_ignore_bits):index_end]
+                index = index_end
+                s_prefix = f"{part0[::-1]} ({get_range_from_bitmap(part0[::-1], 0, len(part0))})" if part0 else ""
+                s_suffix = f"{part1[::-1]} ({get_range_from_bitmap(part1[::-1], 0, len(part1))})"
+                print(f"Val: {s_prefix} {s_suffix}")
+            print("------------------------------------------------------------------------------")
+
     def backup(self, pfname_backup: Optional[str] = None):
         for data in self.data_all:
             pfname_b = pfname_backup
@@ -1150,6 +1180,7 @@ $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
         parser.add_argument('--enable_godmode', action='store_true', help="Enables Demigod-mode (so far without high Mana/HP/Stamina). Creates a .humanity stat file alongside the .d2s for later return to normal mode.")
         parser.add_argument('--disable_godmode', action='store_true', help="Returns to human form (retaining skill points earned in god mode). After all, who wants the stress of being super all the time?")
         parser.add_argument('--info', action='store_true', help="Flag. Show some statistics to each input file.")
+        parser.add_argument('--info_stats', action='store_true', help='Flag. Nerd-minded. Detailed info tool on the parsing of attributes and skills.')
         parser.add_argument('pfnames', nargs='+', type=str, help='List of path and filenames to target .d2s character files.')
         parsed = parser.parse_args(args)  # type: argparse.Namespace
         return parsed
