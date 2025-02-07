@@ -236,6 +236,11 @@ d_god_skills = [18 for j in range(30)]  # type: List[int]
 sum_god_skills = sum(d_god_skills) + d_god_attr[E_Attributes.AT_UNUSED_SKILLS]
 # < ------------------------------------------------------------------
 
+# > Horadric Cube. ---------------------------------------------------
+"""Binary block describing a horadric cube. From 'JM' to end. There are two bytes missing.
+They encode, where the cube is stored and thus may vary."""
+data_horadric_cube = [b'\x4A\x4D\x10\x00\x80\x00\x65\x00', b'\xF6\x86\x07\x02\x38\xCE\x31\xFF\x86\xE0\x3F']
+# < ------------------------------------------------------------------
 
 def bytes2bitmap(data: bytes) -> str:
     return '{:0{width}b}'.format(int.from_bytes(data, 'little'), width = len(data) * 8)
@@ -590,6 +595,13 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
     def get_file_version(self) -> int:
         return BitMaster(32,64,'file version').get_value(self.data[0:8])
 
+    @property
+    def has_horadric_cube(self) -> bool:
+        if not self.data:
+            return False
+        index_start = self.data.find(data_horadric_cube[0])
+        return index_start >= 0
+
     def compute_checksum(self) -> bytes:
         """:returns a newly computed checksum for self.data."""
         csum = 0
@@ -935,7 +947,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     def __str__(self) -> str:
         core = 'hardcore' if self.is_hardcore() else 'softcore'
-        msg = f"{self.get_name(True)}, a level {self.data[43]} {core} {self.get_class(True)}. "\
+        cube_posessing = 'owning' if self.has_horadric_cube else 'lacking'
+        msg = f"{self.get_name(True)}, a Horadric Cube {cube_posessing}, level {self.data[43]} {core} {self.get_class(True)}. "\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}, "\
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \

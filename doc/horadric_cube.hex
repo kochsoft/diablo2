@@ -1,0 +1,52 @@
+This code is the equipment equaling a horadric cube.
+
+Cube in the top left of main inventory (Byte eight is 0,22 encodes main):
+4A 4D 10 00 80 00 65 00 00 22 F6 86 07 02 38 CE 31 FF 86 E0 3F
+
+Cube in column 1 on top of main inventory ():
+4A 4D 10 00 80 00 65 00 02 22 F6 86 07 02 38 CE 31 FF 86 E0 3F
+
+Cube in row 1 on left of main inventory ():
+4A 4D 10 00 80 00 65 00 20 22 F6 86 07 02 38 CE 31 FF 86 E0 3F
+
+Cube in the top right of main inventory (10,22):
+4A 4D 10 00 80 00 65 00 10 22 F6 86 07 02 38 CE 31 FF 86 E0 3F
+
+Cube in the lower left of main inventory (40,22):
+4A 4D 10 00 80 00 65 00 40 22 F6 86 07 02 38 CE 31 FF 86 E0 3F
+
+Cube in the lower right of main inventory (50,22):
+4A 4D 10 00 80 00 65 00 50 22 F6 86 07 02 38 CE 31 FF 86 E0 3F
+
+Cube in the top left of the stash (00,2A)
+4A 4D 10 00 80 00 65 00 00 2A F6 86 07 02 38 CE 31 FF 86 E0 3F
+
+Cube in the top right of stash (08,2A):
+4A 4D 10 00 80 00 65 00 08 2A F6 86 07 02 38 CE 31 FF 86 E0 3F
+
+Cube in the bottom left of the stash (C0,2A):
+4A 4D 10 00 80 00 65 00 C0 2A F6 86 07 02 38 CE 31 FF 86 E0 3F
+
+Cube in the lower right of stash (C8,2A):
+4A 4D 10 00 80 00 65 00 C8 2A F6 86 07 02 38 CE 31 FF 86 E0 3F
+
+Cube on the mouse pointer (C8,20):
+4A 4D 10 00 80 00 65 10 00 20 F6 86 07 02 38 CE 31 FF 86 E0 3F
+
+From Alissa. A cube with content in the lower right stash corner.
+4a 4d 10 00 80 00 65 00 52 42 27 b6 06 02 ce 1a 62 06 86 00 44 f8 0f 4a 4d 10 00 a0 00 65 00 24 7a 06 67 07 02 4a 4d 10 00 a0 00 65 00 02 7a 06 27 06 02 4a 4d 10 00 a0 00 65 00 00 7a 06 77 06 02 4a 4d 10 00 80 00 65 00 12 92 26 b6 06 02 68 54 ae 8e 94 10 4c f8 0f 4a 4d 10 00 a0 00 65 00 0a 3a b7 a6'
+
+As python binary:
+
+bcube = b'\x4A\x4D\x10\x00\x80\x00\x65\x00\x50\x22\xF6\x86\x07\x02\x38\xCE\x31\xFF\x86\xE0\x3F'
+
+Disregarding bytes 8 and 9 there is a prefix and postfix:
+
+bcube_prefix = b'\x4A\x4D\x10\x00\x80\x00\x65\x00'
+bcube_postfix = b'\xF6\x86\x07\x02\x38\xCE\x31\xFF\x86\xE0\x3F'
+index_prefix = data.find(bcube_prefix,0)
+index_postfix = index_prefix + len(bcube_prefix) + 2
+return data[index_postfix:index_postfix+len(bcube_postfix)] == bcube_postfix
+
+
+
