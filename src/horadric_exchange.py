@@ -1,20 +1,33 @@
 #!/usr/bin/python3
 """tkinter GUI part for the Horadric Exchange project.
 
+Literature:
+===========
+[1] The grid.
+  https://www.pythontutorial.net/tkinter/tkinter-grid/
+  https://tkdocs.com/tutorial/grid.html
+[2] Vertical Scrollbar to text area.
+  https://stackoverflow.com/questions/13832720/how-to-attach-a-scrollbar-to-a-text-widget
+
 Markus-Hermann Koch, mhk@markuskoch.eu, 2025/02/06"""
 
 import os
 import sys
 import logging
+from pathlib import Path
+
 logging.basicConfig(level=logging.INFO, format= '[%(asctime)s] {%(lineno)d} %(levelname)s - %(message)s',datefmt='%H:%M:%S')
 _log = logging.getLogger()
+
+pfname_script = Path(__file__)
+pfname_icon =  Path(pfname_script.parent, "logo_horadric_exchange.png")
 
 try:
     import tkinter as tk
     from tkinter import ttk
+    from idlelib.tooltip import Hovertip
 except ModuleNotFoundError:
-    pfname_script = os.path.basename(__file__)
-    _log.warning(f"""{pfname_script}: Failure to import tkinter, which is necessary for opening this GUI.
+    _log.warning(f"""{pfname_script.name}: Failure to import tkinter, which is necessary for opening this GUI.
     
 You now have three options:
 
@@ -37,32 +50,83 @@ from horazons_folly import *
 class Horadric_GUI():
     def __init__(self, args: Optional[List[str]] = None):
         self.horadric = Horadric()
+
+        self.width_column = 40
+        self.padding_columns = 10
+
         self.root = None  # type: Optional[tk.Tk]
+        self.icon_horadric_exchange = None  # type: Optional[tk.PhotoImage]
         self.tabControl =  None  # type: Optional[ttk.Notebook]
         self.tab1 = None  # type: Optional[ttk.Frame]
         self.tab2 = None  # type: Optional[ttk.Frame]
+
+        self.entry_pfname1 = None  # type: Optional[tk.Entry]
+        self.entry_pfname2 = None  # type: Optional[tk.Entry]
+        self.ta_desc1 = None  # type: Optional[tk.Text]
+        self.ta_desc2 = None  # type: Optional[tk.Text]
+        self.button_commit = None  # type: Optional[tk.Button]
+        self.tooltip_commit = None  # type: Optional[Hovertip]
+
         self.build_gui()
         if self.root:
             self.root.mainloop()
         else:
             _log.warning("No GUI available.")
 
+    def load_1(self):
+        pass
+
+    def load_2(self):
+        pass
+
     def build_gui(self):
+        # > Main Window. ---------------------------------------------
         self.root = tk.Tk()
-        self.root.title("Test Window")
+        self.root.title("Horadric Exchange Tool")
+        self.root.geometry('1024x760')
+        self.icon_horadric_exchange = tk.PhotoImage(file=str(pfname_icon))
+        self.root.iconphoto(True, self.icon_horadric_exchange)
+        # < Main Window. ---------------------------------------------
+        # > Tabs. ----------------------------------------------------
         self.tabControl = ttk.Notebook(self.root)
         self.tab1 = ttk.Frame(self.tabControl)
         self.tab2 = ttk.Frame(self.tabControl)
+
+        # Columns 1 and 4 (textboxes) receive weight for stretching, if the main tab resizes.
+        self.tab1.columnconfigure(1, weight=1)
+        self.tab1.columnconfigure(4, weight=1)
+        self.tab1.rowconfigure(1, weight=1)
+
         self.tabControl.add(self.tab1, text="Horadric Exchange")
         self.tabControl.add(self.tab2, text="Horazon's Folly")
-        self.tabControl.pack(expand=1, fill="both")
-        ttk.Label(self.tab1, text="Wanna have Goodies!").grid(column=0, row=0, padx=30, pady=30)
-        ttk.Label(self.tab2, text="Wanna have more Goodies!").grid(column=0, row=0, padx=30, pady=30)
+        self.tabControl.pack(expand=1, fill=tk.BOTH)
+        # < ----------------------------------------------------------
+        # > Tab 1, Horadric Exchange. --------------------------------
+        tk.Label(self.tab1, text='1.:', relief=tk.RIDGE, width=10).grid(row=0, column=0)
+        tk.Label(self.tab1, text='2.:', relief=tk.RIDGE, width=10).grid(row=0, column=3)
 
+        self.entry_pfname1 = tk.Entry(self.tab1, width=self.width_column - 7, state='disabled')
+        self.entry_pfname1.grid(row=0, column=1, sticky='ew')
+        self.entry_pfname2 = tk.Entry(self.tab1, width=self.width_column - 7, state='disabled')
+        self.entry_pfname2.grid(row=0, column=4, sticky='ew')
+
+        tk.Button(self.tab1, text='Load .d2s', command=self.load_1, width=10, height=1, bg='#009999').grid(row=0, column=2) #, padx=(0,20)
+        tk.Button(self.tab1, text='Load. d2s', command=self.load_2, width=10, height=1, bg='#009999').grid(row=0, column=5)
+
+        self.ta_desc1 = tk.Text(self.tab1, width=self.width_column, state='disabled')
+        self.ta_desc1.grid(row=1, column=0, columnspan=3, sticky='ewns')
+        self.ta_desc2 = tk.Text(self.tab1, width=self.width_column, state='disabled')
+        self.ta_desc2.grid(row=1, column=3, columnspan=3, sticky='ewns')
+
+        #scrollbar1 = tk.Scrollbar(self.ta_desc1)
+        #self.txt['yscrollcommand'] = scrollbar1.set
+
+        self.button_commit = tk.Button(self.tab1, state='disabled', image=self.icon_horadric_exchange)
+        self.button_commit.grid(row=2,column=0, columnspan=10, sticky='ew')
+        self.tooltip_commit = Hovertip(self.button_commit, 'Load two character files and swap their Horadric Cube contents.')
+        #self.tooltip_commit.text= "Huhu"
+        # < ----------------------------------------------------------
         # TODO! Hier war ich.
-        # root.title('Youtube to mp3')
-        # pfname_icon = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'resources/get_yt_logo.png')
-        # root.iconphoto(True, tk.PhotoImage(file=pfname_icon))
 
 
 
