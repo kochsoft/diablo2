@@ -92,6 +92,46 @@ class E_Characters(Enum):
     def is_female(self) -> bool:
         return (self == E_Characters.EC_AMAZON) or (self == E_Characters.EC_SORCERESS) or (self == E_Characters.EC_ASSASSIN)
 
+    def starting_attributes(self, attr: E_Attributes):
+        pass
+
+    def effect_of_attribute_points(self, attr: E_Attributes, n: int = 1) -> OrderedDict[E_Attributes, int]:
+        """:returns the delta on HP, Stamina and Mana of a given attribute point spent into that attribute."""
+        res = odict()  # type: OrderedDict[E_Attributes, int]
+        res[E_Attributes.AT_MAX_HP] = 0
+        res[E_Attributes.AT_MAX_MANA] = 0
+        res[E_Attributes.AT_MAX_STAMINA] = 0
+
+        if self in [E_Characters.EC_AMAZON, E_Characters.EC_PALADIN]:
+            if attr == E_Attributes.AT_VITALITY:
+                res[E_Attributes.AT_MAX_HP] = 3 * n
+                res[E_Attributes.AT_MAX_STAMINA] = 1 * n
+            elif attr == E_Attributes.AT_ENERGY:
+                res[E_Attributes.AT_MAX_MANA] = round(1.5 * n)
+
+        if self in [E_Characters.EC_SORCERESS, E_Characters.EC_NECROMANCER, E_Characters.EC_DRUID]:
+            if attr == E_Attributes.AT_VITALITY:
+                res[E_Attributes.AT_MAX_HP] = 2 * n
+                res[E_Attributes.AT_MAX_STAMINA] = 1 * n
+            elif attr == E_Attributes.AT_ENERGY:
+                res[E_Attributes.AT_MAX_MANA] = 2 * n
+
+        if self == E_Characters.EC_BARBARIAN:
+            if attr == E_Attributes.AT_VITALITY:
+                res[E_Attributes.AT_MAX_HP] = 4 * n
+                res[E_Attributes.AT_MAX_STAMINA] = 1 * n
+            if attr == E_Attributes.AT_ENERGY:
+                res[E_Attributes.AT_MAX_MANA] = 1 * n
+
+        if self == E_Characters.EC_ASSASSIN:
+            if attr == E_Attributes.AT_VITALITY:
+                res[E_Attributes.AT_MAX_HP] = 3 * n
+                res[E_Attributes.AT_MAX_STAMINA] = round(1.25 * n)
+            if attr == E_Attributes.AT_ENERGY:
+                res[E_Attributes.AT_MAX_MANA] = round(1.75 * n)
+
+        return res
+
     def __str__(self) -> str:
         if self == E_Characters.EC_AMAZON:
             return "Amazon"
@@ -768,6 +808,10 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
           values are recorded. However, the remaining 8 bit are not uniform 0. If they do have a function, this
           function is unknown to me. As it stands, this parameter allows to preserve the entire data structure,
           for the purpose of writing, e.g., humanity backup files.
+          THEORY: The least significant 2 bits of the appendix byte count the number of quarter points of
+            the respective attribute, introducing rudimentary floating point support.
+            E.g., the assassin receives 1.75 points of max mana per energy attribute point spent.
+              And 1.25 max stamina per vitality point.
         :returns a dict of all non-zero attribute values."""
         index_start = self.data.find(b'gf', 765) + 2
         if index_start < 0:
@@ -832,7 +876,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     def _update_godmode_backup(self) -> int:
         skills = self.get_skills()
-        if sum(skills) >= sum_god_skills:
+        if self.is_demi_god:
             _log.warning("God mode seems to be active already. Cannot backup the gods!")
             return 1
         attr = self.get_attributes(preserve_8bit_HMS_appendix=True)
@@ -1027,6 +1071,9 @@ class Horadric:
         if parsed.boost_skills is not None:
             self.boost(E_Attributes.AT_UNUSED_SKILLS, parsed.boost_skills)
 
+        if parsed.reset_attributes:
+            self.reset_attributes()
+
         if parsed.reset_skills:
             self.reset_skills()
 
@@ -1104,6 +1151,12 @@ class Horadric:
             data.set_attributes(attributes)
             data.update_all()
             data.save2disk()
+
+    def reset_attributes(self):
+        for data in self.data_all:
+            attr_old = data.get_attributes(preserve_8bit_HMS_appendix=False)
+            delta_HSM = odict()  # type: OrderedDict[E_Attributes, int]
+            raise NotImplementedError("Build sum and determine attribute effects.")
 
     def reset_skills(self):
         for data in self.data_all:
@@ -1218,6 +1271,7 @@ $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
         parser.add_argument('--softcore', action='store_true', help="Flag. Set target characters to soft core mode.")
         parser.add_argument('--boost_attributes', type=int, help='Set this number to the given value.')
         parser.add_argument('--boost_skills', type=int, help='Set this number to the given value.')
+        parser.add_argument('--reset_attributes', action="store_true", help="Flag. Returns all spent attribute points for redistribution.")
         parser.add_argument('--reset_skills', action='store_true', help="Flag. Unlearns all skills, returning them as free skill points.")
         parser.add_argument('--enable_godmode', action='store_true', help="Enables Demigod-mode (so far without high Mana/HP/Stamina). Creates a .humanity stat file alongside the .d2s for later return to normal mode.")
         parser.add_argument('--disable_godmode', action='store_true', help="Returns to human form (retaining skill points earned in god mode). After all, who wants the stress of being super all the time?")
