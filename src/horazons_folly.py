@@ -60,14 +60,7 @@ class E_Attributes(Enum):
     AT_EXPERIENCE = 13
     AT_GOLD = 14
     AT_STASHED_GOLD = 15
-    # The following three types have no dedicated IDs within the .d2s. They share them with their respective
-    AT_QUARTER_CURRENT_HP = 16
-    AT_QUARTER_MAX_HP = 17
-    AT_QUARTER_CURRENT_MANA =18
-    AT_QUARTER_MAX_MANA =19
-    AT_QUARTER_CURRENT_STAMINA = 20
-    AT_QUARTER_MAX_STAMINA = 21
-    AT_UNSPECIFIED = 22
+    AT_UNSPECIFIED = 16
 
     def get_attr_sz_bits(self) -> int:
         val = self.value
@@ -83,30 +76,11 @@ class E_Attributes(Enum):
             return 32
         elif val <= 15:
             return 25
-        elif val <= 21:
-            return 8
-        elif val == 22:
-            _log.warning(f"AT_UNSPECIFIED encountered. Unable to determine bit size for that special key.")
+        elif val == 16:
+            return 0
         else:
             _log.warning(f"Unknown attribute ID {val} encountered! Returning -1.")
             return -1
-
-    def get_quarter_partner(self) -> E_Attributes:
-        """For the HMS attributes returns the attribute key of the corresponding quarter key. Else AT_UNSPECIFIED."""
-        if self == E_Attributes.AT_CURRENT_HP:
-            return E_Attributes.AT_QUARTER_CURRENT_HP
-        elif self == E_Attributes.AT_MAX_HP:
-            return E_Attributes.AT_QUARTER_MAX_HP
-        elif self == E_Attributes.AT_CURRENT_MANA:
-            return E_Attributes.AT_QUARTER_CURRENT_MANA
-        elif self == E_Attributes.AT_MAX_MANA:
-            return E_Attributes.AT_QUARTER_MAX_MANA
-        elif self == E_Attributes.AT_CURRENT_STAMINA:
-            return E_Attributes.AT_QUARTER_CURRENT_STAMINA
-        elif self == E_Attributes.AT_MAX_STAMINA:
-            return E_Attributes.AT_QUARTER_MAX_STAMINA
-        else:
-            return E_Attributes.AT_UNSPECIFIED
 
     def has_quarter_prefix_byte(self) -> bool:
         """:returns True if and only if the attribute has quarters, a rudimentary floating point support for
@@ -311,12 +285,12 @@ d_god_attr = odict([
     (E_Attributes.AT_VITALITY, 400),
     (E_Attributes.AT_UNUSED_STATS, 0),
     (E_Attributes.AT_UNUSED_SKILLS, 5),
-    (E_Attributes.AT_CURRENT_HP, 1200),
-    (E_Attributes.AT_MAX_HP, 1200),
-    (E_Attributes.AT_CURRENT_MANA, 1200),
-    (E_Attributes.AT_MAX_MANA, 1200),
-    (E_Attributes.AT_CURRENT_STAMINA, 400),
-    (E_Attributes.AT_MAX_STAMINA, 400)
+    (E_Attributes.AT_CURRENT_HP, 307200), # << encoded 1200 (see Data.HMS_encode(..) below)
+    (E_Attributes.AT_MAX_HP, 307200), # << encoded 1200
+    (E_Attributes.AT_CURRENT_MANA, 307200), # << encoded 1200
+    (E_Attributes.AT_MAX_MANA, 307200), # << encoded 1200
+    (E_Attributes.AT_CURRENT_STAMINA, 102400), # << encoded 400
+    (E_Attributes.AT_MAX_STAMINA, 102400) # << encoded 400
 ])  # type: OrderedDict[E_Attributes, int]
 # [Note: For restoring purposes skills are handled with skills. They are not counted in the god_attr sum.]
 sum_god_attr = d_god_attr[E_Attributes.AT_STRENGTH] +\
@@ -816,6 +790,28 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         """The bit of index 3 in status byte 36 decides if a character is dead."""
         return self.data[36] & 8 > 0
 
+    @staticmethod
+    def parse_HMS(val: int) -> Tuple[int, int]:
+        """The 21 bit values for Health, Mana and Stamina use a rudimentary floating point mechanic.
+        The two leading bits encode the number of quarters to be added.
+        :returns a human-readable 2-tuple. The first entry holds the proper value, the second is for quarter points."""
+        # Makes a binary of 21 bit out of the value.
+        code = '{:0{width}b}'.format(val, width=21)
+        main = int(code[0:13], 2)
+        quarters = int(code[13:15], 2)
+        return main, quarters
+
+    @staticmethod
+    def HMS_encode(main: int, quarters: int = 0) -> int:
+        """Encodes a pair of values main, and number of quarters into a HMS 21 bit number.
+        This is the inverse function of parse_HMS(..)"""
+        return (main << 8) + (quarters << 6)
+
+    @staticmethod
+    def HMS2str(val: int) -> str:
+        main, quarters = Data.parse_HMS(val)
+        return f'{main} {quarters}/4' if quarters > 0 else f'{main}'
+
     def set_attributes(self, vals: OrderedDict[E_Attributes, int]):
         """:param vals: Dictionary with values to be set to the character sheet."""
         sz = 0
@@ -839,13 +835,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 continue
             bitmap = set_range_to_bitmap(bitmap, index, index + 9, key.value)
             index = index + 9
-            key_quarter = E_Attributes.get_quarter_partner(key)
-            if key_quarter == E_Attributes.AT_UNSPECIFIED:
-                bitmap = set_range_to_bitmap(bitmap, index, index + key.get_attr_sz_bits(), vals[key], do_invert=False)
-            else:
-                val_quarter = vals[key_quarter] if key_quarter in vals else 0
-                bitmap = set_range_to_bitmap(bitmap, index, index + key_quarter.get_attr_sz_bits(), val_quarter, do_invert=False)
-                bitmap = set_range_to_bitmap(bitmap, index + key_quarter.get_attr_sz_bits(), index + key.get_attr_sz_bits(), vals[key], do_invert=False)
+            bitmap = set_range_to_bitmap(bitmap, index, index + key.get_attr_sz_bits(), vals[key], do_invert=False)
             index = index + key.get_attr_sz_bits()
         bitmap = set_range_to_bitmap(bitmap, index, index + 9, 0x1ff)
         block = bitmap2bytes(bitmap)
@@ -867,15 +857,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             key = get_bitrange_value_from_bytes(self.data, index_current, index_current + 9, do_invert=False)
             if 0 <= key < 16:
                 attr = E_Attributes(key)
-                attr_quarter = attr.get_quarter_partner()
-                if attr_quarter == E_Attributes.AT_UNSPECIFIED:
-                    res[attr] = get_bitrange_value_from_bytes(self.data,
-                                    index_current + 9, index_current + 9 + attr.get_attr_sz_bits(), do_invert=False)
-                else:
-                    res[attr_quarter] = get_bitrange_value_from_bytes(self.data,
-                                    index_current + 9, index_current + 9 + attr_quarter.get_attr_sz_bits(), do_invert=False)
-                    res[attr] = get_bitrange_value_from_bytes(self.data,
-                                    index_current + 9 + attr_quarter.get_attr_sz_bits(), index_current + 9 + attr.get_attr_sz_bits(), do_invert=False)
+                res[attr] = get_bitrange_value_from_bytes(self.data,
+                                index_current + 9, index_current + 9 + attr.get_attr_sz_bits(), do_invert=False)
                 index_current = index_current + 9 + attr.get_attr_sz_bits()
             else:
                 if key != 511:
@@ -1056,12 +1039,16 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         core = 'hardcore' if self.is_hardcore() else 'softcore'
         cube_posessing = 'owning' if self.has_horadric_cube else 'lacking'
         god_status = 'demi-god' if self.is_demi_god else 'hero'
+        attr = self.get_attributes()
+        s_attr = ''
+        for key in self.get_attributes():
+            s_attr += f"{key.name}: {self.HMS2str(attr[key])},\n" if key.get_attr_sz_bits() == 21 else f"{key.name}: {attr[key]},\n"
         msg = f"{self.get_name(True)}, a Horadric Cube {cube_posessing}, level {self.data[43]} {core} {self.get_class(True)} {god_status}. "\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}, "\
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
               f"direct player item count: {self.get_item_count_player(True)}, is dead: {self.is_dead()}, direct mercenary item count: {self.get_item_count_mercenary(True)}, \n" \
-              f"attributes: {self.get_attributes()}, \n" \
+              f"attributes: {s_attr}, \n" \
               f"learned skill-set : {self.skills2str()}"
         item_analysis = Item(self.data)
         for item in item_analysis.get_block_items():
