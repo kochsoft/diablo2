@@ -1,5 +1,16 @@
 <h1>Horadric Exchange -- a v1.10-v1.14d Diablo II Save Game Editor</h1>
 
+<h2>What this script is not</h2>
+
+It is, at this point in time, not for modern versions of Diablo II. However, it
+should be a matter of rather straight-forward modifications of target bit sites
+to generalize it to other save-game version.
+
+Also, if you are looking for a fast way to finally create that 'Jah Ith Ber' rune
+set or the elite three-socketed armor for it, this script may be misused to copy
+an existing armor. However, it will not create any of these components ex nihili.
+Nor is it meant to do so.
+
 <h2>Motivation</h2>
 
 <p>
@@ -24,7 +35,7 @@ However, she is in a different save game.
 As it stands, the Barbarian takes the priceless, shiny thing, walks up to
 that Gheed character, and ... you get the picture.
 </p><p>
-So this tool's original, and still best purpose is to implement above's
+So this tool's original, and best purpose is to implement above's
 'simple task'. So the Barbarian can hand the sacred globe to an overjoyed
 expert on using sacred globes, and, maybe, even receive something nice in
 return.
@@ -36,18 +47,18 @@ return.
 However, the task was not simple. It took me more than a week's evenings
 and almost all the knowledge that is to be had from this site:
 <a href="https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md">D2CE</a>
-to finally reach this goal. The results of this chore are two python 3 scripts. 
+to finally reach this goal. The results of this chore are two Python 3 scripts. 
 </p>
 
 <h3>horazons_folly.py</h3>
 
 <p>
-The core command line script, that is sufficient to do everything this project
+The command line script, that is sufficient to do everything this project
 does to Diablo II v.1.10-v1.14d save game files. It comes
 </p>
 
 <ul>
-<li>with no additional dependencies. Really. Vanilly python 3 should work just fine.</li>
+<li>with <b>no additional dependencies</b>. Really. Vanilly python 3 should work just fine.</li>
 <li>a generous --help page discribing all its functions.</li>
 </ul>
 
@@ -55,15 +66,13 @@ does to Diablo II v.1.10-v1.14d save game files. It comes
 
 <p>
 This script provides a user-friendly graphical interface to <b>horazons_folly.py</b>.
-However, it also brings in dependencies:
+However, it also brings in a dependecy:
 </p>
-
-<ul>
-<li><b>horazons_folly.py</b> obviously.</li>
-<li>The python package <b>tkinter</b> needs to be installed and accessible
+<p>
+The python package <b>tkinter</b> needs to be installed and accessible
 for the python interpreter. Under Windows this is an option while you install
-python. Under Linux this varies depending on your distribution.</li>
-</ul>
+python. Under Linux this varies depending on your distribution.
+</p>
 
 <h2>Some Erratas and other Comments</h2>
 <p>

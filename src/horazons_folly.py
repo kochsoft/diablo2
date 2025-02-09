@@ -92,8 +92,25 @@ class E_Characters(Enum):
     def is_female(self) -> bool:
         return (self == E_Characters.EC_AMAZON) or (self == E_Characters.EC_SORCERESS) or (self == E_Characters.EC_ASSASSIN)
 
-    def starting_attributes(self, attr: E_Attributes):
-        pass
+    def starting_attributes(self, attr: E_Attributes) -> OrderedDict[E_Attributes, int]:
+        """:returns the core attribute starting values for this character.
+        Note, that HP, Mana and Stamina are not listed. This is on purpose. These values can be computed."""
+        if self == E_Characters.EC_AMAZON:
+            return odict([(E_Attributes.AT_STRENGTH, 20), (E_Attributes.AT_ENERGY, 15), (E_Attributes.AT_DEXTERITY, 25), (E_Attributes.AT_VITALITY, 20)])
+        elif self == E_Characters.EC_SORCERESS:
+            return odict([(E_Attributes.AT_STRENGTH, 10), (E_Attributes.AT_ENERGY, 35), (E_Attributes.AT_DEXTERITY, 25), (E_Attributes.AT_VITALITY, 10)])
+        elif self == E_Characters.EC_NECROMANCER:
+            return odict([(E_Attributes.AT_STRENGTH, 15), (E_Attributes.AT_ENERGY, 25), (E_Attributes.AT_DEXTERITY, 25), (E_Attributes.AT_VITALITY, 15)])
+        elif self == E_Characters.EC_PALADIN:
+            return odict([(E_Attributes.AT_STRENGTH, 25), (E_Attributes.AT_ENERGY, 15), (E_Attributes.AT_DEXTERITY, 20), (E_Attributes.AT_VITALITY, 25)])
+        elif self == E_Characters.EC_BARBARIAN:
+            return odict([(E_Attributes.AT_STRENGTH, 30), (E_Attributes.AT_ENERGY, 10), (E_Attributes.AT_DEXTERITY, 20), (E_Attributes.AT_VITALITY, 25)])
+        elif self == E_Characters.EC_DRUID:
+            return odict([(E_Attributes.AT_STRENGTH, 15), (E_Attributes.AT_ENERGY, 20), (E_Attributes.AT_DEXTERITY, 20), (E_Attributes.AT_VITALITY, 25)])
+        elif self == E_Characters.EC_ASSASSIN:
+            return odict([(E_Attributes.AT_STRENGTH, 20), (E_Attributes.AT_ENERGY, 25), (E_Attributes.AT_DEXTERITY, 20), (E_Attributes.AT_VITALITY, 20)])
+        else:
+            raise ValueError(f"Unsupported character code {self.value} encountered. Unable to determine starting attributes.")
 
     def effect_of_attribute_points(self, attr: E_Attributes, n: int = 1) -> OrderedDict[E_Attributes, int]:
         """:returns the delta on HP, Stamina and Mana of a given attribute point spent into that attribute."""
