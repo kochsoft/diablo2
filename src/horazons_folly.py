@@ -83,6 +83,10 @@ class E_Attributes(Enum):
             return 32
         elif val <= 15:
             return 25
+        elif val <= 21:
+            return 8
+        elif val == 22:
+            _log.warning(f"AT_UNSPECIFIED encountered. Unable to determine bit size for that special key.")
         else:
             _log.warning(f"Unknown attribute ID {val} encountered! Returning -1.")
             return -1
@@ -840,8 +844,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 bitmap = set_range_to_bitmap(bitmap, index, index + key.get_attr_sz_bits(), vals[key], do_invert=False)
             else:
                 val_quarter = vals[key_quarter] if key_quarter in vals else 0
-                bitmap = set_range_to_bitmap(bitmap, index, index + 8, val_quarter, do_invert=False)
-                bitmap = set_range_to_bitmap(bitmap, index + 8, index + key.get_attr_sz_bits(), vals[key], do_invert=False)
+                bitmap = set_range_to_bitmap(bitmap, index, index + key_quarter.get_attr_sz_bits(), val_quarter, do_invert=False)
+                bitmap = set_range_to_bitmap(bitmap, index + key_quarter.get_attr_sz_bits(), index + key.get_attr_sz_bits(), vals[key], do_invert=False)
             index = index + key.get_attr_sz_bits()
         bitmap = set_range_to_bitmap(bitmap, index, index + 9, 0x1ff)
         block = bitmap2bytes(bitmap)
@@ -869,9 +873,9 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                                     index_current + 9, index_current + 9 + attr.get_attr_sz_bits(), do_invert=False)
                 else:
                     res[attr_quarter] = get_bitrange_value_from_bytes(self.data,
-                                    index_current + 9, index_current + 9 + 8, do_invert=False)
+                                    index_current + 9, index_current + 9 + attr_quarter.get_attr_sz_bits(), do_invert=False)
                     res[attr] = get_bitrange_value_from_bytes(self.data,
-                                    index_current + 9 + 8, index_current + 9 + 8 + attr.get_attr_sz_bits(), do_invert=False)
+                                    index_current + 9 + attr_quarter.get_attr_sz_bits(), index_current + 9 + attr.get_attr_sz_bits(), do_invert=False)
                 index_current = index_current + 9 + attr.get_attr_sz_bits()
             else:
                 if key != 511:
