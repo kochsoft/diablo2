@@ -11,9 +11,9 @@ Literature:
 [3] https://daancoppens.wordpress.com/2017/01/25/understanding-the-diablo-2-save-file-format-part-1/
   This is all about sectioning the entire save game file. Pretty nifty!
 [4] https://www.d2mods.info/forum/viewtopic.php?t=9011&start=100
-  "It appears that all the "sections" (quests "Woo!", waypoints "WS", npc introductions "w4", stats "gf", skills "if",
-  items "JM" (with corpse count etc), and mercenary "jf"->"kf" (with "JM" item list))
-   are ..."
+  It appears that all the "sections" (quests "Woo!", waypoints "WS", npc introductions "w4", stats "gf", skills "if",
+  items "JM" (with corpse count etc.), and mercenary "jf"->"kf" (with "JM" item list))
+   are ...
 [5] Python >=3.6 seems to guarantee key order in dicts.
   https://discuss.codecademy.com/t/does-the-dictionary-keys-function-return-the-keys-in-any-specific-order/354717
 
@@ -83,7 +83,8 @@ class E_Attributes(Enum):
             return -1
 
     def has_quarter_prefix_byte(self) -> bool:
-        """:returns True if and only if the attribute has quarters, a rudimentary floating point support for
+        """
+        :returns True if and only if the attribute has quarters, a rudimentary floating point support for
         0/4,..,3/4. This means HP, MANA, and STAMINA attributes. They are prefixed a byte of the structure
         ab000000, where ab counts the number of quarters. 00=0/4, 01=1/4, 10=2/4, 11=3/4."""
         return self.value == 21
@@ -580,7 +581,7 @@ class Item:
 
     def get_block_item_index(self) -> Dict[E_ItemBlock, List[Tuple[int, int]]]:
         """:returns for each block a list of index-2-tuples for self.data.
-        Each 3 tuple. Entries 0 and 1 index one item, thus that data[indexs_start:index_end] encompasses the entire
+        Each 3 tuple. Entries 0 and 1 index one item, thus that data[index_start:index_end] encompasses the entire
         item. The third entry is a copy of that binary blob."""
         block_index = self.get_block_index()
         res = dict()  # type: Dict[E_ItemBlock, List[Tuple[int, int]]]
@@ -767,7 +768,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     def set_name(self, name: str):
         """Sets the given name of maximum length 16.
-        DISCLAIMER: THIS FUNCTION DOES NOT SEEM TO WORK. PRODUCES INVALID SAVERGAMES."""
+        DISCLAIMER: THIS FUNCTION DOES NOT SEEM TO WORK. PRODUCES INVALID SAVE-GAMES."""
         regex = re.compile("^[a-zA-Z_-]{2,}$")
         acceptable = regex.search(name) is not None
         if acceptable:
@@ -810,7 +811,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     @staticmethod
     def HMS_encode(main: int, quarters: int = 0) -> int:
-        """Encodes a pair of values main, and number of quarters into a HMS 21 bit number.
+        """Encodes a pair of values main, and number of quarters into an HMS 21 bit number.
         This is the inverse function of parse_HMS(..)"""
         return (main << 8) + (quarters << 6)
 
@@ -886,7 +887,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     def set_skills(self, skills: List[int]):
         if len(skills) < 30:
-            skills.extend([0 for j in range(30-len(skills))])
+            skills.extend( [0] * (30-len(skills)) )
             _log.warning("Skill list is too short (30 entries are needed). Padding with zeros.")
         block = bytes(skills)
         index_start = self.data.find(b'if', 765) + 2
@@ -1022,7 +1023,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     @staticmethod
     def get_time(frmt: str = "%y%m%d_%H%M%S", unix_time_s: Optional[int] = None) -> str:
-        """":return Time string aiming to become part of a backup pfname."""
+        """:return Time string aiming to become part of a backup pfname."""
         unix_time_s = int(time.time()) if unix_time_s is None else int(unix_time_s)
         return time.strftime(frmt, time.localtime(unix_time_s))
 
@@ -1235,7 +1236,7 @@ class Horadric:
         for data in self.data_all:
             n_skills = sum(data.get_skills())
             print(f"Attempting to reset {data.get_name(True)}'s {n_skills} learned skills.")
-            skillset = [0 for j in range(30)]
+            skillset = [0] * 30
             #skillset = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,19,18,17,16,15,14,13,12,11]
             data.set_skills(skillset)
             # That boost command also does the saving!
@@ -1334,10 +1335,10 @@ both files thus, that the Horadric Cube contents of both players switch places."
 $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
         parser = argparse.ArgumentParser(prog='horazons_folly.py', description=desc, epilog=epilog, formatter_class=RawTextHelpFormatter)
         parser.add_argument('--omit_backup', action='store_true',
-            help="Per default, target files will be backupped to .backup files. For safety. This option will disable that safety.")
+            help="Per default, target files will be back-upped to .backup files. For safety. This option will disable that safety.")
         parser.add_argument('--pfname_backup', type=str, help='State a pfname to the backup file. Per default a timestamped name will be used. If there are multiple files to backup, the given name will be prefixed with each character\'s name.')
         parser.add_argument('--exchange_horadric', action='store_true', help="Flag. Requires that there are precisely 2 character pfnames given. This will exchange their Horadric Cube contents.")
-        parser.add_argument('--drop_horadric', action='store_true', help="Flag. If given, the Horardric Cube contents of the targetted character will be removed.")
+        parser.add_argument('--drop_horadric', action='store_true', help="Flag. If given, the Horadric Cube contents of the targeted character will be removed.")
         parser.add_argument('--save_horadric', type=str, help="Write the items found in the Horadric Cube to disk with the given pfname. Only one character allowed.")
         parser.add_argument('--load_horadric', type=str, help="Drop all contents from the Horadric Cube and replace them with the horadric file content, that had been written using --save_horadric earlier.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")
