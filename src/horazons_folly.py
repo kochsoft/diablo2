@@ -34,7 +34,7 @@ import argparse
 from collections import OrderedDict as odict
 from argparse import RawTextHelpFormatter
 from pathlib import Path
-from math import ceil
+from math import ceil, floor
 from typing import List, Dict, Optional, Union, Tuple, OrderedDict
 from enum import Enum
 
@@ -102,7 +102,7 @@ class E_Characters(Enum):
     def is_female(self) -> bool:
         return (self == E_Characters.EC_AMAZON) or (self == E_Characters.EC_SORCERESS) or (self == E_Characters.EC_ASSASSIN)
 
-    def starting_attributes(self, attr: E_Attributes) -> OrderedDict[E_Attributes, int]:
+    def starting_attributes(self) -> OrderedDict[E_Attributes, int]:
         """:returns the core attribute starting values for this character.
         Note, that HP, Mana and Stamina are not listed. This is on purpose. These values can be computed."""
         if self == E_Characters.EC_AMAZON:
@@ -122,40 +122,47 @@ class E_Characters(Enum):
         else:
             raise ValueError(f"Unsupported character code {self.value} encountered. Unable to determine starting attributes.")
 
-    def effect_of_attribute_points(self, attr: E_Attributes, n: int = 1) -> OrderedDict[E_Attributes, int]:
+    @staticmethod
+    def _float2tuple(val: float) -> Tuple[int, int]:
+        main = round(floor(val))
+        quarters = round((val - main) * 4.0)
+        return main, quarters
+
+
+    def effect_of_attribute_points(self, attr: E_Attributes, n: int = 1) -> OrderedDict[E_Attributes, Tuple[int, int]]:
         """:returns the delta on HP, Stamina and Mana of a given attribute point spent into that attribute."""
-        res = odict()  # type: OrderedDict[E_Attributes, int]
-        res[E_Attributes.AT_MAX_HP] = 0
-        res[E_Attributes.AT_MAX_MANA] = 0
-        res[E_Attributes.AT_MAX_STAMINA] = 0
+        res = odict()  # type: OrderedDict[E_Attributes, Tuple[int, int]]
+        res[E_Attributes.AT_MAX_HP] = 0, 0
+        res[E_Attributes.AT_MAX_MANA] = 0, 0
+        res[E_Attributes.AT_MAX_STAMINA] = 0, 0
 
         if self in [E_Characters.EC_AMAZON, E_Characters.EC_PALADIN]:
             if attr == E_Attributes.AT_VITALITY:
-                res[E_Attributes.AT_MAX_HP] = 3 * n
-                res[E_Attributes.AT_MAX_STAMINA] = 1 * n
+                res[E_Attributes.AT_MAX_HP] = 3 * n, 0
+                res[E_Attributes.AT_MAX_STAMINA] = 1 * n, 0
             elif attr == E_Attributes.AT_ENERGY:
-                res[E_Attributes.AT_MAX_MANA] = round(1.5 * n)
+                res[E_Attributes.AT_MAX_MANA] = self._float2tuple(1.5 * n)
 
         if self in [E_Characters.EC_SORCERESS, E_Characters.EC_NECROMANCER, E_Characters.EC_DRUID]:
             if attr == E_Attributes.AT_VITALITY:
-                res[E_Attributes.AT_MAX_HP] = 2 * n
-                res[E_Attributes.AT_MAX_STAMINA] = 1 * n
+                res[E_Attributes.AT_MAX_HP] = 2 * n, 0
+                res[E_Attributes.AT_MAX_STAMINA] = 1 * n, 0
             elif attr == E_Attributes.AT_ENERGY:
-                res[E_Attributes.AT_MAX_MANA] = 2 * n
+                res[E_Attributes.AT_MAX_MANA] = 2 * n, 0
 
         if self == E_Characters.EC_BARBARIAN:
             if attr == E_Attributes.AT_VITALITY:
-                res[E_Attributes.AT_MAX_HP] = 4 * n
-                res[E_Attributes.AT_MAX_STAMINA] = 1 * n
+                res[E_Attributes.AT_MAX_HP] = 4 * n, 0
+                res[E_Attributes.AT_MAX_STAMINA] = 1 * n, 0
             if attr == E_Attributes.AT_ENERGY:
-                res[E_Attributes.AT_MAX_MANA] = 1 * n
+                res[E_Attributes.AT_MAX_MANA] = 1 * n, 0
 
         if self == E_Characters.EC_ASSASSIN:
             if attr == E_Attributes.AT_VITALITY:
-                res[E_Attributes.AT_MAX_HP] = 3 * n
-                res[E_Attributes.AT_MAX_STAMINA] = round(1.25 * n)
+                res[E_Attributes.AT_MAX_HP] = 3 * n, 0
+                res[E_Attributes.AT_MAX_STAMINA] = self._float2tuple(1.25 * n)
             if attr == E_Attributes.AT_ENERGY:
-                res[E_Attributes.AT_MAX_MANA] = round(1.75 * n)
+                res[E_Attributes.AT_MAX_MANA] = self._float2tuple(1.75 * n)
 
         return res
 
@@ -1043,7 +1050,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         s_attr = ''
         for key in self.get_attributes():
             s_attr += f"{key.name}: {self.HMS2str(attr[key])},\n" if key.get_attr_sz_bits() == 21 else f"{key.name}: {attr[key]},\n"
-        msg = f"{self.get_name(True)}, a Horadric Cube {cube_posessing}, level {self.data[43]} {core} {self.get_class(True)} {god_status}. "\
+        msg = f"{self.get_name(True)} ({self.pfname}), a Horadric Cube {cube_posessing}, level {self.data[43]} {core} {self.get_class(True)} {god_status}.\n"\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}, "\
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
@@ -1187,11 +1194,42 @@ class Horadric:
             data.update_all()
             data.save2disk()
 
+    @staticmethod
+    def _subtract_and_encode_quarter_tuples(a: Tuple[int, int], b: Tuple[int, int]) -> int:
+        main = a[0] - b[0]
+        quarters = a[1] - b[1]
+        if quarters < 0:
+            quarters += 4
+            main -= 1
+        return Data.HMS_encode(main, quarters)
+
     def reset_attributes(self):
         for data in self.data_all:
-            attr_old = data.get_attributes()
-            delta_HSM = odict()  # type: OrderedDict[E_Attributes, int]
-            raise NotImplementedError("Build sum and determine attribute effects.")
+            attr = data.get_attributes()
+            character = E_Characters(int.from_bytes(data.get_class()))
+            attr_start = character.starting_attributes()
+            vitality_loss = attr[E_Attributes.AT_VITALITY] - attr_start[E_Attributes.AT_VITALITY]
+            energy_loss = attr[E_Attributes.AT_ENERGY] - attr_start[E_Attributes.AT_ENERGY]
+            hp_current = Data.parse_HMS(attr[E_Attributes.AT_MAX_HP])
+            stamina_current = Data.parse_HMS(attr[E_Attributes.AT_MAX_STAMINA])
+            mana_current = Data.parse_HMS(attr[E_Attributes.AT_MAX_MANA])
+            hp_loss = character.effect_of_attribute_points(E_Attributes.AT_VITALITY, vitality_loss)[E_Attributes.AT_MAX_HP]
+            stamina_loss = character.effect_of_attribute_points(E_Attributes.AT_VITALITY, vitality_loss)[E_Attributes.AT_MAX_STAMINA]
+            mana_loss = character.effect_of_attribute_points(E_Attributes.AT_ENERGY, energy_loss)[E_Attributes.AT_MAX_MANA]
+            attr[E_Attributes.AT_MAX_HP] = self._subtract_and_encode_quarter_tuples(hp_current, hp_loss)
+            attr[E_Attributes.AT_MAX_MANA] = self._subtract_and_encode_quarter_tuples(stamina_current, stamina_loss)
+            attr[E_Attributes.AT_MAX_STAMINA] = self._subtract_and_encode_quarter_tuples(mana_current, mana_loss)
+
+            stat_points = attr[E_Attributes.AT_UNUSED_STATS] if E_Attributes.AT_UNUSED_STATS in attr else 0
+            for key in attr_start:
+                stat_points += attr[key] - attr_start[key]
+                attr[key] = attr_start[key]
+            print(f"Attempting to reset {data.get_name(True)}'s {stat_points} spent attribute points.")
+            attr[E_Attributes.AT_UNUSED_STATS] = stat_points
+
+            data.set_attributes(attr)
+            data.update_all()
+            data.save2disk()
 
     def reset_skills(self):
         for data in self.data_all:
