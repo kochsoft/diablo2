@@ -307,7 +307,7 @@ sum_god_attr = d_god_attr[E_Attributes.AT_STRENGTH] +\
     d_god_attr[E_Attributes.AT_VITALITY]+\
     d_god_attr[E_Attributes.AT_UNUSED_STATS]
 
-d_god_skills = [18 for j in range(30)]  # type: List[int]
+d_god_skills = [18] * 30  # type: List[int]
 sum_god_skills = sum(d_god_skills) + d_god_attr[E_Attributes.AT_UNUSED_SKILLS]
 # < ------------------------------------------------------------------
 
