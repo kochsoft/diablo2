@@ -112,6 +112,7 @@ class Horadric_GUI:
         self.ta_desc1 = None  # type: Optional[tk.Text]
         self.ta_desc2 = None  # type: Optional[tk.Text]
         self.button_horadric = None  # type: Optional[tk.Button]
+        self.button_horazon = None  # type: Optional[tk.Button]
         self.tooltip_commit = None  # type: Optional[Hovertip]
 
         self.entry_pname_work = None  # type: Optional[tk.Entry]
@@ -223,7 +224,7 @@ class Horadric_GUI:
             tkinter.messagebox.showinfo("Success.", f"Horadric Exchange Succeeded! Backup files have been written into '{self.pname_work}'"
                                         f" ({pfname_backup1} and {pfname_backup2})")
 
-    def reinstate_backup(self):
+    def do_commit_horazon(self):
         pass
 
     @staticmethod
@@ -289,8 +290,6 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         self.root.config(menu=self.menu)
         menu_files = tk.Menu(self.menu, tearoff=0)
         self.menu.add_cascade(label="File", menu=menu_files)
-        menu_files.add_command(label="Reinstate Backup ...", command=self.reinstate_backup)
-        menu_files.add_separator()
         menu_files.add_command(label="Load Character 1 ...", command=self.load_1)
         menu_files.add_command(label="Load Character 2 ...", command=self.load_2)
         menu_files.add_command(label="Load Horazon Hero ...", command=self.load_hero)
@@ -353,13 +352,11 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         self.button_horadric = tk.Button(self.tab1, state='disabled', image=self.icon_horadric_exchange, command=self.do_horadric_exchange)
         self.button_horadric.grid(row=4, column=0, columnspan=10, sticky='ew')
         self.tooltip_commit = Hovertip(self.button_horadric, 'Load two character files and swap their Horadric Cube contents.')
-        #self.tooltip_commit.text= "Huhu"
         # < ----------------------------------------------------------
         # > Tab 2: Horazon's Folly. ----------------------------------
-        ta_introduction = tk.Text(self.tab2, width=80, height=8, state='normal', wrap=tk.WORD)
+        ta_introduction = tk.Text(self.tab2, width=80, height=6, state='normal', wrap=tk.WORD)
         ta_introduction.grid(row=0, column=0, columnspan=3, sticky='ew')
-        msg_horazon = """
-\"Demonic magic is a quick path, but its powers are seductive and deadly.\" (Deckard Cain)
+        msg_horazon = """\"Demonic magic is a quick path, but its powers are seductive and deadly.\" (Deckard Cain)
 
 This tab grants great, quick power over the abilities of any hero.
 However, using it is bound to take out the spice of the game.
@@ -375,6 +372,10 @@ Beware!"""
         # There is really no reason, why the user should not write into this text area.
         self.ta_hero = tk.Text(self.tab2, state='normal', wrap=tk.WORD)
         self.ta_hero.grid(row=2, column=0, columnspan=2, sticky='ew')
+
+        self.button_horazon = tk.Button(self.tab2, state='normal', image=self.icon_potion_of_life, command=self.do_commit_horazon)
+        self.button_horazon.grid(row=4, column=0, columnspan=2, sticky='ew')
+        Hovertip(self.button_horazon, 'Commit all that was planned.')
         # < ----------------------------------------------------------
 
 
