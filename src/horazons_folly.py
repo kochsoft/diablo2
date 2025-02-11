@@ -25,12 +25,13 @@ Markus-Hermann Koch, mhk@markuskoch.eu, 2025/01/29.
 
 from __future__ import annotations
 
-import os
 import re
+import os
 import sys
 import time
 import logging
 import argparse
+from os.path import expanduser
 from collections import OrderedDict as odict
 from argparse import RawTextHelpFormatter
 from pathlib import Path
@@ -39,8 +40,11 @@ from typing import List, Dict, Optional, Union, Tuple, OrderedDict
 from enum import Enum
 
 
-logging.basicConfig(level=logging.INFO, format= '[%(asctime)s] {%(lineno)d} %(levelname)s - %(message)s',datefmt='%H:%M:%S')
+logging.basicConfig(level=logging.INFO, format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',datefmt='%H:%M:%S')
 _log = logging.getLogger()
+
+
+regexp_invalid_pfname_chars = r'[/\\?%*:|"<> !]'
 
 
 class E_Attributes(Enum):
@@ -667,6 +671,13 @@ Fixing this is mostly updating the sites in the .d2s file, where the action take
 this page was an excellent source for that: https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md""")
             sys.exit(1)
 
+    def __eq__(self, other: Data) -> bool:
+        """Two Data blocks are deemed equal if their pfnames match."""
+        return self.pfname == other.pfname
+
+    def __ne__(self, other: Data) -> bool:
+        return self.pfname != other.pfname
+
     def get_file_version(self) -> int:
         return BitMaster(32,64,'file version').get_value(self.data[0:8])
 
@@ -684,6 +695,21 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         index_postfix = index_start + len(data_empty_horadric_cube) + 2
         res = (self.data[index_postfix:(index_postfix+len(data_empty_horadric_cube[1]))].find(data_empty_horadric_cube[1]) == 0)
         return res
+
+    @property
+    def n_cube_contents_shallow(self) -> int:
+        """:returns the number of direct items to be found in the Horadric Cube."""
+        items = Item(self.data).get_cube_contents()
+        c = 0
+        for item in items:
+            if item.item_parent != E_ItemParent.IP_ITEM:
+                c = c + 1
+        return c
+
+    @property
+    def n_cube_contents_deep(self) -> int:
+        """:returns the number of items to be found in the Horadric Cube. Also counting nested items, like socketed runes."""
+        return len(Item(self.data).get_cube_contents())
 
     @property
     def is_demi_god(self) -> bool:
@@ -929,7 +955,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         for val in [int.to_bytes(x,3,'little') for x in bu_attr]:
             a += val
         backup = a + bytes(skills)
-        with open(self.pfname_humanity, 'wb') as OUT:
+        with open(expanduser(self.pfname_humanity), 'wb') as OUT:
             OUT.write(backup)
             print(f"Wrote humanity backup '{self.pfname_humanity}' for {self.get_name(True)}.")
         return 0
@@ -1038,8 +1064,9 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             parts = os.path.split(pfname)
             pname = parts[0]
             fname = parts[1]
+            fname = re.sub(regexp_invalid_pfname_chars, '_', fname)
             pfname = os.path.join(pname, Data.get_time() + '_' + fname + '.backup')
-        with open(pfname, 'wb') as OUT:
+        with open(expanduser(pfname), 'wb') as OUT:
             OUT.write(self.data)
         print(f"Wrote {self.get_class(True)} {self.get_name(True)} to disk: {pfname}")
 
@@ -1051,7 +1078,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         s_attr = ''
         for key in self.get_attributes():
             s_attr += f"{key.name}: {self.HMS2str(attr[key])},\n" if key.get_attr_sz_bits() == 21 else f"{key.name}: {attr[key]},\n"
-        msg = f"{self.get_name(True)} ({self.pfname}), a Horadric Cube {cube_posessing}, level {self.data[43]} {core} {self.get_class(True)} {god_status}.\n"\
+        msg = f"{self.get_name(True)} ({self.pfname}), a Horadric Cube (holding {self.n_cube_contents_shallow} items) {cube_posessing}, level {self.data[43]} {core} {self.get_class(True)} {god_status}.\n"\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}, "\
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
@@ -1066,6 +1093,9 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
 class Horadric:
     def __init__(self, args: Optional[List[str]] = None):
+        if not self.is_standalone:
+            self.data_all = list()  # type: List[Data]
+            return
         # > Setting up the data. -------------------------------------
         parsed = self.parse_arguments(args)
         pfnames_in = parsed.pfnames if parsed.pfnames else list()  # type: List[str]
@@ -1079,7 +1109,7 @@ class Horadric:
             print("Omitting backups.")
         # < ----------------------------------------------------------
         if parsed.info:
-            self.print_info()
+            print(self.get_info())
 
         if parsed.softcore and parsed.hardcore:
             print("Both, set to hardcore and set to softcore has been requested. Ignoring both.")
@@ -1129,6 +1159,25 @@ class Horadric:
         if parsed.info_stats:
             self.info_stats()
 
+    @property
+    def is_standalone(self) -> bool:
+        """Is this script running on its own, or does it serve the Horadric Exchange GUI?"""
+        return __name__ == "__main__"
+
+    def get_data_by_pfname(self, pfname: str, *, create_if_missing: bool = False) -> Optional[Data]:
+        """:returns the data block with the given pfname. Or None, in case of failure."""
+        for data in self.data_all:
+            if data.pfname == pfname:
+                return data
+        if create_if_missing:
+            if not Path(pfname).is_file():
+                _log.warning(f"Target file '{pfname}' not found.")
+                return None
+            data = Data(pfname)
+            self.data_all.append(data)
+            return data
+        return None
+
     def info_stats(self):
         for data in self.data_all:
             index_start = data.data.find(b'gf', 765) + 2
@@ -1164,18 +1213,24 @@ class Horadric:
 
     def backup(self, pfname_backup: Optional[str] = None):
         for data in self.data_all:
-            pfname_b = pfname_backup
-            if pfname_b and (len(self.data_all) > 1):
-                data.get_name(True) + '_' + pfname_b
-            data.save2disk(pfname_b, pfname_backup is None)
+            pfname_b = ''
+            if pfname_backup:
+                pfname_b = pfname_backup
+                if len(self.data_all) > 1:
+                    pfname_b += data.get_name(True) + '_' + pfname_b
+            else:
+                pfname_b += data.get_name(True)
+            data.save2disk(pfname_b, prefix_timestamp=pfname_backup is None)
 
-    def print_info(self):
+    def get_info(self) -> str:
         """Print various info to all files to the console."""
         n = len(self.data_all)
+        res = ""
         for j in range(n):
-            print(self.data_all[j])
+            res += str(self.data_all[j])
             if j < (n-1):
-                print("====================")
+                res += "\n====================\n"
+        return res
 
     def set_hardcore(self, hardcore: bool):
         for data in self.data_all:
@@ -1285,7 +1340,7 @@ class Horadric:
         Target file structure: Number of main items, bytes block of all cube items."""
         data = self.data_all[0]
         res = self.grep_horadric(data)
-        with open(pfname_out, 'wb') as OUT:
+        with open(expanduser(pfname_out), 'wb') as OUT:
             OUT.write(res)
         print(f"Wrote file '{pfname_out}'.")
 
