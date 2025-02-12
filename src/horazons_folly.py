@@ -657,12 +657,13 @@ class Item:
 
 class Data:
     """Data object concerned with the binary content of the entirety of a .d2s save game file."""
-    def __init__(self, pfname: str):
+    def __init__(self, pfname: str, pname_backup: Optional[str] = None):
         """:param pfname: Path and filename to target .d2s save game file."""
         if not pfname:
             raise ValueError("pfname required for Data object.")
         self.pfname = pfname
-        with open(pfname, 'rb') as IN:
+        self.pname_backup = os.path.expanduser(pname_backup if pname_backup else os.path.dirname(pfname))
+        with open(os.path.expanduser(pfname), 'rb') as IN:
             self.data = IN.read()
         ver = self.get_file_version()
         if ver != 96:
@@ -692,9 +693,13 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         index_start = self.data.find(data_empty_horadric_cube[0])
         if index_start < 0:
             return False
-        index_postfix = index_start + len(data_empty_horadric_cube) + 2
-        res = (self.data[index_postfix:(index_postfix+len(data_empty_horadric_cube[1]))].find(data_empty_horadric_cube[1]) == 0)
-        return res
+        else:
+            return True
+        # TODO! Debug. Second part of Horadric Cube structure search does not work yet. Bit shifting issue?
+        #index_postfix = index_start + len(data_empty_horadric_cube[0]) + 2
+        #second_part = self.data[index_postfix:]  #(index_postfix+len(data_empty_horadric_cube[1]))]
+        #res = second_part.find(data_empty_horadric_cube[1])
+        #return res == 0
 
     @property
     def n_cube_contents_shallow(self) -> int:
@@ -937,7 +942,11 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     @property
     def pfname_humanity(self) -> str:
-        return self.pfname + '.humanity'
+        """Set self.pname_backup to redirect this property from putting the .humanity backup inside the Diablo II directory."""
+        pfname = self.pfname
+        if self.pname_backup and os.path.isdir(self.pname_backup):
+            pfname = os.path.join(self.pname_backup, os.path.basename(pfname))
+        return pfname + '.humanity'
 
     def _update_godmode_backup(self) -> int:
         skills = self.get_skills()
@@ -960,10 +969,10 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             print(f"Wrote humanity backup '{self.pfname_humanity}' for {self.get_name(True)}.")
         return 0
 
-    def _restore_godmode_backup(self):
+    def _restore_godmode_backup(self) -> int:
         if not os.path.isfile(self.pfname_humanity):
             _log.warning(f"Unable to restore humanity to {self.get_name(True)}. Backup file '{self.pfname_humanity}' was not found.")
-            return
+            return 1
         with open(self.pfname_humanity, 'rb') as IN:
             backup = IN.read()
         attrs_restored = odict()  # type: Dict[E_Attributes, int]
@@ -989,8 +998,11 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         current_attrs[E_Attributes.AT_UNUSED_SKILLS] += skill_delta
         self.set_attributes(current_attrs)
         self.set_skills(skills_human)
+        return 0
 
     def enable_godmode(self):
+        if self.is_demi_god:
+            return
         attrs = self.get_attributes()
         for key in d_god_attr:
             attrs[key] = d_god_attr[key]
@@ -998,12 +1010,17 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         self.set_attributes(attrs)
         self.set_skills(d_god_skills)
 
-    def disable_godmode(self):
-        self._restore_godmode_backup()
+    def disable_godmode(self) -> int:
+        if not self.is_demi_god:
+            return 0  # << This is no crime.
+        err = self._restore_godmode_backup()
+        if err:
+            return 1
         index_start = self.data.find(b'mf', 765 + 32)
         if index_start < 0:
-            return
+            return 2
         self.data = self.data[0:index_start]
+        return 0
 
     def is_hardcore(self) -> bool:
         """The bit of index 2 in status byte 36  decides if a character is hardcore."""
@@ -1161,7 +1178,8 @@ class Horadric:
 
     @property
     def is_standalone(self) -> bool:
-        """Is this script running on its own, or does it serve the Horadric Exchange GUI?"""
+        """Is this script running on its own, or does it serve the Horadric Exchange GUI?
+        The greatest effect of this is that a non-standalone script will not autoupdate and autosave."""
         return __name__ == "__main__"
 
     def get_data_by_pfname(self, pfname: str, *, create_if_missing: bool = False) -> Optional[Data]:
@@ -1235,8 +1253,9 @@ class Horadric:
     def set_hardcore(self, hardcore: bool):
         for data in self.data_all:
             data.set_hardcore(hardcore)
-            data.update_all()
-            data.save2disk()
+            if self.is_standalone:
+                data.update_all()
+                data.save2disk()
 
     def boost(self, attr: E_Attributes, val: int):
         for data in self.data_all:
@@ -1247,8 +1266,9 @@ class Horadric:
             else:
                 del attributes[attr]
             data.set_attributes(attributes)
-            data.update_all()
-            data.save2disk()
+            if self.is_standalone:
+                data.update_all()
+                data.save2disk()
 
     @staticmethod
     def _subtract_and_encode_quarter_tuples(a: Tuple[int, int], b: Tuple[int, int]) -> int:
@@ -1284,8 +1304,9 @@ class Horadric:
             attr[E_Attributes.AT_UNUSED_STATS] = stat_points
 
             data.set_attributes(attr)
-            data.update_all()
-            data.save2disk()
+            if self.is_standalone:
+                data.update_all()
+                data.save2disk()
 
     def reset_skills(self):
         for data in self.data_all:
@@ -1294,31 +1315,33 @@ class Horadric:
             skillset = [0] * 30
             #skillset = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,19,18,17,16,15,14,13,12,11]
             data.set_skills(skillset)
-            # That boost command also does the saving!
+            # That boost command also does the updating and saving!
             self.boost(E_Attributes.AT_UNUSED_SKILLS, n_skills)
 
     def enable_godmode(self):
         for data in self.data_all:
             print(f"Enabling GOD MODE for {data.get_name(True)}.")
             data.enable_godmode()
-            data.update_all()
-            data.save2disk()
+            if self.is_standalone:
+                data.update_all()
+                data.save2disk()
 
     def disable_godmode(self):
         for data in self.data_all:
             print(f"Disabling GOD MODE for {data.get_name(True)}.")
             data.disable_godmode()
-            data.update_all()
-            data.save2disk()
+            if self.is_standalone:
+                data.update_all()
+                data.save2disk()
 
-    @staticmethod
-    def drop_horadric(data: Data):
+    def drop_horadric(self, data: Data):
         items = Item(data.data).get_cube_contents()  # type: List[Item]
         # [Note: Iterate in reversed order, so that dropping front items will not destroy indices for back items.]
         for item in reversed(items):
             data.drop_item(item)
-        data.update_all()
-        data.save2disk()
+        if self.is_standalone:
+            data.update_all()
+            data.save2disk()
         print(f"Dropped {len(items)} items from the Horadric cube.")
 
     @staticmethod
@@ -1349,7 +1372,8 @@ class Horadric:
         Replaces old contents.
         After this is done the character file is saved automatically."""
         self.drop_horadric(data)
-        if not data.add_items_to_player(items):
+        err = data.add_items_to_player(items)
+        if self.is_standalone and (err == 0):
             data.update_all()
             data.save2disk()
 

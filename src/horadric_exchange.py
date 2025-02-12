@@ -12,14 +12,13 @@ Literature:
   https://www.python-kurs.eu/tkinter_menus.php
 
 Markus-Hermann Koch, mhk@markuskoch.eu, 2025/02/06"""
-
-
+import os.path
 import sys
 import shutil
 import logging
 from pathlib import Path
-from os.path import expanduser
 from tkinter.filedialog import askopenfile
+from copy import deepcopy
 
 # > Config.Sys. ------------------------------------------------------
 # Edit this for setting default values within the script.
@@ -62,7 +61,6 @@ Say "python horazons_folly.py --help" and you will receive a detailed manual pag
 """)
     sys.exit(1)
 
-from typing import Optional, List, Dict
 from horazons_folly import *
 
 
@@ -112,7 +110,6 @@ class Horadric_GUI:
         self.ta_desc1 = None  # type: Optional[tk.Text]
         self.ta_desc2 = None  # type: Optional[tk.Text]
         self.button_horadric = None  # type: Optional[tk.Button]
-        self.button_horazon = None  # type: Optional[tk.Button]
         self.tooltip_commit = None  # type: Optional[Hovertip]
 
         self.entry_pname_work = None  # type: Optional[tk.Entry]
@@ -121,6 +118,18 @@ class Horadric_GUI:
         self.entry_pname_hero = None  # type: Optional[tk.Entry]
         self.ta_hero = None  # type: Optional[tk.Text]
 
+        self.data_hero_backup = None  # type: Optional[Data]
+        self.button_load_cube = None  # type: Optional[tk.Button]
+        self.button_save_cube = None  # type: Optional[tk.Button]
+        self.button_reset_skills = None  # type: Optional[tk.Button]
+        self.button_reset_attributes = None  # type: Optional[tk.Button]
+        self.button_boost_skills = None  # type: Optional[tk.Button]
+        self.button_boost_attributes = None  # type: Optional[tk.Button]
+        self.check_hardcore = None  # type: Optional[tk.Checkbutton]
+        self.check_godmode = None  # type: Optional[tk.Checkbutton]
+        self.entry_boost_skills = None  # type: Optional[tk.Entry]
+        self.entry_boost_attributes = None  # type: Optional[tk.Entry]
+        self.button_horazon = None  # type: Optional[tk.Button]
         self.build_gui()
         if self.root:
             self.root.mainloop()
@@ -194,11 +203,6 @@ class Horadric_GUI:
         pname_d2 = tkinter.filedialog.askdirectory(parent=self.root, title="Select directory with .d2s files.", initialdir=self.pname_d2, mustexist=True)
         self.replace_entry_text(self.entry_pname_d2, pname_d2)
 
-    def load_hero(self):
-        pfname_hero = tkinter.filedialog.askopenfilename(parent=self.root, title="Select Hero Save-Game", filetypes=[("d2s save-game","*.d2s *.backup")], initialdir=self.pname_d2)
-        self.replace_entry_text(self.entry_pname_hero, pfname_hero)
-        self.ta_insert_character_data(self.horadric_horazon, pfname_hero, self.ta_hero)
-
     def pfname2pfname_backup(self, pfname) -> str:
         tm = Data.get_time()
         return str(Path(self.pname_work).joinpath(Path(tm + '_' + Path(pfname).name + '.backup').name))
@@ -224,11 +228,8 @@ class Horadric_GUI:
             tkinter.messagebox.showinfo("Success.", f"Horadric Exchange Succeeded! Backup files have been written into '{self.pname_work}'"
                                         f" ({pfname_backup1} and {pfname_backup2})")
 
-    def do_commit_horazon(self):
-        pass
-
     @staticmethod
-    def ta_insert_character_data(horadric: Horadric, pfname: str, ta: tk.Text):
+    def ta_insert_character_data(horadric: Horadric, pfname: str, ta: tk.Text) -> int:
         """Load a character's file information into the given text area.
         :param horadric: Horadric instance.
         :param pfname: pfname to a .d2s file.
@@ -238,8 +239,10 @@ class Horadric_GUI:
             info = str(data)
             ta.delete(0.0, tk.END)
             ta.insert(0.0, info)
+            return 0
         else:
             tkinter.messagebox.showerror("File not found.", f"Failure to find file '{pfname}'.")
+            return 1
 
     def mb_settings(self):
         msg = f"""K.I.S.S.! There is no config file to this simple script program. Instead there is a
@@ -275,6 +278,149 @@ But let's keep silent about what can only be described as cheating.
 
 February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         TextWindow(self.root, msg, self.icon_horadric_exchange, (70,18))
+
+    def verify_hero(self) -> Optional[Data]:
+        if self.horadric_horazon.data_all:
+            return self.horadric_horazon.data_all[0]
+        else:
+            tk.messagebox.showerror("No Hero", "No hero has been loaded. Unable to proceed.")
+            return None
+
+    def load_hero(self):
+        pfname_hero = tkinter.filedialog.askopenfilename(parent=self.root, title="Select Hero Save-Game", filetypes=[("d2s save-game","*.d2s *.backup")], initialdir=self.pname_d2)
+        self.replace_entry_text(self.entry_pname_hero, pfname_hero)
+        self.horadric_horazon.data_all = [Data(pfname_hero, pname_backup=os.path.expanduser(self.pname_work))]
+        self.data_hero_backup = deepcopy(self.horadric_horazon.data_all[0])
+        self.data_hero_backup.pfname = self.pfname2pfname_backup(pfname_hero)
+        err = self.ta_insert_character_data(self.horadric_horazon, pfname_hero, self.ta_hero)
+        if err == 0:
+            self.update_hero_widgets(err == 0)
+
+    def load_cube(self):
+        data = self.verify_hero()
+        if not data:
+            return
+        pfname_in = tk.filedialog.askopenfilename(parent=self.root, title='Save Horadric Cube Contents.',
+                        filetypes=[('Horadric Cube File', '*.cube')], initialdir=self.pname_work)
+        if os.path.isfile(pfname_in):
+            self.horadric_horazon.load_horadric(pfname_in)
+            self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
+    def save_cube(self):
+        data = self.verify_hero()
+        if not data:
+            return
+        pfname_out = tk.filedialog.asksaveasfilename(parent=self.root, title='Save Horadric Cube Contents.',
+                        initialfile=Path(data.pfname).stem + '.cube',
+                        confirmoverwrite=True, filetypes=[('Horadric Cube File', '*.cube')], initialdir=self.pname_work)
+        if pfname_out:
+            self.horadric_horazon.save_horadric(pfname_out)
+            tk.messagebox.showinfo("Wrote Horadric Cube Backup.", f"Cube file written to '{pfname_out}'.")
+
+    def reset_skills(self):
+        data = self.verify_hero()
+        if not data:
+            return
+        self.horadric_horazon.reset_skills()
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
+    def reset_attributes(self):
+        data = self.verify_hero()
+        if not data:
+            return
+        self.horadric_horazon.reset_attributes()
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
+    @staticmethod
+    def entry2int(entry: tk.Entry):
+        val = 0  # type: int
+        try:
+            val = int(entry.get())
+        except ValueError:
+            Horadric_GUI.replace_entry_text(entry, '0')
+        return val
+
+    def boost_skills(self, value: int):
+        val = self.entry2int(self.entry_boost_skills)
+        if val == 0:
+            return  # << Nothing to do.
+        data = self.verify_hero()
+        if not data:
+            return
+        self.horadric_horazon.boost(E_Attributes.AT_UNUSED_SKILLS, val)
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
+    def boost_attributes(self, value: int):
+        val = self.entry2int(self.entry_boost_attributes)
+        if val == 0:
+            return
+        data = self.verify_hero()
+        if not data:
+            return
+        self.horadric_horazon.boost(E_Attributes.AT_UNUSED_STATS, val)
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
+    def set_hardcore(self, enable: bool):
+        data = self.verify_hero()
+        if not data:
+            return
+        data.set_hardcore(enable)
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
+    def set_godmode(self, enable: bool):
+        data = self.verify_hero()
+        if not data:
+            return
+        if enable:
+            data.enable_godmode()
+        else:
+            err = data.disable_godmode()
+            if err:
+                self.check_godmode.select()
+                tkinter.messagebox.showerror("Failure to Restore Humanity.",
+                    f"Failure to restore humanity to {data.get_name(True)}. '{data.pfname_humanity}' was not found.")
+                return
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
+    def update_hero_widgets(self, enable: bool, *, do_update: bool = True):
+        """Common Horazon widget update function."""
+        for widget in [self.button_load_cube, self.button_save_cube, self.button_reset_skills,
+                       self.button_reset_attributes, self.button_boost_skills, self.button_boost_attributes,
+                       self.check_hardcore, self.check_godmode, self.entry_boost_skills,
+                       self.entry_boost_attributes, self.button_horazon]:
+            if enable:
+                widget.config(state='normal')
+            else:
+                widget.config(state='disabled')
+        if do_update and enable:
+            data = self.horadric_horazon.data_all[0]  # type: Data
+            if not data.has_horadric_cube:
+                self.button_load_cube.config(state='disabled')
+                self.button_save_cube.config(state='disabled')
+            self.entry_boost_skills.delete(0, tk.END)
+            self.entry_boost_skills.insert(0, '0')
+            self.entry_boost_attributes.delete(0, tk.END)
+            self.entry_boost_attributes.insert(0, '0')
+            if data.is_hardcore():
+                self.check_hardcore.select()
+            else:
+                self.check_hardcore.deselect()
+            if data.is_demi_god:
+                self.check_godmode.select()
+            else:
+                self.check_godmode.deselect()
+
+    def do_commit_horazon(self):
+        """Save the current hero to disk. A backup has been made earlier, during self.update_hero_widgets(..)."""
+        data = self.verify_hero()
+        if not data:
+            return
+        for d in [data, self.data_hero_backup]:
+            d.update_all()
+            d.save2disk()
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+        tk.messagebox.showinfo("Modifications Saved.", f"Alteration of the Hero has been saved to '{data.pfname}'. "
+                               f"A backup file may be found at '{self.data_hero_backup.pfname}'.")
 
     def build_gui(self):
         # > Main Window. ---------------------------------------------
@@ -373,9 +519,43 @@ Beware!"""
         self.ta_hero = tk.Text(self.tab2, state='normal', wrap=tk.WORD)
         self.ta_hero.grid(row=2, column=0, columnspan=2, sticky='ew')
 
-        self.button_horazon = tk.Button(self.tab2, state='normal', image=self.icon_potion_of_life, command=self.do_commit_horazon)
-        self.button_horazon.grid(row=4, column=0, columnspan=2, sticky='ew')
+        self.button_load_cube = tk.Button(self.tab2, text='Load Cube', command=self.load_cube, width=10, height=1, bg='#009999')
+        self.button_load_cube.grid(row=3, column=0)
+
+        self.button_save_cube = tk.Button(self.tab2, text='Save Cube', command=self.save_cube, width=10, height=1, bg='#009999')
+        self.button_save_cube.grid(row=3, column=1, sticky='w')
+
+        self.button_reset_skills = tk.Button(self.tab2, text='Unlearn Skills', command=self.reset_skills, width=10, height=1, bg='#009999')
+        self.button_reset_skills.grid(row=4, column=0)
+
+        self.button_reset_attributes = tk.Button(self.tab2, text='Untrain Attrib.', command=self.reset_attributes, width=10, height=1, bg='#009999')
+        self.button_reset_attributes.grid(row=4, column=1, sticky='w')
+
+        var_skills = tk.IntVar()
+        self.entry_boost_skills = tk.Entry(self.tab2, textvariable=var_skills)
+        self.entry_boost_skills.grid(row=5, column=1, sticky='ew')
+        self.button_boost_skills = tk.Button(self.tab2, text='Boost Skills', command=lambda: self.boost_skills(var_skills.get()), width=10, height=1, bg='#009999')
+        self.button_boost_skills.grid(row=5, column=0)
+
+        var_attributes = tk.IntVar()
+        self.entry_boost_attributes = tk.Entry(self.tab2, textvariable=var_attributes)
+        self.entry_boost_attributes.grid(row=6, column=1, sticky='ew')
+        self.button_boost_attributes = tk.Button(self.tab2, text='Boost Attrib.', command=lambda: self.boost_attributes(var_attributes.get()), width=10, height=1, bg='#009999')
+        self.button_boost_attributes.grid(row=6, column=0)
+
+        var_hardcore = tk.IntVar()
+        self.check_hardcore = tk.Checkbutton(self.tab2, text='Hardcore', variable=var_hardcore, command=lambda: self.set_hardcore(bool(var_hardcore.get())))
+        self.check_hardcore.grid(row=7, column=0)
+
+        var_godmode = tk.IntVar()
+        self.check_godmode = tk.Checkbutton(self.tab2, text='Godmode', variable=var_godmode, command=lambda: self.set_godmode(bool(var_godmode.get())))
+        self.check_godmode.grid(row=7, column=1, sticky='w')
+
+        self.button_horazon = tk.Button(self.tab2, image=self.icon_potion_of_life, command=self.do_commit_horazon) #, bg='#dfff00')
+        self.button_horazon.grid(row=8, column=0, columnspan=2, sticky='ew')
         Hovertip(self.button_horazon, 'Commit all that was planned.')
+
+        self.update_hero_widgets(False)
         # < ----------------------------------------------------------
 
 
