@@ -24,7 +24,7 @@ from copy import deepcopy
 # Edit this for setting default values within the script.
 default =\
 {
-    'pname_work': r'~/tmp',
+    'pname_work': r'~/tmmp',
     'pname_d2': r'~/.wine/drive_c/Program Files/Diablo II/Save'
 }
 # < ------------------------------------------------------------------
@@ -112,6 +112,7 @@ class Horadric_GUI:
         self.button_horadric = None  # type: Optional[tk.Button]
         self.tooltip_commit = None  # type: Optional[Hovertip]
 
+        self.button_pname_work = None  # type: Optional[tk.Button]
         self.entry_pname_work = None  # type: Optional[tk.Entry]
         self.entry_pname_d2 = None  # type: Optional[tk.Entry]
 
@@ -148,21 +149,54 @@ class Horadric_GUI:
     def pname_work(self) -> str:
         return self.entry_pname_work.get() if self.entry_pname_work else default['pname_work']
 
+    @pname_work.setter
+    def pname_work(self, pname: str):
+        self.replace_entry_text(self.entry_pname_work, pname)
+        if self.validate_pname_work(False):
+            self.update_hero_widgets(len(self.horadric_horazon.data_all) > 0)
+
     @property
     def pname_d2(self) -> str:
         return self.entry_pname_d2.get() if self.entry_pname_d2 else default['pname_d2']
+
+    def validate_pname_work(self, show_info: bool=True) -> bool:
+        pname = os.path.expanduser(self.pname_work)
+        pname_d2 = os.path.expanduser(self.pname_d2)
+        if pname == pname_d2 or (os.path.isdir(pname) and os.access(pname, os.W_OK) and os.access(pname, os.R_OK)):
+            self.button_pname_work.config(bg='#90ee90')
+            return True
+        self.button_pname_work.config(bg='#ff5050')
+        if show_info:
+            TextWindow(self.root, f"""Working directory '{self.pname_work}' cannot be opened for reading and writing.
+
+Horadric Exchange does a lot of back-upping.
+ 
+* d2s save-game files are back-upped with character name and timestamp.
+* Activating god-mode for a character will leave a .humanity-datafile, that
+  will allow a character to return to humanity later on.
+* Horadric Cube contents, too can be saved to disk.
+
+All this is done in a working directory which's current default is given above.
+And it cannot be found for writing on your system. So please select an
+adequate working directory which should also not be the Diablo II Save dir.
+
+It is encouraged to edit the 'config.sys' section close to the top of
+{os.path.basename(__file__)}, setting defaults for these two directories
+that fit your system.""", dim=(60,17))
+        return False
 
     def update_button_horadric(self):
         good = False  # type: bool
         if Path(self.pfname_1).is_file() and Path(self.pfname_2).is_file():
             data_1 = self.horadric_exchange.get_data_by_pfname(self.pfname_1, create_if_missing=True)
             data_2 = self.horadric_exchange.get_data_by_pfname(self.pfname_2, create_if_missing=True)
-            if data_1.has_horadric_cube and data_2.has_horadric_cube:
+            if self.validate_pname_work(False) and data_1.has_horadric_cube and data_2.has_horadric_cube:
                 good = True
             else:
-                tkinter.messagebox.showerror("Characters not ready.",
-                    "At least one of the selected characters lacks a Horadric Cube. This makes Horadric Cube "
-                    "exchange impossible. Look for such an item in the desert close to Lut Gholein.")
+                tkinter.messagebox.showerror("Characters not ready or working directory invalid. ",
+                    "Either the working directory is not selected validly, or at least one "
+                    "of the selected characters lacks a Horadric Cube. This would make Horadric Cube "
+                    "exchange impossible. If so, look for such an item in the desert close to Lut Gholein.")
         self.button_horadric.config(state='normal' if good else 'disabled')
 
     @staticmethod
@@ -178,6 +212,8 @@ class Horadric_GUI:
     def load_1(self):
         pfname_1 = tkinter.filedialog.askopenfilename(parent=self.root, title='Select First Character File',
                     initialdir=self.pname_d2, filetypes=[("Diablo II character save-game",".d2s *.backup")])
+        if not pfname_1:
+            return
         if pfname_1 == self.pfname_2:
             tk.messagebox.showerror("Twice the same character.", "Error: The first file name cannot match the second one.")
             return
@@ -188,6 +224,8 @@ class Horadric_GUI:
     def load_2(self):
         pfname_2 = tkinter.filedialog.askopenfilename(parent=self.root, title='Select Second Character File',
                     initialdir=self.pname_d2, filetypes=[("Diablo II character save-game",".d2s *.backup")])
+        if not pfname_2:
+            return
         if self.pfname_1 == pfname_2:
             tk.messagebox.showerror("Twice the same character.", "The second file name cannot match the first one.")
             return
@@ -197,10 +235,14 @@ class Horadric_GUI:
 
     def select_pname_work(self):
         pname_work = tkinter.filedialog.askdirectory(parent=self.root, title='Select working directory for backup file storage.', initialdir=self.pname_work, mustexist=True)
-        self.replace_entry_text(self.entry_pname_work, pname_work)
+        if not pname_work:
+            return
+        self.pname_work = pname_work
 
     def select_pname_d2(self):
         pname_d2 = tkinter.filedialog.askdirectory(parent=self.root, title="Select directory with .d2s files.", initialdir=self.pname_d2, mustexist=True)
+        if not pname_d2:
+            return
         self.replace_entry_text(self.entry_pname_d2, pname_d2)
 
     def pfname2pfname_backup(self, pfname) -> str:
@@ -216,6 +258,7 @@ class Horadric_GUI:
         self.horadric_exchange.data_all = [data_1, data_2]
         pfname_backup1 = self.pfname2pfname_backup(self.pfname_1)
         pfname_backup2 = self.pfname2pfname_backup(self.pfname_2)
+        print(f"Writing backup files '{pfname_backup1}' and '{pfname_backup2}'.")
         shutil.copyfile(expanduser(self.pfname_1), expanduser(pfname_backup1))
         shutil.copyfile(expanduser(self.pfname_2), expanduser(pfname_backup2))
         if self.horadric_exchange.exchange_horadric():
@@ -279,6 +322,21 @@ But let's keep silent about what can only be described as cheating.
 February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         TextWindow(self.root, msg, self.icon_horadric_exchange, (70,18))
 
+    def load_backup(self):
+        pfname_backup = os.path.expanduser(tkinter.filedialog.askopenfilename(parent=self.root, title="Select backup file.",
+                            filetypes=[("d2s backup", "*.backup")], initialdir=self.pname_work))
+        fname_backup = os.path.basename(pfname_backup)
+
+        fname_target = re.sub('^[0-9_]+', '', fname_backup)
+        fname_target = re.sub('\\.backup$', '', fname_target, flags=re.IGNORECASE)
+        pfname_target = os.path.expanduser(os.path.join(self.pname_d2, fname_target))
+        if not os.path.isfile(pfname_target):
+            _log.warning(f"Backup file '{pfname_backup}' leads to non-existing target file '{pfname_target}'.")
+            tk.messagebox.showinfo("Installing Backup", f"Copying backup file '{pfname_backup}' into Diablo II save-game directory as '{pfname_target}'.")
+        else:
+            tk.messagebox.showinfo("Reinstating Backup", f"Copying backup file '{pfname_backup}' to replace active save-game '{pfname_target}'.")
+        shutil.copyfile(pfname_backup, pfname_target)
+
     def verify_hero(self) -> Optional[Data]:
         if self.horadric_horazon.data_all:
             return self.horadric_horazon.data_all[0]
@@ -288,6 +346,8 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
 
     def load_hero(self):
         pfname_hero = tkinter.filedialog.askopenfilename(parent=self.root, title="Select Hero Save-Game", filetypes=[("d2s save-game","*.d2s *.backup")], initialdir=self.pname_d2)
+        if not pfname_hero:
+            return
         self.replace_entry_text(self.entry_pname_hero, pfname_hero)
         self.horadric_horazon.data_all = [Data(pfname_hero, pname_backup=os.path.expanduser(self.pname_work))]
         self.data_hero_backup = deepcopy(self.horadric_horazon.data_all[0])
@@ -384,6 +444,8 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
 
     def update_hero_widgets(self, enable: bool, *, do_update: bool = True):
         """Common Horazon widget update function."""
+        if not self.validate_pname_work(False):
+            enable = False
         for widget in [self.button_load_cube, self.button_save_cube, self.button_reset_skills,
                        self.button_reset_attributes, self.button_boost_skills, self.button_boost_attributes,
                        self.check_hardcore, self.check_godmode, self.entry_boost_skills,
@@ -440,6 +502,8 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         menu_files.add_command(label="Load Character 2 ...", command=self.load_2)
         menu_files.add_command(label="Load Horazon Hero ...", command=self.load_hero)
         menu_files.add_separator()
+        menu_files.add_command(label="Reinstate backup ...", command=self.load_backup)
+        menu_files.add_separator()
         menu_files.add_command(label="Exit", command=self.root.quit)
         menu_help = tk.Menu(self.menu, tearoff=0)
         self.menu.add_cascade(label="Help", menu=menu_help)
@@ -487,7 +551,8 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         self.replace_entry_text(self.entry_pname_work, default['pname_work'])
         self.replace_entry_text(self.entry_pname_d2, default['pname_d2'])
 
-        tk.Button(self.tab1, text='Work Dir', command=self.select_pname_work, width=10, height=1, bg='#009999').grid(row=2, column=0)
+        self.button_pname_work = tk.Button(self.tab1, text='Work Dir', command=self.select_pname_work, width=10, height=1, bg='#009999')
+        self.button_pname_work.grid(row=2, column=0)
         tk.Button(self.tab1, text='D2 Save Dir', command=self.select_pname_d2, width=10, height=1, bg='#009999').grid(row=3, column=0)
 
         label_wd = tk.Label(self.tab1, anchor='w', text='<- Working Dir. Where backups will be kept.', relief=tk.RIDGE, width=10)
@@ -509,7 +574,7 @@ However, using it is bound to take out the spice of the game.
 
 Beware!"""
         ta_introduction.insert(0.0, msg_horazon)
-        ta_introduction.config(state='disabled')
+        ta_introduction.config(state='disabled', bg='#fffaa0')
 
         tk.Button(self.tab2, text='Select Hero', command=self.load_hero, width=10, height=1, bg='#009999').grid(row=1, column=0)
         self.entry_pname_hero = tk.Entry(self.tab2, width=self.width_column - 7, state='readonly')
@@ -554,7 +619,7 @@ Beware!"""
         self.button_horazon = tk.Button(self.tab2, image=self.icon_potion_of_life, command=self.do_commit_horazon) #, bg='#dfff00')
         self.button_horazon.grid(row=8, column=0, columnspan=2, sticky='ew')
         Hovertip(self.button_horazon, 'Commit all that was planned.')
-
+        self.validate_pname_work()
         self.update_hero_widgets(False)
         # < ----------------------------------------------------------
 
