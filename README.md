@@ -23,35 +23,24 @@ Still:
 
 **BE SURE TO BACKUP YOUR .d2s CHARACTER FILES PRIOR TO TAMPERING.**
 
-# About a Use Case and More
+# GUI
 
-Consider the Barbarian finding the **sacred globe of divine world domination**,
-that the sorceress has been looking for all these years. That brute does not
-even know how to equip it to bash a zombie's head in. And there is just no way
-to give it to the Sorceress.
+There is a GUI to the entire tool: **horadric_exchange.py** consider
+it the main script. It is documented in detail within the wiki
+that is attached to this repository.
 
-Sad. Really sad.
-
-No more! Using the horadric python script, the Barbarian may just put the sacred
-globe into his Horadric Cube! If she is of the courteous type, the Sorceress may
-put some glass perls into her own Horadric Cube as well.
-
-Then exit the game. I trust you know how to employ the script's `--exchange_horadric`
-function? It will cause the contents of both characters' Horadric Cubes to
-change places by acting on their `.d2s` character files.
-
-For this, vanilla Python 3 is needed. Required level is not quite known.
-Python >=3.13 should do nicely though.
-
-You may be pleased to read that this script has more capabilities. I have to
-leave it to you, to employ the scripts `--help` function to find out more.
-
-# Help Text (February 3rd 2025)
+# Help Text (February 15th 2025)
 
 ```
-usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP] [--exchange_horadric] [--drop_horadric] [--save_horadric SAVE_HORADRIC] [--load_horadric LOAD_HORADRIC]
-                         [--hardcore] [--softcore] [--boost_attributes BOOST_ATTRIBUTES] [--boost_skills BOOST_SKILLS] [--reset_skills] [--enable_godmode] [--disable_godmode] [--info]
-                         pfnames [pfnames ...]
+usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
+                         [--exchange_horadric] [--drop_horadric]
+                         [--save_horadric SAVE_HORADRIC]
+                         [--load_horadric LOAD_HORADRIC] [--hardcore]
+                         [--softcore] [--boost_attributes BOOST_ATTRIBUTES]
+                         [--boost_skills BOOST_SKILLS] [--reset_attributes]
+                         [--reset_skills] [--enable_godmode]
+                         [--disable_godmode] [--info] [--info_stats]
+                         [pfnames ...]
 
 Tool script for doing small scale changes to Diablo II .d2s save game files.
 
@@ -64,11 +53,11 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  --omit_backup         Per default, target files will be backupped to .backup files. For safety. This option will disable that safety.
+  --omit_backup         Per default, target files will be back-upped to .backup files. For safety. This option will disable that safety.
   --pfname_backup PFNAME_BACKUP
                         State a pfname to the backup file. Per default a timestamped name will be used. If there are multiple files to backup, the given name will be prefixed with each character's name.
   --exchange_horadric   Flag. Requires that there are precisely 2 character pfnames given. This will exchange their Horadric Cube contents.
-  --drop_horadric       Flag. If given, the Horardric Cube contents of the targetted character will be removed.
+  --drop_horadric       Flag. If given, the Horadric Cube contents of the targeted character will be removed.
   --save_horadric SAVE_HORADRIC
                         Write the items found in the Horadric Cube to disk with the given pfname. Only one character allowed.
   --load_horadric LOAD_HORADRIC
@@ -79,10 +68,12 @@ options:
                         Set this number to the given value.
   --boost_skills BOOST_SKILLS
                         Set this number to the given value.
+  --reset_attributes    Flag. Returns all spent attribute points for redistribution.
   --reset_skills        Flag. Unlearns all skills, returning them as free skill points.
   --enable_godmode      Enables Demigod-mode (so far without high Mana/HP/Stamina). Creates a .humanity stat file alongside the .d2s for later return to normal mode.
   --disable_godmode     Returns to human form (retaining skill points earned in god mode). After all, who wants the stress of being super all the time?
   --info                Flag. Show some statistics to each input file.
+  --info_stats          Flag. Nerd-minded. Detailed info tool on the parsing of attributes and skills.
 
 Example call:
 $ python3 horazons_folly.py conan.d2s ormaline.d2s

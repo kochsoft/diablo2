@@ -24,7 +24,7 @@ from copy import deepcopy
 # Edit this for setting default values within the script.
 default =\
 {
-    'pname_work': r'~/tmmp',
+    'pname_work': r'~/tmp',
     'pname_d2': r'~/.wine/drive_c/Program Files/Diablo II/Save'
 }
 # < ------------------------------------------------------------------
