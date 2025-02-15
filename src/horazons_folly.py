@@ -636,6 +636,9 @@ class Item:
         items = self.get_block_items(E_ItemBlock.IB_PLAYER)
         found_cube = False
         res = list()  # type: List[Item]
+        # [Note: Horadric cube items may be parents to children following them. These children will then
+        #  have E_ItemParent.IP_ITEM. This holds true, e.g., for socketed runes.
+        #  Also, it is (contrary to earlier assumption) not a given that all CUBE items are consecutive.]
         for item in items:
             if item.item_stored == E_ItemStorage.IS_CUBE:
                 found_cube = True
@@ -644,7 +647,7 @@ class Item:
             if item.item_stored == E_ItemStorage.IS_CUBE or item.item_parent == E_ItemParent.IP_ITEM:
                 res.append(item)
             else:
-                break
+                found_cube = False
         return res
 
     def __str__(self) -> str:
