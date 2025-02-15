@@ -264,6 +264,8 @@ that fit your system.""", dim=(60,17))
         if self.horadric_exchange.exchange_horadric():
             tkinter.messagebox.showerror("Exchange Failed.", "Horadric Exchange has failed for unknown reasons.")
         else:
+            data_1.update_all()
+            data_2.update_all()
             data_1.save2disk()
             data_2.save2disk()
             self.ta_insert_character_data(self.horadric_exchange, self.pfname_1, self.ta_desc1)
