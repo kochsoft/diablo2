@@ -1,3 +1,11 @@
+# About this README.md
+
+Any good git repository should have a README.md!
+
+And so does this one. However, there also is a **full-blown wiki page**:
+
+https://github.com/kochsoft/diablo2/wiki
+
 # About horadric_exchange.py
 
 This is a home-brew Python 3-script for modifying Diablo v1.10-v1.14d legacy savegame files.

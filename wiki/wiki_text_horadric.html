@@ -1,17 +1,16 @@
-<html>
-<head>
-  <title>Horadric Exchange -- a Diablo II inter-Character Item Swapper</title>
-<style>
-  center_img {display: block; margin-left: auto; margin-right: auto}
-</style>
-</head>>
+<h1>Horadric Exchange -- a v1.10-v1.14d Diablo II inter-Character Item Swapper and Save Game Editor</h1>
 
-<body>
 <figure>
-  <img src="logo_horadric_exchange.png" alt="Horadric Exchange" class="center_img">
+  <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/logo_horadric_exchange.png" alt="Horadric Exchange" class="center_img">
 </figure>
 
-<h1>Horadric Exchange -- a v1.10-v1.14d Diablo II inter-Character Item Swapper and Save Game Editor</h1>
+<h2>Disclaimer</h2>
+<p>
+<b>Editing binary save-games is dangerous and may leave you with corrupt files. Although an effort has been made, that these scripts do backups of all files they modify, there is no guarantee. If you use this script, make sure to first do your own backups of any .d2s file you wish to edit.</b>
+</p>
+<p>
+That being said ...
+</p>
 
 <h2>Last night, at the Rogue's camp</h2>
 
@@ -23,14 +22,14 @@ really has no idea what end of the thing to clobber over the head of the next
 unsuspecting monster.
 </p><p>
 Your Sorceress has more knowledge and would make great use of the globe.
-However, she is in a different save game.
+However, she is in a different save-game.
 </p><p>
 As it stands, the Barbarian takes the priceless, shiny thing, walks up to
 that Gheed character, and ... you get the picture.
 </p>
 
 <figure>
-  <img src="gheed.png" alt="Gheed and Barbarian" class="center_img">
+  <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/gheed.png" alt="Gheed and Barbarian" class="center_img"><br />
   <figcaption>Fig.1 - Gheed is a wonderful human being, and a true friend.</figcaption>
 </figure>
 
@@ -45,13 +44,13 @@ to other save-game versions.
 </p><p>
 Also, if you are looking for a fast way to finally create that 'Jah Ith Ber' rune
 set or the elite three-socketed armor for it: These scripts may be misused to copy
-an existing armor. However, they will not create any of these components ex nihili.
+an existing armor. However, they will not create any of these components ex nihilo.
 Nor are they meant to do so.
 </p><p>
 Inevitably though, development of the primary goal <i>(i.e., exchanging the contents of the
 Horadric Cubes between two distinct character <code>.d2s</code> save-game files)</i>,
 led to some generous cheating functions as well. They are available, e.g., in the
-GUI from a separate Tab <b>Horazon's Folly</b>.
+GUI from a separate tab, <b>Horazon's Folly</b>.
 </p>
 
 <h2>What these two scripts are</h2>
@@ -74,20 +73,20 @@ The project mainly comprises
     interpreter. Under Linux there often is a dedicated package to be had, or
     <code>python -m pip install tkinter</code> might help.
     The GUI allows to load and read save-game contents, and to do both, the title-
-    giving Horadric Exchanges, and some more clandestine edits like (reversible,
+    giving Horadric Exchanges, and some more clandestine edits, like (reversible,
     but still gain-maintaining!) godmode, or attribute or skill resets, if one
     indulges into the "Horazon's Folly Tab". There is more.
-  </li>>
+  </li>
 </ul>
 
 <figure>
-  <img src="prior_to_horadric_exchange.png" alt="The Horadric Exchange GUI tab" class="center_img">
+  <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/prior_to_horadric_exchange.png" alt="The Horadric Exchange GUI tab" class="center_img"><br />
   <figcaption>Fig.2 - The main tab allows to load two characters and to exchange
     items between them via the Horadric Cube.</figcaption>
 </figure>
-
+<br />
 <figure>
-  <img src="250202_moved_items.png" alt="Charonson got an item personalized to Alissa" class="center_img">
+  <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/250202_moved_items.png" alt="Charonson got an item personalized to Alissa" class="center_img"><br />
   <figcaption>Fig.3 - Charonson got an item that was personalized to Alissa. Although he will
   still need more experience to make good use of it. She will probably want to have it back
   anyways.</figcaption>
@@ -95,27 +94,30 @@ The project mainly comprises
 
 <h2>Setup</h2>
 
+<p>
 Installation is as simple as putting both <b>.py</b> files and the two graphics,
 <b>logo_horadric_exchange.png</b> and <b>potion_of_life.png</b>, into one directory
-and running the desired script using a python 3 interpreter.
-
+and running the desired script using a python 3 interpreter with the script
+directory as working directory.
+</p><p>
 <b>There is no config file.</b> Instead, there is a small block "config.sys" close to the
 top of <code>horardric_exchange.py</code>. That section provides two global variables
 that will define
 <ul>
   <li><b>pname_work:</b> Horadric Exchange does a generous amount of backups of your
-  original save-games (with timestamps!), .humanity restore files (they will allow
-  returning from godmode in a sensible, progress-preserving way), and even cube-content
+  original save-games (with timestamps), .humanity restore files (they will allow
+  returning from godmode in a sensible, progress-preserving way), and cube-content
     saves, if this function is used.
-  I label these backups necessary, as they will save your characters if the scripts
+  I label these backups necessary, as they will save your characters, if the scripts
   should ever leave you with corrupted files -- editing binary save-games is a
     dangerous process!
   So create some writable directory of your choosing and refer to it here.</li>
   <li><b>pname_d2:</b> The target "Save" directory within the actual game installation.</li>
 </ul>
+</p>
 
 <figure>
-  <img src="config_sys.png" alt="Use config.sys section in horadric_exchange.py to define default directories." class="center_img">
+  <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/config_sys.png" alt="Use config.sys section in horadric_exchange.py to define default directories." class="center_img"><br />
   <figcaption>Fig.4 - This global structure in <b>horadric_exchange.py</b> defines default
     values for the necessary backup/working directory and the location of your
     Diablo II v1.10-v1.14d Save game directory.</figcaption>
@@ -126,7 +128,7 @@ that will define
 Both, the <code>--help</code> section of <code>horazons_folly.py</code>, and the
 GUI, provided by <code>horadric_exchange.py</code> are rather self-explanatory.
 </p><p>
-Still some comments to the GUI. The general workflow for both tabs is:
+Still some comments on the GUI. The general workflow for both tabs is:
 </p>
 <ul>
   <li>Ensure a writable-to backup directory. The button "Work Dir" will show green,
@@ -134,8 +136,8 @@ Still some comments to the GUI. The general workflow for both tabs is:
     a proper backup directory is setup. This script will not create directories on
     its own.</li>
   <li>Load character files. In the case of Horadric Exchange, it is required that
-  both characters have progressed far enough to own their own Horadric Cube.</li>
-  <li>In the case of the Horazon's Folly tab, do whatever edits that seem good to you.</li>
+  both characters have progressed far enough to own their own Horadric Cubes.</li>
+  <li>In the case of the Horazon's Folly tab, do whatever edits seem good to you.</li>
   <li>At the bottom of each tab there is one large button. These buttons start out
   disabled, but will activate, once the above conditions are fulfilled.</li>
 </ul>
@@ -150,7 +152,7 @@ godmode, need to be sited in the selected backup directory to be found and used.
 </p>
 
 <figure>
-  <img src="horazons_folly.png" alt="The Horazon's Folly tab." class="center_img">
+  <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/horazons_folly.png" alt="The Horazon's Folly tab." class="center_img"><br />
   <figcaption>Fig.5 - Horazon's Folly, too, uses the backup directory selected
     in the Horadric Exchange tab. However, it acts on only one character file.</figcaption>
 </figure>
@@ -212,5 +214,3 @@ Damage", followed by "Teeth", "Bone Armor", "Skeleton Mastery" and "Raise Skelet
 Next comes the second row with "Dim Vision", "Weaken", "Poison Dagger", and so on.
 The other character classes' skills are organized in the same way.
 </p>
-</body>
-</html>
