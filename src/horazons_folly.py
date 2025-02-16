@@ -1093,7 +1093,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
     def __str__(self) -> str:
         core = 'hardcore' if self.is_hardcore() else 'softcore'
         cube_posessing = 'owning' if self.has_horadric_cube else 'lacking'
-        god_status = 'demi-god' if self.is_demi_god else 'hero'
+        god_status = ('demi-goddess' if self.is_demi_god else 'heroine') if E_Characters(int.from_bytes(self.get_class(), "little")).is_female() else ('demi-god' if self.is_demi_god else 'hero')
         attr = self.get_attributes()
         s_attr = ''
         for key in self.get_attributes():
