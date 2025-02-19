@@ -6,15 +6,9 @@ Literature:
 ===========
 [1] https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md
   Description of the Diablo 2 save game format. Quite good. Principal source of information.
-[2] https://github.com/krisives/d2s-format
-  Description of the Diablo 2 save game format.
-[3] https://daancoppens.wordpress.com/2017/01/25/understanding-the-diablo-2-save-file-format-part-1/
-  This is all about sectioning the entire save game file. Pretty nifty!
-[4] https://www.d2mods.info/forum/viewtopic.php?t=9011&start=100
-  It appears that all the "sections" (quests "Woo!", waypoints "WS", npc introductions "w4", stats "gf", skills "if",
-  items "JM" (with corpse count etc.), and mercenary "jf"->"kf" (with "JM" item list))
-   are ...
-[5] Python >=3.6 seems to guarantee key order in dicts.
+[2] https://www.gmstemple.com/Diablo2/itemcodes.html
+  Large list of 3-letter item codes. E.g., the item codes for the runes are 'r01'-'r33'
+[3] Python >=3.6 seems to guarantee key order in dicts.
   https://discuss.codecademy.com/t/does-the-dictionary-keys-function-return-the-keys-in-any-specific-order/354717
 
 Fun facts:
@@ -45,6 +39,56 @@ _log = logging.getLogger()
 
 
 regexp_invalid_pfname_chars = r'[/\\?%*:|"<> !]'
+
+
+class E_Rune(Enum):
+    ER_NORUNE = 0
+    ER_EL = 1
+    ER_ELD = 2
+    ER_TIR = 3
+    ER_NEF = 4
+    ER_ETH = 5
+    ER_ITH = 6
+    ER_TAL = 7
+    ER_RAL = 8
+    ER_ORT = 9
+    ER_THUL = 10
+    ER_AMN = 11
+    ER_SOL = 12
+    ER_SHAEL = 13
+    ER_DOL = 14
+    ER_HEL = 15
+    ER_IO = 16
+    ER_LUM = 17
+    ER_KO = 18
+    ER_FAL = 19
+    ER_LEM = 20
+    ER_PUL = 21
+    ER_UM = 22
+    ER_MAL = 23
+    ER_IST = 24
+    ER_GUL = 25
+    ER_VEX = 26
+    ER_OHM = 27
+    ER_LO = 28
+    ER_SUR = 29
+    ER_BER = 30
+    ER_JAH = 31
+    ER_CHAM = 32
+    ER_ZOD = 33
+
+    @property
+    def type_code(self) -> str:
+        return "r{0:02d}".format(self.value)
+
+    @staticmethod
+    def from_name(name: str):
+        return E_Rune[f"ER_{name}".upper()]
+
+    @staticmethod
+    def sample_byte_code_rune_el() -> bytes:
+        """:returns byte code of a rune El, located in row 0, column 0 of the Horadric Cube."""
+        return b'JM\x10\x00\xa0\x00e\x00\x00(\x07\x13\x03\x02'
 
 
 class E_Attributes(Enum):
@@ -321,6 +365,7 @@ They encode, where the cube is stored and thus may vary."""
 data_empty_horadric_cube = [b'\x4A\x4D\x10\x00\x80\x00\x65\x00', b'\xF6\x86\x07\x02\x38\xCE\x31\xFF\x86\xE0\x3F']
 # < ------------------------------------------------------------------
 
+
 def bytes2bitmap(data: bytes) -> str:
     return '{:0{width}b}'.format(int.from_bytes(data, 'little'), width = len(data) * 8)
 
@@ -426,6 +471,13 @@ class Item:
         else:
             return self.data[self.index_start:self.index_end]
 
+    @data_item.setter
+    def data_item(self, bts: bytes):
+        if self.is_analytical:
+            return
+        else:
+            self.data = self.data[0:self.index_start] + bts + self.data[self.index_end:]
+
     @property
     def is_identified(self) -> Optional[bool]:
         if self.is_analytical:
@@ -439,12 +491,26 @@ class Item:
             return None
         return get_range_from_bitmap(bytes2bitmap(self.data_item), 65, 69)
 
+    @col.setter
+    def col(self, c: int):
+        if self.is_analytical:
+            return
+        bm = bytes2bitmap(self.data_item)
+        self.data_item = set_bitrange_value_to_bytes(self.data_item, 65, 69, c)
+
     @property
     def row(self) -> Optional[int]:
         """Bits 69,..,71"""
         if self.is_analytical:
             return None
         return get_range_from_bitmap(bytes2bitmap(self.data_item), 69, 72)
+
+    @row.setter
+    def row(self, r: int):
+        if self.is_analytical:
+            return
+        bm = bytes2bitmap(self.data_item)
+        self.data_item = set_bitrange_value_to_bytes(self.data_item, 69, 72, r)
 
     @property
     def stash_type(self) -> Optional[E_ItemStorage]:
@@ -453,11 +519,36 @@ class Item:
         rg = get_range_from_bitmap(bytes2bitmap(self.data_item), 73, 76)
         return E_ItemStorage.IS_UNSPECIFIED if not rg else E_ItemStorage(rg)
 
+    @stash_type.setter
+    def stash_type(self, code: E_ItemStorage):
+        if self.is_analytical:
+            return
+        bm = bytes2bitmap(self.data_item)
+        self.data_item = set_bitrange_value_to_bytes(self.data_item, 73, 76, code.value)
+
     @property
-    def type_code(self) -> Optional[int]:
+    def type_code(self) -> Optional[str]:
         if self.is_analytical:
             return None
-        return get_range_from_bitmap(bytes2bitmap(self.data_item), 76, 106)
+        bm = bytes2bitmap(self.data_item)[::-1]
+        if len(bm) < 106:
+            return None  # No item with type code.
+        l1 = chr(int(bm[76:84][::-1], 2))
+        l2 = chr(int(bm[84:92][::-1], 2))
+        l3 = chr(int(bm[92:100][::-1], 2))
+        return l1 + l2 + l3
+
+    @type_code.setter
+    def type_code(self, code: str):
+        if len(code) != 3:
+            _log.warning("Item Code string needs to be 3 characters exactly.")
+        if self.is_analytical:
+            return
+        bm = bytes2bitmap(self.data_item)
+        if len(bm) < 106:
+            return  # No item with type code.
+        val = ord(code[0]) + (ord(code[1]) << 8) + (ord(code[2]) << 16)
+        self.data_item = set_bitrange_value_to_bytes(self.data_item, 76, 100, val)
 
     @property
     def item_parent(self) -> Optional[E_ItemParent]:
@@ -663,12 +754,36 @@ class Item:
                 found_cube = False
         return res
 
+    @staticmethod
+    def create_rune(name: E_Rune, stash_type = E_ItemStorage.IS_CUBE, row: int = 0, col: int = 0) -> Item:
+        """Creates an 'JM...' byte string with the specified rune.
+        :param name: Which rune is to be created?
+        :param stash_type: Where is the rune stored?
+        :param row: Row index in storage.
+        :param col: Column index in storage.
+        [Note: The rune type is determined by the item code. This is a list of 3 eight-bit letters.
+          Consider a simple item's bitmap. Reverse order (little endian style) binary string of bit [76:106] of
+          the binary representation of an "JM"-starting item, potentially representing a rune.
+          It will be split into three letters:
+          * Bits [0:8]: Letter 1. Always an 'r': '01001110'==114=='r' (reversed!)
+          * Bits [8:16]: Letter 2, and
+          * Bits[16:24]: Letter 3. These are numbers. From '01' to '33'. The digits:
+            '00001100' == '0', '10001100' == '1', '01001100' == '2', '11001100' == '3', '00101100' == '4',
+            '10101100' == '5', '01101100' == '6', '11101100' == '7', '00011100' == '8', '10011100' == '9'."""
+        rune_el = E_Rune.sample_byte_code_rune_el()  # type: bytes
+        rune = Item(rune_el)
+        rune.stash_type = stash_type
+        rune.col = col
+        rune.row = row
+        rune.type_code = name.type_code
+        return rune
+
     def __str__(self) -> str:
         if self.is_analytical:
             return "Analytic Item instance."
         else:
             bm = bytes2bitmap(self.data_item)[::-1]
-            bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:76]} {bm[76:106]} {bm[106:]}"
+            bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:76]} {bm[76:84]} {bm[84:96]} {bm[96:106]} {bm[106:]}"
             return f"Item {self.item_block.name} #{self.index_item_block} index: ({self.index_start}, {self.index_end}): " \
                 f"Parent: {self.item_parent.name}, Storage: {self.stash_type.name}, (r:{self.row}, c:{self.col}), Equip: {self.item_equipped.name}\n" \
                 f"identified: {self.is_identified}, type code: {self.type_code}\n" \
@@ -1163,6 +1278,9 @@ class Horadric:
             else:
                 _log.warning("Saving of Horadric Cube content requires 1 target character exactly.")
 
+        if parsed.create_rune_cube is not None:
+            self.create_rune_cube(parsed.create_rune_cube)
+
         if parsed.load_horadric:
             if len(pfnames_in) == 1:
                 self.load_horadric(parsed.load_horadric)
@@ -1387,6 +1505,27 @@ class Horadric:
             OUT.write(res)
         print(f"Wrote file '{pfname_out}'.")
 
+    @staticmethod
+    def create_rune_cube(cmd: str):
+        (pfname, runes) = cmd.split(":",1)
+        runes = list(filter(lambda x: len(x) == 3, runes.split(",")))[:12]
+        content = b''
+        el = E_Rune.sample_byte_code_rune_el()
+        for j in range(len(runes)):
+            row = floor(j / 3)
+            col = j % 3
+            item = Item(el, 0, len(el))
+            item.col = col
+            item.row = row
+            item.stash_type = E_ItemStorage.IS_CUBE
+            item.type_code = E_Rune.from_name(runes[j]).type_code
+            content = content + item.data_item
+            print(f"Adding: {item}")
+        content = len(runes).to_bytes(1, 'little') + content
+        with open(pfname, 'wb') as OUT:
+            OUT.write(content)
+        print(f"Wrote runic cube with {len(runes)} runes to '{pfname}'")
+
     def insert_horadric(self, data: Data, items: bytes):
         """Takes a byte block of Horadric cube player items and moves it into the players Horadric Cube.
         Replaces old contents.
@@ -1437,6 +1576,7 @@ $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
             help="Per default, target files will be back-upped to .backup files. For safety. This option will disable that safety.")
         parser.add_argument('--pfname_backup', type=str, help='State a pfname to the backup file. Per default a timestamped name will be used. If there are multiple files to backup, the given name will be prefixed with each character\'s name.')
         parser.add_argument('--exchange_horadric', action='store_true', help="Flag. Requires that there are precisely 2 character pfnames given. This will exchange their Horadric Cube contents.")
+        parser.add_argument('--create_rune_cube', type=str, nargs='?', const='enigmatic_rune_cube.cube:jah,ith,ber', help="pfname, ':', then a comma separated list of up to 12 rune names. Creates a cube content with these runes.")
         parser.add_argument('--drop_horadric', action='store_true', help="Flag. If given, the Horadric Cube contents of the targeted character will be removed.")
         parser.add_argument('--save_horadric', type=str, help="Write the items found in the Horadric Cube to disk with the given pfname. Only one character allowed.")
         parser.add_argument('--load_horadric', type=str, help="Drop all contents from the Horadric Cube and replace them with the horadric file content, that had been written using --save_horadric earlier.")

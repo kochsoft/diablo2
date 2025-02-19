@@ -41,8 +41,9 @@ that is attached to this repository.
 
 ```
 usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
-                         [--exchange_horadric] [--drop_horadric]
-                         [--save_horadric SAVE_HORADRIC]
+                         [--exchange_horadric]
+                         [--create_rune_cube [CREATE_RUNE_CUBE]]
+                         [--drop_horadric] [--save_horadric SAVE_HORADRIC]
                          [--load_horadric LOAD_HORADRIC] [--hardcore]
                          [--softcore] [--boost_attributes BOOST_ATTRIBUTES]
                          [--boost_skills BOOST_SKILLS] [--reset_attributes]
@@ -65,6 +66,8 @@ options:
   --pfname_backup PFNAME_BACKUP
                         State a pfname to the backup file. Per default a timestamped name will be used. If there are multiple files to backup, the given name will be prefixed with each character's name.
   --exchange_horadric   Flag. Requires that there are precisely 2 character pfnames given. This will exchange their Horadric Cube contents.
+  --create_rune_cube [CREATE_RUNE_CUBE]
+                        pfname, ':', then a comma separated list of up to 12 rune names. Creates a cube content with these runes.
   --drop_horadric       Flag. If given, the Horadric Cube contents of the targeted character will be removed.
   --save_horadric SAVE_HORADRIC
                         Write the items found in the Horadric Cube to disk with the given pfname. Only one character allowed.
