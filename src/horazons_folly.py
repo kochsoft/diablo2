@@ -427,20 +427,37 @@ class Item:
             return self.data[self.index_start:self.index_end]
 
     @property
+    def is_identified(self) -> Optional[bool]:
+        if self.is_analytical:
+            return None
+        return True if get_range_from_bitmap(bytes2bitmap(self.data_item), 20, 21) else False
+
+    @property
     def col(self) -> Optional[int]:
         """Bits 65,..,68"""
         if self.is_analytical:
             return None
-        rg = get_range_from_bitmap(bytes2bitmap(self.data_item), 65, 69)
-        return rg
+        return get_range_from_bitmap(bytes2bitmap(self.data_item), 65, 69)
 
     @property
     def row(self) -> Optional[int]:
         """Bits 69,..,71"""
         if self.is_analytical:
             return None
-        rg = get_range_from_bitmap(bytes2bitmap(self.data_item), 69, 72)
-        return rg
+        return get_range_from_bitmap(bytes2bitmap(self.data_item), 69, 72)
+
+    @property
+    def stash_type(self) -> Optional[E_ItemStorage]:
+        if self.is_analytical:
+            return None
+        rg = get_range_from_bitmap(bytes2bitmap(self.data_item), 73, 76)
+        return E_ItemStorage.IS_UNSPECIFIED if not rg else E_ItemStorage(rg)
+
+    @property
+    def type_code(self) -> Optional[int]:
+        if self.is_analytical:
+            return None
+        return get_range_from_bitmap(bytes2bitmap(self.data_item), 76, 106)
 
     @property
     def item_parent(self) -> Optional[E_ItemParent]:
@@ -506,27 +523,6 @@ class Item:
             if val != 0:
                 _log.warning(f"Encountered weird equipment code {val}.")
             return E_ItemEquipment.IE_UNSPECIFIED
-
-    @property
-    def item_stored(self) -> Optional[E_ItemStorage]:
-        if self.is_analytical:
-            return None
-        data_item = self.data_item
-        if len(data_item) < 10:
-            return E_ItemStorage.IS_UNSPECIFIED
-        # 73-75
-        # Bits 72-79 reduced to bits 73-75
-        val = (data_item[9] >> 1) & 7
-        if val == 1:
-            return E_ItemStorage.IS_INVENTORY
-        elif val == 4:
-            return E_ItemStorage.IS_CUBE
-        elif val == 5:
-            return E_ItemStorage.IS_STASH
-        else:
-            if val != 0:
-                _log.warning(f"Encountered weird storage code {val}.")
-            return  E_ItemStorage.IS_UNSPECIFIED
 
     @staticmethod
     def drop_empty_block_indices(block_indices: Dict[E_ItemBlock, Tuple[int, int]]) -> Dict[E_ItemBlock, Tuple[int, int]]:
@@ -644,7 +640,7 @@ class Item:
                 item = Item(self.data, lst[j][0], lst[j][1], block_relevant, j)
                 if (parent in [E_ItemParent.IP_UNSPECIFIED, item.item_parent]) or \
                    (equipped in [E_ItemEquipment.IE_UNSPECIFIED, item.item_equipped]) or \
-                   (stored in [E_ItemStorage.IS_UNSPECIFIED, item.item_stored]):
+                   (stored in [E_ItemStorage.IS_UNSPECIFIED, item.stash_type]):
                     res.append(item)
         return res
 
@@ -657,11 +653,11 @@ class Item:
         #  have E_ItemParent.IP_ITEM. This holds true, e.g., for socketed runes.
         #  Also, it is (contrary to earlier assumption) not a given that all CUBE items are consecutive.]
         for item in items:
-            if item.item_stored == E_ItemStorage.IS_CUBE:
+            if item.stash_type == E_ItemStorage.IS_CUBE:
                 found_cube = True
             if not found_cube:
                 continue
-            if item.item_stored == E_ItemStorage.IS_CUBE or item.item_parent == E_ItemParent.IP_ITEM:
+            if item.stash_type == E_ItemStorage.IS_CUBE or item.item_parent == E_ItemParent.IP_ITEM:
                 res.append(item)
             else:
                 found_cube = False
@@ -672,9 +668,10 @@ class Item:
             return "Analytic Item instance."
         else:
             bm = bytes2bitmap(self.data_item)[::-1]
-            bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:]}"
+            bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:76]} {bm[76:106]} {bm[106:]}"
             return f"Item {self.item_block.name} #{self.index_item_block} index: ({self.index_start}, {self.index_end}): " \
-                f"Parent: {self.item_parent.name}, Storage: {self.item_stored.name}, (r:{self.row}, c:{self.col}), Equip: {self.item_equipped.name}\n" \
+                f"Parent: {self.item_parent.name}, Storage: {self.stash_type.name}, (r:{self.row}, c:{self.col}), Equip: {self.item_equipped.name}\n" \
+                f"identified: {self.is_identified}, type code: {self.type_code}\n" \
                 f"{bm_col_row_split}\n{self.data_item}"
 
 
