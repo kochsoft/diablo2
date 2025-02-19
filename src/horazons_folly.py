@@ -330,14 +330,15 @@ def bitmap2bytes(bitmap: str) -> bytes:
         raise ValueError(f"Invalid bitmap length {n} not being a multiple of 8.")
     return int(bitmap,2).to_bytes(round(n/8), 'little')
 
-
-def get_range_from_bitmap(bitmap: str, index_start: int, index_end: int, *, do_invert: bool = False) -> int:
-    # [Note: Being numerals the left-most entries in the bitmap are the most significant!
+def get_range_from_bitmap(bitmap: str, index_start: int, index_end: int, *, do_invert: bool = False) -> Optional[int]:
+    # Note: Being numerals the left-most entries in the bitmap are the most significant!
     #  However, our indexing schema asks for little endian. Hence, when accessing the bitmap,
     #  we have to invert the indices to start on the right side of the numeral.
     #  Thus, the index [start:end] becomes [n-end:n-start].]
     n = len(bitmap)
     bm = bitmap[n-index_end:n-index_start]
+    if len(bm) == 0:
+        return None
     return int(bm[::-1] if do_invert else bm, 2)
 
 def set_range_to_bitmap(bitmap: str, index_start: int, index_end: int, val: int, *, do_invert: bool = False) -> str:
@@ -424,6 +425,22 @@ class Item:
             return None
         else:
             return self.data[self.index_start:self.index_end]
+
+    @property
+    def col(self) -> Optional[int]:
+        """Bits 65,..,68"""
+        if self.is_analytical:
+            return None
+        rg = get_range_from_bitmap(bytes2bitmap(self.data_item), 65, 69)
+        return rg
+
+    @property
+    def row(self) -> Optional[int]:
+        """Bits 69,..,71"""
+        if self.is_analytical:
+            return None
+        rg = get_range_from_bitmap(bytes2bitmap(self.data_item), 69, 72)
+        return rg
 
     @property
     def item_parent(self) -> Optional[E_ItemParent]:
@@ -654,8 +671,11 @@ class Item:
         if self.is_analytical:
             return "Analytic Item instance."
         else:
+            bm = bytes2bitmap(self.data_item)[::-1]
+            bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:]}"
             return f"Item {self.item_block.name} #{self.index_item_block} index: ({self.index_start}, {self.index_end}): " \
-                f"Parent: {self.item_parent.name}, Storage: {self.item_stored.name}, Equip: {self.item_equipped.name}"
+                f"Parent: {self.item_parent.name}, Storage: {self.item_stored.name}, (r:{self.row}, c:{self.col}), Equip: {self.item_equipped.name}\n" \
+                f"{bm_col_row_split}\n{self.data_item}"
 
 
 class Data:
