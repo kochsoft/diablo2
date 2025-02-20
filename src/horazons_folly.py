@@ -1206,7 +1206,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         return 0
 
     def add_items_to_player(self, items: bytes) -> int:
-        """Warning: Be sure to add multiple items in a sensible order!"""
+        """Warning: Be sure to add multiple items in a sensible order!
+        :param items: Byte string of 'JM...'-items. Prefixed with one byte giving the count."""
         index_start = Item(self.data).get_block_index()[E_ItemBlock.IB_PLAYER][0]
         self.data = self.data[0:index_start] + items[1:] + self.data[index_start:]
         count = int.from_bytes(items[0:1], 'little')
@@ -1488,6 +1489,7 @@ class Horadric:
                 data.save2disk()
 
     def drop_horadric(self, data: Data):
+        """Drops all items from the Horadric Cube. If standalone mode, also saves the results to disk."""
         items = Item(data.data).get_cube_contents()  # type: List[Item]
         # [Note: Iterate in reversed order, so that dropping front items will not destroy indices for back items.]
         for item in reversed(items):

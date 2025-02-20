@@ -16,6 +16,7 @@ import os.path
 import sys
 import shutil
 import logging
+from math import floor
 from pathlib import Path
 from tkinter.filedialog import askopenfile
 from copy import deepcopy
@@ -122,12 +123,14 @@ class Horadric_GUI:
         self.data_hero_backup = None  # type: Optional[Data]
         self.button_load_cube = None  # type: Optional[tk.Button]
         self.button_save_cube = None  # type: Optional[tk.Button]
+        self.button_runic_cube = None  # type: Optional[tk.Button]
         self.button_reset_skills = None  # type: Optional[tk.Button]
         self.button_reset_attributes = None  # type: Optional[tk.Button]
         self.button_boost_skills = None  # type: Optional[tk.Button]
         self.button_boost_attributes = None  # type: Optional[tk.Button]
         self.check_hardcore = None  # type: Optional[tk.Checkbutton]
         self.check_godmode = None  # type: Optional[tk.Checkbutton]
+        self.entry_runic_cube = None  # type: Optional[tk.Entry]
         self.entry_boost_skills = None  # type: Optional[tk.Entry]
         self.entry_boost_attributes = None  # type: Optional[tk.Entry]
         self.button_horazon = None  # type: Optional[tk.Button]
@@ -393,6 +396,25 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         self.horadric_horazon.reset_attributes()
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
+    def runic_cube(self, text_runic_cube: str):
+        runes = list(filter(lambda x: x is not None, [E_Rune.from_name(w) for w in re.findall('([a-zA-Z]+)', text_runic_cube)]))
+        if not runes:
+            tk.messagebox.showinfo("Runic Cube", "Use a comma-separated list of up to 12 rune names to replace your "
+                                                 "Horadric Cube content with that set of runes. E.g., 'ral, ort, tal'.")
+            return
+        runes = runes[:12]
+        items = list()  # type: List[Item]
+        for j in range(len(runes)):
+            row = floor(j / 3)
+            col = j % 3
+            items.append(Item.create_rune(runes[j], E_ItemStorage.IS_CUBE, row, col))
+        data = self.verify_hero()
+        if data is None:
+            return
+        self.horadric_horazon.drop_horadric(data)
+        data.add_items_to_player(int.to_bytes(len(items)) + b''.join([item.data_item for item in items]))
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
     @staticmethod
     def entry2int(entry: tk.Entry):
         val = 0  # type: int
@@ -448,9 +470,9 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         """Common Horazon widget update function."""
         if not self.validate_pname_work(False):
             enable = False
-        for widget in [self.button_load_cube, self.button_save_cube, self.button_reset_skills,
+        for widget in [self.button_load_cube, self.button_save_cube, self.button_reset_skills, self.button_runic_cube,
                        self.button_reset_attributes, self.button_boost_skills, self.button_boost_attributes,
-                       self.check_hardcore, self.check_godmode, self.entry_boost_skills,
+                       self.check_hardcore, self.check_godmode, self.entry_boost_skills, self.entry_runic_cube,
                        self.entry_boost_attributes, self.button_horazon]:
             if enable:
                 widget.config(state='normal')
@@ -461,6 +483,9 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
             if not data.has_horadric_cube:
                 self.button_load_cube.config(state='disabled')
                 self.button_save_cube.config(state='disabled')
+                self.button_runic_cube.config(state='disabled')
+            self.entry_runic_cube.delete(0, tk.END)
+            self.entry_runic_cube.insert(0, 'ort,sol')
             self.entry_boost_skills.delete(0, tk.END)
             self.entry_boost_skills.insert(0, '0')
             self.entry_boost_attributes.delete(0, tk.END)
@@ -598,28 +623,35 @@ Beware!"""
         self.button_reset_attributes = tk.Button(self.tab2, text='Untrain Attrib.', command=self.reset_attributes, width=10, height=1, bg='#009999')
         self.button_reset_attributes.grid(row=4, column=1, sticky='w')
 
+        var_runic_cube = tk.StringVar()
+        var_runic_cube.set("ort, sol")
+        self.entry_runic_cube = tk.Entry(self.tab2, textvariable=var_runic_cube)
+        self.entry_runic_cube.grid(row=5, column=1, sticky='ew')
+        self.button_runic_cube = tk.Button(self.tab2, text='Runes to Cube', command=lambda: self.runic_cube(var_runic_cube.get()), width=10, height=1, bg='#009999')
+        self.button_runic_cube.grid(row=5, column=0)
+
         var_skills = tk.IntVar()
         self.entry_boost_skills = tk.Entry(self.tab2, textvariable=var_skills)
-        self.entry_boost_skills.grid(row=5, column=1, sticky='ew')
+        self.entry_boost_skills.grid(row=6, column=1, sticky='ew')
         self.button_boost_skills = tk.Button(self.tab2, text='Boost Skills', command=lambda: self.boost_skills(var_skills.get()), width=10, height=1, bg='#009999')
-        self.button_boost_skills.grid(row=5, column=0)
+        self.button_boost_skills.grid(row=6, column=0)
 
         var_attributes = tk.IntVar()
         self.entry_boost_attributes = tk.Entry(self.tab2, textvariable=var_attributes)
-        self.entry_boost_attributes.grid(row=6, column=1, sticky='ew')
+        self.entry_boost_attributes.grid(row=7, column=1, sticky='ew')
         self.button_boost_attributes = tk.Button(self.tab2, text='Boost Attrib.', command=lambda: self.boost_attributes(var_attributes.get()), width=10, height=1, bg='#009999')
-        self.button_boost_attributes.grid(row=6, column=0)
+        self.button_boost_attributes.grid(row=7, column=0)
 
         var_hardcore = tk.IntVar()
         self.check_hardcore = tk.Checkbutton(self.tab2, text='Hardcore', variable=var_hardcore, command=lambda: self.set_hardcore(bool(var_hardcore.get())))
-        self.check_hardcore.grid(row=7, column=0)
+        self.check_hardcore.grid(row=8, column=0)
 
         var_godmode = tk.IntVar()
         self.check_godmode = tk.Checkbutton(self.tab2, text='Godmode', variable=var_godmode, command=lambda: self.set_godmode(bool(var_godmode.get())))
-        self.check_godmode.grid(row=7, column=1, sticky='w')
+        self.check_godmode.grid(row=8, column=1, sticky='w')
 
         self.button_horazon = tk.Button(self.tab2, image=self.icon_potion_of_life, command=self.do_commit_horazon) #, bg='#dfff00')
-        self.button_horazon.grid(row=8, column=0, columnspan=2, sticky='ew')
+        self.button_horazon.grid(row=9, column=0, columnspan=2, sticky='ew')
         Hovertip(self.button_horazon, 'Commit all that was planned.')
         self.validate_pname_work()
         self.update_hero_widgets(False)
