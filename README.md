@@ -44,8 +44,9 @@ usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
                          [--exchange_horadric]
                          [--create_rune_cube [CREATE_RUNE_CUBE]]
                          [--drop_horadric] [--save_horadric SAVE_HORADRIC]
-                         [--load_horadric LOAD_HORADRIC] [--hardcore]
-                         [--softcore] [--boost_attributes BOOST_ATTRIBUTES]
+                         [--load_horadric LOAD_HORADRIC] [--ensure_horadric]
+                         [--hardcore] [--softcore]
+                         [--boost_attributes BOOST_ATTRIBUTES]
                          [--boost_skills BOOST_SKILLS] [--reset_attributes]
                          [--reset_skills] [--enable_godmode]
                          [--disable_godmode] [--info] [--info_stats]
@@ -73,6 +74,7 @@ options:
                         Write the items found in the Horadric Cube to disk with the given pfname. Only one character allowed.
   --load_horadric LOAD_HORADRIC
                         Drop all contents from the Horadric Cube and replace them with the horadric file content, that had been written using --save_horadric earlier.
+  --ensure_horadric     Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.
   --hardcore            Flag. Set target characters to hard core mode.
   --softcore            Flag. Set target characters to soft core mode.
   --boost_attributes BOOST_ATTRIBUTES
