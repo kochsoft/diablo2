@@ -78,12 +78,19 @@ class E_Rune(Enum):
     ER_ZOD = 33
 
     @property
-    def type_code(self) -> str:
+    def type_code(self) -> Optional[str]:
+        if not (1 <= self.value <= 33):
+            return None
         return "r{0:02d}".format(self.value)
 
     @staticmethod
-    def from_name(name: str):
-        return E_Rune[f"ER_{name}".upper()]
+    def from_name(name: str) -> Optional[E_Rune]:
+        try:
+            candidate = E_Rune[f"ER_{name}".upper()]
+        except KeyError as err:
+            _log.warning(f"Invalid rune name '{name}' encountered.")
+            return None
+        return candidate if 1 <= candidate.value <= 33  else None
 
     @staticmethod
     def sample_byte_code_rune_el() -> bytes:
@@ -755,7 +762,7 @@ class Item:
         return res
 
     @staticmethod
-    def create_rune(name: E_Rune, stash_type = E_ItemStorage.IS_CUBE, row: int = 0, col: int = 0) -> Item:
+    def create_rune(name: E_Rune, stash_type = E_ItemStorage.IS_CUBE, row: int = 0, col: int = 0) -> Optional[Item]:
         """Creates an 'JM...' byte string with the specified rune.
         :param name: Which rune is to be created?
         :param stash_type: Where is the rune stored?
@@ -770,8 +777,16 @@ class Item:
           * Bits[16:24]: Letter 3. These are numbers. From '01' to '33'. The digits:
             '00001100' == '0', '10001100' == '1', '01001100' == '2', '11001100' == '3', '00101100' == '4',
             '10101100' == '5', '01101100' == '6', '11101100' == '7', '00011100' == '8', '10011100' == '9'."""
+        if isinstance(name, str):
+            try:
+                name = E_Rune[name]
+            except KeyError as err:
+                _log.warning(f"Invalid rune name string: '{name}'. Returning None.")
+                return None
+        if name.type_code is None:
+            _log.warning(f"Invalid rune designation: '{name}'. Returning None.")
         rune_el = E_Rune.sample_byte_code_rune_el()  # type: bytes
-        rune = Item(rune_el)
+        rune = Item(rune_el, index_start=0, index_end=len(rune_el))
         rune.stash_type = stash_type
         rune.col = col
         rune.row = row
@@ -1508,17 +1523,14 @@ class Horadric:
     @staticmethod
     def create_rune_cube(cmd: str):
         (pfname, runes) = cmd.split(":",1)
-        runes = list(filter(lambda x: len(x) == 3, runes.split(",")))[:12]
+        runes = list(filter(lambda x: x is not None, [E_Rune.from_name(r) for r in runes.split(",")[:12]]))
         content = b''
-        el = E_Rune.sample_byte_code_rune_el()
         for j in range(len(runes)):
             row = floor(j / 3)
             col = j % 3
-            item = Item(el, 0, len(el))
-            item.col = col
-            item.row = row
-            item.stash_type = E_ItemStorage.IS_CUBE
-            item.type_code = E_Rune.from_name(runes[j]).type_code
+            item = Item.create_rune(runes[j], E_ItemStorage.IS_CUBE, row=row, col=col)
+            if item is None or item.data_item is None:
+                continue
             content = content + item.data_item
             print(f"Adding: {item}")
         content = len(runes).to_bytes(1, 'little') + content
