@@ -87,7 +87,7 @@ class E_Rune(Enum):
     def from_name(name: str) -> Optional[E_Rune]:
         try:
             candidate = E_Rune[f"ER_{name}".upper()]
-        except KeyError as err:
+        except KeyError:
             _log.warning(f"Invalid rune name '{name}' encountered.")
             return None
         return candidate if 1 <= candidate.value <= 33  else None
@@ -367,9 +367,14 @@ sum_god_skills = sum(d_god_skills) + d_god_attr[E_Attributes.AT_UNUSED_SKILLS]
 # < ------------------------------------------------------------------
 
 # > Horadric Cube. ---------------------------------------------------
-"""Binary block describing a horadric cube. From 'JM' to end. There are two bytes missing.
-They encode, where the cube is stored and thus may vary."""
-data_empty_horadric_cube = [b'\x4A\x4D\x10\x00\x80\x00\x65\x00', b'\xF6\x86\x07\x02\x38\xCE\x31\xFF\x86\xE0\x3F']
+"""Binary block describing a horadric cube. This one has been taken from Alissa' mouse cursor, the Assassin. Details:
+Item IB_PLAYER #86 index: (2557, 2578): Parent: IP_CURSOR, Storage: IS_UNSPECIFIED, (r:6, c:4), Equip: IE_UNSPECIFIED, identified: True, type code: box
+01010010101100100000100000000000000000010000000010100110000010000 0010 011 0000 01000110 111101100001 1110000001 00000000011100011100111000110011111111011000010000011111111100"""
+#data_tpl_horadric_cube = b'JM\x10\x00\x80\x00e\x10\xc8 \xf6\x86\x07\x028\xce1\xff\x86\xe0?'
+"""Stashed version. Lower right corner of the stash."""
+#data_tpl_horadric_cube = b'JM\x10\x00\x80\x00e\x00\xc8*\xf6\x86\x07\x028\xce1\xff\x86\xe0?'
+"""Inventory version. Top left corner of the inventory."""
+data_tpl_horadric_cube = b'JM\x10\x00\x80\x00e\x00\x00"\xf6\x86\x07\x028\xce1\xff\x86\xe0?'
 # < ------------------------------------------------------------------
 
 
@@ -456,10 +461,8 @@ class Item:
                  index_item_block: Optional[int] = None):
         """Initialization of the item.
         :param data: Binary block describing the entirety of a .d2s file.
-        :param index_start
-        :param index_end
-        :param item_block: Item block this item is part of.
-        :param index_item_block: Index of the item within the given block. I.e. the occurrence index of the item.
+        :param index_start byte index in the complete file where this item starts.
+        :param index_end byte index int the complete file one point beyond where this item ends.
         [Note: This class does little sanity checks.]"""
         self.data = data
         self.index_start = index_start
@@ -502,7 +505,6 @@ class Item:
     def col(self, c: int):
         if self.is_analytical:
             return
-        bm = bytes2bitmap(self.data_item)
         self.data_item = set_bitrange_value_to_bytes(self.data_item, 65, 69, c)
 
     @property
@@ -516,7 +518,6 @@ class Item:
     def row(self, r: int):
         if self.is_analytical:
             return
-        bm = bytes2bitmap(self.data_item)
         self.data_item = set_bitrange_value_to_bytes(self.data_item, 69, 72, r)
 
     @property
@@ -530,7 +531,6 @@ class Item:
     def stash_type(self, code: E_ItemStorage):
         if self.is_analytical:
             return
-        bm = bytes2bitmap(self.data_item)
         self.data_item = set_bitrange_value_to_bytes(self.data_item, 73, 76, code.value)
 
     @property
@@ -562,25 +562,22 @@ class Item:
         """Simple items Version 96: Bits 58-60"""
         if self.is_analytical:
             return None
-        data_item = self.data_item
-        if len(data_item) < 8:
+        if len(self.data_item) < 8:
             return E_ItemParent.IP_UNSPECIFIED
-        # From 56,..,63 Bits 58-60
-        val = (data_item[7] >> 2) & 7
-        # val0 = BitMaster(58, 61, 'alternate code using BitMaster. Working, too.').get_value(data_item)
-        if val == 0:
-            return E_ItemParent.IP_STORED
-        elif val == 1:
-            return E_ItemParent.IP_EQUIPPED
-        elif val == 2:
-            return E_ItemParent.IP_BELT
-        elif val == 4:
-            return E_ItemParent.IP_CURSOR
-        elif val == 6:
-            return E_ItemParent.IP_ITEM
-        else:
-            _log.warning(f"Encountered weird parent code {val}.")
+        val = get_bitrange_value_from_bytes(self.data_item, 58, 61)
+        try:
+            return E_ItemParent(val)
+        except ValueError:
+            _log.warning(f"Invalid parent code {val} encountered.")
             return E_ItemParent.IP_UNSPECIFIED
+
+    @item_parent.setter
+    def item_parent(self, parent: E_ItemParent):
+        if self.is_analytical:
+            return
+        bm = bytes2bitmap(self.data_item)
+        bm = set_range_to_bitmap(bm, 58, 61, parent.value)
+        self.data_item = bitmap2bytes(bm)
 
     @property
     def item_equipped(self) -> Optional[E_ItemEquipment]:
@@ -627,7 +624,7 @@ class Item:
         # Drop empty blocks.
         deletees = list()  # type: List[E_ItemBlock]
         for key in block_indices:
-            if block_indices[key][0] == block_indices[key][1]:
+            if (block_indices[key])[0] == (block_indices[key])[1]:
                 deletees.append(key)
         for key in deletees:
             del block_indices[key]
@@ -719,11 +716,12 @@ class Item:
                     index_start = index_end
         return res
 
-    def get_block_items(self, block: E_ItemBlock = E_ItemBlock.IB_UNSPECIFIED,
-                          parent: E_ItemParent = E_ItemParent.IP_UNSPECIFIED,
-                          equipped: E_ItemEquipment = E_ItemEquipment.IE_UNSPECIFIED,
-                          stored: E_ItemStorage = E_ItemStorage.IS_UNSPECIFIED) -> List[Item]:
+    def get_block_items(self, block: Optional[E_ItemBlock] = E_ItemBlock.IB_UNSPECIFIED,
+                          parent: Optional[E_ItemParent] = E_ItemParent.IP_UNSPECIFIED,
+                          equipped: Optional[E_ItemEquipment] = E_ItemEquipment.IE_UNSPECIFIED,
+                          stored: Optional[E_ItemStorage] = E_ItemStorage.IS_UNSPECIFIED) -> List[Item]:
         """Get a list of items that matches all given filters. If everything is unspecified, all items are returned.
+        However, if a parameter is given as None, that property will be ignored.
         :returns a List of tuples. Entries:
           * Start index within the master data structure.
           * End index (one point beyond the end) within the master data structure (or len(data) if it goes to EOF).
@@ -776,11 +774,11 @@ class Item:
           * Bits [8:16]: Letter 2, and
           * Bits[16:24]: Letter 3. These are numbers. From '01' to '33'. The digits:
             '00001100' == '0', '10001100' == '1', '01001100' == '2', '11001100' == '3', '00101100' == '4',
-            '10101100' == '5', '01101100' == '6', '11101100' == '7', '00011100' == '8', '10011100' == '9'."""
+            '10101100' == '5', '01101100' == '6', '11101100' == '7', '00011100' == '8', '10011100' == '9'.]"""
         if isinstance(name, str):
             try:
                 name = E_Rune[name]
-            except KeyError as err:
+            except KeyError:
                 _log.warning(f"Invalid rune name string: '{name}'. Returning None.")
                 return None
         if name.type_code is None:
@@ -834,22 +832,10 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     @property
     def has_horadric_cube(self) -> bool:
-        # Test 1: Are there Horadric Cube content items?
-        if Item(self.data).get_cube_contents():
-            return True
-        # Test 2: So we have potentially an empty cube.
-        if not self.data:
-            return False
-        index_start = self.data.find(data_empty_horadric_cube[0])
-        if index_start < 0:
-            return False
-        else:
-            return True
-        # TODO! Debug. Second part of Horadric Cube structure search does not work yet. Bit shifting issue?
-        #index_postfix = index_start + len(data_empty_horadric_cube[0]) + 2
-        #second_part = self.data[index_postfix:]  #(index_postfix+len(data_empty_horadric_cube[1]))]
-        #res = second_part.find(data_empty_horadric_cube[1])
-        #return res == 0
+        for item in Item(self.data).get_block_items(E_ItemBlock.IB_PLAYER):
+            if item.type_code == 'box':
+                return True
+        return False
 
     @property
     def n_cube_contents_shallow(self) -> int:
@@ -1205,9 +1191,15 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             self.data = self.data[0:index_start] + self.data[index_end:]
         return 0
 
+    def drop_items(self, items: List[Item]):
+        """Dropping multiple items at once is dangerous due to indices becoming obsolete. This function hides this danger."""
+        items.sort(key=lambda x: x.index_start, reverse=True)
+        for item in items:
+            self.drop_item(item)
+
     def add_items_to_player(self, items: bytes) -> int:
         """Warning: Be sure to add multiple items in a sensible order!
-        :param items: Byte string of 'JM...'-items. Prefixed with one byte giving the count."""
+        :param items: Byte string of JM...-items. Prefixed with one byte giving the count."""
         index_start = Item(self.data).get_block_index()[E_ItemBlock.IB_PLAYER][0]
         self.data = self.data[0:index_start] + items[1:] + self.data[index_start:]
         count = int.from_bytes(items[0:1], 'little')
@@ -1293,6 +1285,10 @@ class Horadric:
                 self.save_horadric(parsed.save_horadric)
             else:
                 _log.warning("Saving of Horadric Cube content requires 1 target character exactly.")
+
+        if parsed.ensure_horadric:
+            for data in self.data_all:
+                self.ensure_horadric(data)
 
         if parsed.create_rune_cube is not None:
             self.create_rune_cube(parsed.create_rune_cube)
@@ -1499,6 +1495,30 @@ class Horadric:
             data.save2disk()
         print(f"Dropped {len(items)} items from the Horadric cube.")
 
+    def ensure_horadric(self, data: Data):
+        if data.has_horadric_cube:
+            return  # << Nothing to do.
+        item_master = Item(data.data)
+        items_in_non_existing_cube = Item(data.data).get_cube_contents()  # type: List[Item]
+        data.drop_items(items_in_non_existing_cube)
+        items_inventory = list(filter(lambda x: x.row <= 1 and x.col <= 1,
+                                      item_master.get_block_items(E_ItemBlock.IB_PLAYER, E_ItemParent.IP_STORED, None, stored=E_ItemStorage.IS_INVENTORY)))  # type: List[Item]
+        if items_inventory:
+            code = b''
+            n_items = 1
+            data.drop_items(items_inventory)
+            for item in items_inventory:
+                item.stash_type = E_ItemStorage.IS_CUBE
+                n_items = n_items + 1
+                code += item.data_item
+            data.add_items_to_player(int.to_bytes(n_items) + data_tpl_horadric_cube + code)
+        else:
+            data.add_items_to_player(int.to_bytes(1) + data_tpl_horadric_cube)
+        if self.is_standalone:
+            data.update_all()
+            data.save2disk()
+        print("Horadric Cube has been added to the top left corner of the inventory. Old items in this place have been moved into the cube.")
+
     @staticmethod
     def grep_horadric(data: Data) -> bytes:
         """:returns a one-byte prefix with the number of counting items and then the
@@ -1594,6 +1614,7 @@ $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
         parser.add_argument('--drop_horadric', action='store_true', help="Flag. If given, the Horadric Cube contents of the targeted character will be removed.")
         parser.add_argument('--save_horadric', type=str, help="Write the items found in the Horadric Cube to disk with the given pfname. Only one character allowed.")
         parser.add_argument('--load_horadric', type=str, help="Drop all contents from the Horadric Cube and replace them with the horadric file content, that had been written using --save_horadric earlier.")
+        parser.add_argument('--ensure_horadric', action='store_true', help="Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")
         parser.add_argument('--softcore', action='store_true', help="Flag. Set target characters to soft core mode.")
         parser.add_argument('--boost_attributes', type=int, help='Set this number to the given value.')
