@@ -98,6 +98,14 @@ class E_Rune(Enum):
         return b'JM\x10\x00\xa0\x00e\x00\x00(\x07\x13\x03\x02'
 
 
+class E_Progression(Enum):
+    """Which is the adequate level of difficulty? Lives repeating bits 0-1 into 6-7"""
+    EP_NORMAL = 0      # <<   0 + 0
+    EP_NIGHTMARE = 5  # <<  64 + 1
+    EP_HELL = 10      # << 128 + 2
+    EP_MASTER = 15    # << 192 + 3
+
+
 class E_Attributes(Enum):
     AT_STRENGTH = 0
     AT_ENERGY = 1
@@ -838,6 +846,27 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         return False
 
     @property
+    def progression(self) -> int:
+        return self.data[37]
+
+    @progression.setter
+    def progression(self, progression: E_Progression):
+        """Setter for progression. Set to 5 to enable nightmare. Set to 10 to enable hell."""
+        if len(self.data) >= 37:
+            self.data = self.data[:37] + int.to_bytes(progression.value) + self.data[38:]
+
+    @property
+    def has_hell(self) -> bool:
+        return self.data[170] & 128 != 0
+
+    @has_hell.setter
+    def has_hell(self, enable: bool):
+        if enable:
+            self.data = self.data[:170] + int.to_bytes(self.data[170] | 128) + self.data[171:]
+        else:
+            self.data = self.data[:170] + int.to_bytes(self.data[170] & 127) + self.data[171:]
+
+    @property
     def n_cube_contents_shallow(self) -> int:
         """:returns the number of direct items to be found in the Horadric Cube."""
         items = Item(self.data).get_cube_contents()
@@ -952,6 +981,38 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             name += '\x00' * (15 - len(name))
         bname = name.encode() + b'\x00'
         self.data = self.data[0:20] + bname + self.data[36:]
+
+    def _enable_higher_difficulty(self, attr_new: OrderedDict[E_Attributes, int], progression: E_Progression):
+        """Code redundancy saving for enable_{nightmare,hell}."""
+        if self.progression >= progression.value:
+            _log.info("Hell is already enabled. Doing nothing more.")
+            return
+        attr = self.get_attributes()
+        if attr[E_Attributes.AT_LEVEL] >= attr_new[E_Attributes.AT_LEVEL]:
+            _log.info(f"Character already is mighty at level {attr[E_Attributes.AT_LEVEL]}. Doing nothing more.")
+            return
+        old_level = attr[E_Attributes.AT_LEVEL]
+        attr[E_Attributes.AT_LEVEL] = attr_new[E_Attributes.AT_LEVEL]
+        attr[E_Attributes.AT_EXPERIENCE] = attr_new[E_Attributes.AT_EXPERIENCE]
+        attr[E_Attributes.AT_STASHED_GOLD] = attr_new[E_Attributes.AT_EXPERIENCE]
+        attr[E_Attributes.AT_UNUSED_STATS] += 5 * (attr_new[E_Attributes.AT_LEVEL] - old_level)
+        attr[E_Attributes.AT_UNUSED_SKILLS] += (attr_new[E_Attributes.AT_LEVEL] - old_level)
+        self.set_attributes(attr)
+        self.progression = progression
+
+    def enable_nightmare(self):
+        attr_new = odict([(E_Attributes.AT_LEVEL, 35),
+                          (E_Attributes.AT_EXPERIENCE, 10250000),
+                          (E_Attributes.AT_STASHED_GOLD, 900000)])
+        self._enable_higher_difficulty(attr_new, E_Progression.EP_NIGHTMARE)
+        print(f"{self.get_name(True)} is no longer scared by nightmares.")
+
+    def enable_hell(self):
+        attr_new = odict([(E_Attributes.AT_LEVEL, 65),
+                          (E_Attributes.AT_EXPERIENCE, 192000000),
+                          (E_Attributes.AT_STASHED_GOLD, 1650000)])
+        self._enable_higher_difficulty(attr_new, E_Progression.EP_HELL)
+        print(f"{self.get_name(True)} is prepared to go to hell!")
 
     def get_class(self, as_str: bool = False) -> Union[bytes, str]:
         """:returns this character's class as a byte or string."""
@@ -1243,11 +1304,15 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}, "\
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
               f"direct player item count: {self.get_item_count_player(True)}, is dead: {self.is_dead()}, direct mercenary item count: {self.get_item_count_mercenary(True)}, \n" \
+              f"Progress: {self.progression},\n" \
               f"attributes: {s_attr}, \n" \
               f"learned skill-set : {self.skills2str()}"
         item_analysis = Item(self.data)
         for item in item_analysis.get_block_items():
             msg += f"\n{item}"
+        msg += "Quests\n"
+        index = self.data.find(b"Woo!")
+        msg += bytes2bitmap(self.data[index:(index+200)])
         return msg
 
 
@@ -1316,6 +1381,12 @@ class Horadric:
 
         if parsed.reset_skills:
             self.reset_skills()
+
+        if parsed.enable_nightmare:
+            self.enable_nightmare()
+
+        if parsed.enable_hell:
+            self.enable_hell()
 
         if parsed.enable_godmode:
             self.enable_godmode()
@@ -1467,6 +1538,20 @@ class Horadric:
             data.set_skills(skillset)
             # That boost command also does the updating and saving!
             self.boost(E_Attributes.AT_UNUSED_SKILLS, n_skills)
+
+    def enable_nightmare(self):
+        for data in self.data_all:
+            data.enable_nightmare()
+            if self.is_standalone:
+                data.update_all()
+                data.save2disk()
+
+    def enable_hell(self):
+        for data in self.data_all:
+            data.enable_hell()
+            if self.is_standalone:
+                data.update_all()
+                data.save2disk()
 
     def enable_godmode(self):
         for data in self.data_all:
@@ -1621,6 +1706,8 @@ $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
         parser.add_argument('--boost_skills', type=int, help='Set this number to the given value.')
         parser.add_argument('--reset_attributes', action="store_true", help="Flag. Returns all spent attribute points for redistribution.")
         parser.add_argument('--reset_skills', action='store_true', help="Flag. Unlearns all skills, returning them as free skill points.")
+        parser.add_argument('--enable_nightmare', action='store_true', help="Flag. Enables entering nightmare. Fully upgrades character to level 35 and gives gold to match.")
+        parser.add_argument('--enable_hell', action='store_true', help="Flag. Enables entering hell and nightmare. Fully upgrades character to level 65 and give gold to match.")
         parser.add_argument('--enable_godmode', action='store_true', help="Enables Demigod-mode (so far without high Mana/HP/Stamina). Creates a .humanity stat file alongside the .d2s for later return to normal mode.")
         parser.add_argument('--disable_godmode', action='store_true', help="Returns to human form (retaining skill points earned in god mode). After all, who wants the stress of being super all the time?")
         parser.add_argument('--info', action='store_true', help="Flag. Show some statistics to each input file.")

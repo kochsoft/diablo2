@@ -48,8 +48,9 @@ usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
                          [--hardcore] [--softcore]
                          [--boost_attributes BOOST_ATTRIBUTES]
                          [--boost_skills BOOST_SKILLS] [--reset_attributes]
-                         [--reset_skills] [--enable_godmode]
-                         [--disable_godmode] [--info] [--info_stats]
+                         [--reset_skills] [--enable_nightmare] [--enable_hell]
+                         [--enable_godmode] [--disable_godmode] [--info]
+                         [--info_stats]
                          [pfnames ...]
 
 Tool script for doing small scale changes to Diablo II .d2s save game files.
@@ -83,6 +84,8 @@ options:
                         Set this number to the given value.
   --reset_attributes    Flag. Returns all spent attribute points for redistribution.
   --reset_skills        Flag. Unlearns all skills, returning them as free skill points.
+  --enable_nightmare    Flag. Enables entering nightmare. Fully upgrades character to level 35 and gives gold to match.
+  --enable_hell         Flag. Enables entering hell and nightmare. Fully upgrades character to level 65 and give gold to match.
   --enable_godmode      Enables Demigod-mode (so far without high Mana/HP/Stamina). Creates a .humanity stat file alongside the .d2s for later return to normal mode.
   --disable_godmode     Returns to human form (retaining skill points earned in god mode). After all, who wants the stress of being super all the time?
   --info                Flag. Show some statistics to each input file.
