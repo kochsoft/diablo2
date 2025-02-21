@@ -25,7 +25,7 @@ However:
 
 **MODIFYING DIABLO II .d2s FILES IS DANGEROUS TO THOSE FILES!**
 
-The default settings of the script will create backups of the modified savegame .d2s files.
+The default settings of the script will create backups of the modified save-game .d2s files.
 
 Still:
 
@@ -84,8 +84,8 @@ options:
                         Set this number to the given value.
   --reset_attributes    Flag. Returns all spent attribute points for redistribution.
   --reset_skills        Flag. Unlearns all skills, returning them as free skill points.
-  --enable_nightmare    Flag. Enables entering nightmare. Fully upgrades character to level 35 and gives gold to match.
-  --enable_hell         Flag. Enables entering hell and nightmare. Fully upgrades character to level 65 and give gold to match.
+  --enable_nightmare    Flag. Enables entering nightmare. Fully upgrades character to level 38 and gives gold to match.
+  --enable_hell         Flag. Enables entering hell and nightmare. Fully upgrades character to level 68 and gives gold to match.
   --enable_godmode      Enables Demigod-mode (so far without high Mana/HP/Stamina). Creates a .humanity stat file alongside the .d2s for later return to normal mode.
   --disable_godmode     Returns to human form (retaining skill points earned in god mode). After all, who wants the stress of being super all the time?
   --info                Flag. Show some statistics to each input file.
