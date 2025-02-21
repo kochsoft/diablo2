@@ -1586,7 +1586,7 @@ class Horadric:
         item_master = Item(data.data)
         items_in_non_existing_cube = Item(data.data).get_cube_contents()  # type: List[Item]
         data.drop_items(items_in_non_existing_cube)
-        items_inventory = list(filter(lambda x: x.row <= 1 and x.col <= 1,
+        items_inventory = list(filter(lambda x: x.row <= 1 and x.col <= 1 and x.stash_type == E_ItemStorage.IS_INVENTORY,
                                       item_master.get_block_items(E_ItemBlock.IB_PLAYER, E_ItemParent.IP_STORED, None, stored=E_ItemStorage.IS_INVENTORY)))  # type: List[Item]
         if items_inventory:
             code = b''
