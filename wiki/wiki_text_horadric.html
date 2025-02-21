@@ -30,7 +30,7 @@ that Gheed character, and ... you get the picture.
 
 <figure>
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/gheed.png" alt="Gheed and Barbarian" class="center_img"><br />
-  <figcaption>Fig.1 - Gheed is a wonderful human being, and a true friend.</figcaption>
+  <figcaption>Fig.1 - Gheed is a wonderful human being. And a true friend.</figcaption>
 </figure>
 
 <h2>What these two scripts are not</h2>
@@ -42,15 +42,10 @@ wine-10.1 available. However, it should be a matter of rather straight-forward
 modifications of target bit sites in <code>horazons_folly.py</code> to generalize it
 to other save-game versions.
 </p><p>
-Also, if you are looking for a fast way to finally create that 'Jah Ith Ber' rune
-set or the elite three-socketed armor for it: These scripts may be misused to copy
-an existing armor. However, they will not create any of these components ex nihilo.
-Nor are they meant to do so.
-</p><p>
-Inevitably though, development of the primary goal <i>(i.e., exchanging the contents of the
-Horadric Cubes between two distinct character <code>.d2s</code> save-game files)</i>,
-led to some generous cheating functions as well. They are available, e.g., in the
-GUI from a separate tab, <b>Horazon's Folly</b>.
+While there are, in the more clandestine Horazon's section, facilities that will
+provide a Horadric cube and even create any rune you could wish for, creation
+powers do not extend beyond that. So after creating that set of 'Jah Ith Ber' runes
+you will still have to find a suitable armor to go with them yourself.
 </p>
 
 <h2>What these two scripts are</h2>
@@ -67,14 +62,15 @@ The project mainly comprises
     that contains a lot of knowledge for anyone endeavoring to understand Diablo II
     save-game files.
   </li>
-  <li><b>horadric_exchange.py</b>: A GUI frontend for <code>horazons_folly.py</code>.
+  <li><b>horadric_exchange.py</b>: A comprehensive GUI frontend for <code>horazons_folly.py</code>.
     It brings one dependency: <code>tkinter</code>, the basic, python GUI system.
     On windows it may be selected as optional during installation of the Python 3
     interpreter. Under Linux there often is a dedicated package to be had, or
     <code>python -m pip install tkinter</code> might help.
     The GUI allows to load and read save-game contents, and to do both, the title-
-    giving Horadric Exchanges, and some more clandestine edits, like (reversible,
-    but still gain-maintaining!) godmode, or attribute or skill resets, if one
+    giving Horadric Exchanges, and some more clandestine edits, like enabling
+    nightmare or hell mode (also promoting the character for standing a chance),
+    god mode (reversible, but still gain-maintaining!), or attribute or skill resets, if one
     indulges into the "Horazon's Folly Tab". There is more.
   </li>
 </ul>
@@ -127,6 +123,8 @@ that will define
 <p>
 Both, the <code>--help</code> section of <code>horazons_folly.py</code>, and the
 GUI, provided by <code>horadric_exchange.py</code> are rather self-explanatory.
+The <code>--help</code> section can also be reviewed in
+<a href="https://github.com/kochsoft/diablo2">the README.md file</a>.
 </p><p>
 Still some comments on the GUI. The general workflow for both tabs is:
 </p>
@@ -164,9 +162,9 @@ Diablo II save-game file format analysis page:
 </p><p>
 <a href=https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md>https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md</a>
 </p><p>
-  For the remainder of this text I will silently refer to this source.
-  Yet, there are couple of grains of knowledge, that I found on my own, too.
-  Note however, that, as stated above, all is promised to hold true to v1.10-v1.14d only.
+For the remainder of this text I will silently refer to this source.
+Yet, there are couple of grains of knowledge, that I found on my own, too.
+Note however, that, as stated above, all is promised to hold true to v1.10-v1.14d only.
 </p>
 <h3>Health, Mana, and Stamina Attributes</h3>
 <p>
@@ -186,18 +184,18 @@ It is true, that these attributes are encoded in 21 bits. However, they are regu
 <p>
   <i>
   Example bit-sequence: ID, Quarters, and proper value.<br />
-ID: 000001000 (AT_CURRENT_MANA), value: 8<br />
-  Val: 01000000 (64) 0000000011100 (28)</i>
+ID: 000001000 (ID 8) (AT_CURRENT_MANA)<br />
+  Val: 01000000 (64 AKA 1/4) 0000000011100 (28)</i>
 </p>
 
 <p>
   I can also not confirm that any of the other values are bit-inverted.
 </p><p>
 The variable length of the attributes section seems to stem from the fact
-  that values that are 0 are not listed, but missing. It appears that 0 values
-  are even illegal.  When I tried to add explicit 0 values this led me into a
-  corrupt save-game, complaining that the skill section (which is beyond attributes)
-  were corrupted. Only when I made sure, that 0 values are not present all was well again.
+that values that are 0 are not listed, but missing. It appears that 0 values
+are even illegal.  When I tried to add explicit 0 values this led me into a
+corrupt save-game, complaining that the skill section (which is beyond attributes)
+were corrupted. Only when I made sure, that 0 values are not present all was well again.
 </p><p>
 The skill section is far simpler than described. It is preceded with the code
 <b>if</b>. However, after that, there just come 30 byte values describing
@@ -213,4 +211,21 @@ And now read the skills left to right, line by line. First skill is "Amplified
 Damage", followed by "Teeth", "Bone Armor", "Skeleton Mastery" and "Raise Skeleton".
 Next comes the second row with "Dim Vision", "Weaken", "Poison Dagger", and so on.
 The other character classes' skills are organized in the same way.
+</p><p>I am not entirely positive on how character progression (i.e. byte 37 of
+the .d2s file, still part of the main header) really works. However, it appears that
+<ul>
+<li>0 is the starting value</li>
+<li>5 is reached upon completion of the normal campaign. This value grants the rank of Slayer/Destroyer and enables nightmare.</li>
+<li>10 is reached upon completion of the nightmare campaign. This value grants the rank of Champion/Conqueror and enables hell.</li>
+<li>15 is reached upon completion of the hell campaign. This value grants the rank of (M|P)atriarch/Guardian.</li>
+</ul>
+</p><p>
+Each item has a <a href="https://www.gmstemple.com/Diablo2/itemcodes.html">three-letter code</a> defining its elementary nature.
+E.g., the unique item of the Horadric Cube is called "box". The runes are, in sequence from 'el' to 'zod', labelled 'r01', .., 'r33'.
+These three bytes range from [Bit 76:Bit 100]. This means a bit shift of 4 if you want to read the codes in the original byte format.
 </p>
+<figure>
+  <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/crafted_runes.png" alt="Jah, Ith, Ber, and, for show, a Zod rune." class="center_img"><br />
+  <figcaption>Fig.6 - Jah, Ith, Ber, and, for show, a Zod rune. All from Horazon's workshop. Sadly however, the character who received them is too
+whimpy to apply them to anything. However, enabling Hell capability would remedy this for any of these, but the Zod rune.</figcaption>
+</figure>
