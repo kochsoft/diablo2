@@ -985,32 +985,34 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
     def _enable_higher_difficulty(self, attr_new: OrderedDict[E_Attributes, int], progression: E_Progression):
         """Code redundancy saving for enable_{nightmare,hell}."""
         if self.progression >= progression.value:
-            _log.info("Hell is already enabled. Doing nothing more.")
+            _log.info(f"{progression} is already enabled. Doing nothing more.")
             return
+        self.progression = progression
         attr = self.get_attributes()
         if attr[E_Attributes.AT_LEVEL] >= attr_new[E_Attributes.AT_LEVEL]:
             _log.info(f"Character already is mighty at level {attr[E_Attributes.AT_LEVEL]}. Doing nothing more.")
             return
         old_level = attr[E_Attributes.AT_LEVEL]
+        attr[E_Attributes.AT_UNUSED_STATS] = 5 * (attr_new[E_Attributes.AT_LEVEL] - old_level) + (attr[E_Attributes.AT_UNUSED_STATS] if E_Attributes.AT_UNUSED_STATS in attr else 0)
+        attr[E_Attributes.AT_UNUSED_SKILLS] = (attr_new[E_Attributes.AT_LEVEL] - old_level) + (attr[E_Attributes.AT_UNUSED_SKILLS] if E_Attributes.AT_UNUSED_SKILLS in attr else 0)
         attr[E_Attributes.AT_LEVEL] = attr_new[E_Attributes.AT_LEVEL]
         attr[E_Attributes.AT_EXPERIENCE] = attr_new[E_Attributes.AT_EXPERIENCE]
-        attr[E_Attributes.AT_STASHED_GOLD] = attr_new[E_Attributes.AT_EXPERIENCE]
-        attr[E_Attributes.AT_UNUSED_STATS] += 5 * (attr_new[E_Attributes.AT_LEVEL] - old_level)
-        attr[E_Attributes.AT_UNUSED_SKILLS] += (attr_new[E_Attributes.AT_LEVEL] - old_level)
+        attr[E_Attributes.AT_STASHED_GOLD] = attr_new[E_Attributes.AT_STASHED_GOLD]
         self.set_attributes(attr)
-        self.progression = progression
 
     def enable_nightmare(self):
-        attr_new = odict([(E_Attributes.AT_LEVEL, 35),
-                          (E_Attributes.AT_EXPERIENCE, 10250000),
-                          (E_Attributes.AT_STASHED_GOLD, 900000)])
+        # https://classic.battle.net/diablo2exp/basics/levels.shtml
+        # https://www.purediablo.com/d2wiki/Gold
+        attr_new = odict([(E_Attributes.AT_LEVEL, 38),
+                          (E_Attributes.AT_EXPERIENCE, 14641810),
+                          (E_Attributes.AT_STASHED_GOLD, 1000000)])
         self._enable_higher_difficulty(attr_new, E_Progression.EP_NIGHTMARE)
         print(f"{self.get_name(True)} is no longer scared by nightmares.")
 
     def enable_hell(self):
-        attr_new = odict([(E_Attributes.AT_LEVEL, 65),
-                          (E_Attributes.AT_EXPERIENCE, 192000000),
-                          (E_Attributes.AT_STASHED_GOLD, 1650000)])
+        attr_new = odict([(E_Attributes.AT_LEVEL, 68),
+                          (E_Attributes.AT_EXPERIENCE, 250161148),
+                          (E_Attributes.AT_STASHED_GOLD, 1750000)])
         self._enable_higher_difficulty(attr_new, E_Progression.EP_HELL)
         print(f"{self.get_name(True)} is prepared to go to hell!")
 
@@ -1299,12 +1301,12 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         s_attr = ''
         for key in self.get_attributes():
             s_attr += f"{key.name}: {self.HMS2str(attr[key])},\n" if key.get_attr_sz_bits() == 21 else f"{key.name}: {attr[key]},\n"
-        msg = f"{self.get_name(True)} ({self.pfname}), a Horadric Cube (holding {self.n_cube_contents_shallow} items) {cube_posessing}, level {self.data[43]} {core} {self.get_class(True)} {god_status}.\n"\
+        msg = f"{self.get_name(True)} ({self.pfname}), a Horadric Cube (holding {self.n_cube_contents_shallow} items) {cube_posessing}, level {attr[E_Attributes.AT_LEVEL]} {core} {self.get_class(True)} {god_status}.\n"\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}, "\
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
               f"direct player item count: {self.get_item_count_player(True)}, is dead: {self.is_dead()}, direct mercenary item count: {self.get_item_count_mercenary(True)}, \n" \
-              f"Progress: {self.progression},\n" \
+              f"Progress: {self.progression}, Gold: {attr[E_Attributes.AT_STASHED_GOLD]+attr[E_Attributes.AT_GOLD]}.\n" \
               f"attributes: {s_attr}, \n" \
               f"learned skill-set : {self.skills2str()}"
         item_analysis = Item(self.data)
@@ -1706,8 +1708,8 @@ $ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
         parser.add_argument('--boost_skills', type=int, help='Set this number to the given value.')
         parser.add_argument('--reset_attributes', action="store_true", help="Flag. Returns all spent attribute points for redistribution.")
         parser.add_argument('--reset_skills', action='store_true', help="Flag. Unlearns all skills, returning them as free skill points.")
-        parser.add_argument('--enable_nightmare', action='store_true', help="Flag. Enables entering nightmare. Fully upgrades character to level 35 and gives gold to match.")
-        parser.add_argument('--enable_hell', action='store_true', help="Flag. Enables entering hell and nightmare. Fully upgrades character to level 65 and give gold to match.")
+        parser.add_argument('--enable_nightmare', action='store_true', help="Flag. Enables entering nightmare. Fully upgrades character to level 38 and gives gold to match.")
+        parser.add_argument('--enable_hell', action='store_true', help="Flag. Enables entering hell and nightmare. Fully upgrades character to level 68 and gives gold to match.")
         parser.add_argument('--enable_godmode', action='store_true', help="Enables Demigod-mode (so far without high Mana/HP/Stamina). Creates a .humanity stat file alongside the .d2s for later return to normal mode.")
         parser.add_argument('--disable_godmode', action='store_true', help="Returns to human form (retaining skill points earned in god mode). After all, who wants the stress of being super all the time?")
         parser.add_argument('--info', action='store_true', help="Flag. Show some statistics to each input file.")

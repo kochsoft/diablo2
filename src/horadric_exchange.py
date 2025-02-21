@@ -511,6 +511,10 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                 self.button_ensure_cube.config(state='normal')
             else:
                 self.button_ensure_cube.config(state='disabled')
+            if data.progression >= 5:
+                self.button_enable_nightmare.config(state='disabled')
+            if data.progression >= 10:
+                self.button_enable_hell.config(state='disabled')
             self.entry_runic_cube.delete(0, tk.END)
             self.entry_runic_cube.insert(0, 'ort,sol')
             self.entry_boost_skills.delete(0, tk.END)
@@ -616,7 +620,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
 
         self.button_horadric = tk.Button(self.tab1, state='disabled', image=self.icon_horadric_exchange, command=self.do_horadric_exchange)
         self.button_horadric.grid(row=4, column=0, columnspan=10, sticky='ew')
-        self.tooltip_commit = Hovertip(self.button_horadric, 'Load two character files and swap their Horadric Cube contents.')
+        self.tooltip_commit = Hovertip(self.button_horadric, 'Load two character files and click this button to swap their Horadric Cube contents.')
         # < ----------------------------------------------------------
         # > Tab 2: Horazon's Folly. ----------------------------------
         ta_introduction = tk.Text(self.tab2, width=80, height=6, state='normal', wrap=tk.WORD)
@@ -640,24 +644,31 @@ Beware!"""
 
         self.button_load_cube = tk.Button(self.tab2, text='Load Cube', command=self.load_cube, width=10, height=1, bg='#009999')
         self.button_load_cube.grid(row=3, column=0)
+        Hovertip(self.button_load_cube, 'Load a .cube file as may have been created using Save Cube at an earlier occasion.')
 
         self.button_save_cube = tk.Button(self.tab2, text='Save Cube', command=self.save_cube, width=10, height=1, bg='#009999')
         self.button_save_cube.grid(row=3, column=1, sticky='w')
+        Hovertip(self.button_save_cube, 'Save the cube contents of this character into a binary .cube file.')
 
         self.button_reset_skills = tk.Button(self.tab2, text='Unlearn Skills', command=self.reset_skills, width=10, height=1, bg='#009999')
         self.button_reset_skills.grid(row=4, column=0)
+        Hovertip(self.button_reset_skills, 'Return all hard skill points for redistribution.')
 
         self.button_reset_attributes = tk.Button(self.tab2, text='Untrain Attrib.', command=self.reset_attributes, width=10, height=1, bg='#009999')
         self.button_reset_attributes.grid(row=4, column=1, sticky='w')
+        Hovertip(self.button_reset_attributes, 'Return all hard attribute points for redistribution.')
 
         self.button_ensure_cube = tk.Button(self.tab2, text='Ensure Cube', command=self.ensure_cube, width=10, height=1, bg='#009999')
         self.button_ensure_cube.grid(row=3, column=3, sticky='w')
+        Hovertip(self.button_ensure_cube, 'If your character has no Horadric Cube. Get one into your inventory. Supplanted items will be moved into the cube.')
 
         self.button_enable_nightmare = tk.Button(self.tab2, text='Enable Nightmare', command=self.enable_nightmare, width=15, height=1, bg='#009999')
         self.button_enable_nightmare.grid(row=4, column=2, sticky='w')
+        Hovertip(self.button_enable_nightmare, 'If still in normal mode. Raise your character level to 38 (if necessary) and fill his stash with gold.')
 
         self.button_enable_hell = tk.Button(self.tab2, text='Enable Hell', command=self.enable_hell, width=10, height=1, bg='#009999')
         self.button_enable_hell.grid(row=4, column=3, sticky='w')
+        Hovertip(self.button_enable_hell, 'If still in normal or nightmare mode. Raise your character level to 68 (if necessary) and fill his stash with gold.')
 
         var_runic_cube = tk.StringVar()
         var_runic_cube.set("ort, sol")
@@ -665,30 +676,35 @@ Beware!"""
         self.entry_runic_cube.grid(row=5, column=1, columnspan=4, sticky='ew')
         self.button_runic_cube = tk.Button(self.tab2, text='Runes to Cube', command=lambda: self.runic_cube(var_runic_cube.get()), width=10, height=1, bg='#009999')
         self.button_runic_cube.grid(row=5, column=0)
+        Hovertip(self.button_runic_cube, 'Write a comma-separated list of up to 12 rune names and click this. Will replace your cube contents with these runes.')
 
         var_skills = tk.IntVar()
         self.entry_boost_skills = tk.Entry(self.tab2, textvariable=var_skills)
         self.entry_boost_skills.grid(row=6, column=1, columnspan=4, sticky='ew')
         self.button_boost_skills = tk.Button(self.tab2, text='Boost Skills', command=lambda: self.boost_skills(var_skills.get()), width=10, height=1, bg='#009999')
         self.button_boost_skills.grid(row=6, column=0)
+        Hovertip(self.button_boost_skills, 'Get some extra skill points.')
 
         var_attributes = tk.IntVar()
         self.entry_boost_attributes = tk.Entry(self.tab2, textvariable=var_attributes)
         self.entry_boost_attributes.grid(row=7, column=1, columnspan=4, sticky='ew')
         self.button_boost_attributes = tk.Button(self.tab2, text='Boost Attrib.', command=lambda: self.boost_attributes(var_attributes.get()), width=10, height=1, bg='#009999')
         self.button_boost_attributes.grid(row=7, column=0)
+        Hovertip(self.button_boost_attributes, 'Get some extra attribute points.')
 
         var_hardcore = tk.IntVar()
         self.check_hardcore = tk.Checkbutton(self.tab2, text='Hardcore', variable=var_hardcore, command=lambda: self.set_hardcore(bool(var_hardcore.get())))
         self.check_hardcore.grid(row=8, column=0)
+        Hovertip(self.check_hardcore, 'Enable or disable hardcore mode.')
 
         var_godmode = tk.IntVar()
         self.check_godmode = tk.Checkbutton(self.tab2, text='Godmode', variable=var_godmode, command=lambda: self.set_godmode(bool(var_godmode.get())))
         self.check_godmode.grid(row=8, column=1, sticky='w')
+        Hovertip(self.check_godmode, 'Enable or disable god mode. Will give you powerful skills all around and high attributes. Gains made under god mode will be preserved when disabling it.')
 
         self.button_horazon = tk.Button(self.tab2, image=self.icon_potion_of_life, command=self.do_commit_horazon) #, bg='#dfff00')
         self.button_horazon.grid(row=9, column=0, columnspan=5, sticky='ew')
-        Hovertip(self.button_horazon, 'Commit all that was planned.')
+        Hovertip(self.button_horazon, 'All changes made above are hypothetical. Unless you click this here button that will commit them!')
         self.validate_pname_work()
         self.update_hero_widgets(False)
         # < ----------------------------------------------------------
