@@ -1303,7 +1303,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             s_attr += f"{key.name}: {self.HMS2str(attr[key])},\n" if key.get_attr_sz_bits() == 21 else f"{key.name}: {attr[key]},\n"
         msg = f"{self.get_name(True)} ({self.pfname}), a Horadric Cube (holding {self.n_cube_contents_shallow} items) {cube_posessing}, level {attr[E_Attributes.AT_LEVEL]} {core} {self.get_class(True)} {god_status}.\n"\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
-              f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}, "\
+              f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}', "\
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
               f"direct player item count: {self.get_item_count_player(True)}, is dead: {self.is_dead()}, direct mercenary item count: {self.get_item_count_mercenary(True)}, \n" \
               f"Progress: {self.progression}.\n" \
