@@ -1306,7 +1306,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}, "\
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
               f"direct player item count: {self.get_item_count_player(True)}, is dead: {self.is_dead()}, direct mercenary item count: {self.get_item_count_mercenary(True)}, \n" \
-              f"Progress: {self.progression}, Gold: {attr[E_Attributes.AT_STASHED_GOLD]+attr[E_Attributes.AT_GOLD]}.\n" \
+              f"Progress: {self.progression}.\n" \
               f"attributes: {s_attr}, \n" \
               f"learned skill-set : {self.skills2str()}"
         item_analysis = Item(self.data)
