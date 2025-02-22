@@ -502,7 +502,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                 widget.config(state='normal')
             else:
                 widget.config(state='disabled')
-        if do_update and enable:
+        if do_update and enable and len(self.horadric_horazon.data_all):
             data = self.horadric_horazon.data_all[0]  # type: Data
             if not data.has_horadric_cube:
                 self.button_load_cube.config(state='disabled')
@@ -618,7 +618,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         label_d2 = tk.Label(self.tab1, anchor='w', text='<- D2 Save-Game Dir. Where .d2s save-games will be edited.', relief=tk.RIDGE, width=10)
         label_d2.grid(row=3, column=3, columnspan=3, sticky='ew')
 
-        self.button_horadric = tk.Button(self.tab1, state='disabled', image=self.icon_horadric_exchange, command=self.do_horadric_exchange)
+        self.button_horadric = tk.Button(self.tab1, state='disabled', image=self.icon_horadric_exchange, command=self.do_horadric_exchange, bg='#009999')
         self.button_horadric.grid(row=4, column=0, columnspan=10, sticky='ew')
         self.tooltip_commit = Hovertip(self.button_horadric, 'Load two character files and click this button to swap their Horadric Cube contents.')
         # < ----------------------------------------------------------
@@ -702,7 +702,7 @@ Beware!"""
         self.check_godmode.grid(row=8, column=1, sticky='w')
         Hovertip(self.check_godmode, 'Enable or disable god mode. Will give you powerful skills all around and high attributes. Gains made under god mode will be preserved when disabling it.')
 
-        self.button_horazon = tk.Button(self.tab2, image=self.icon_potion_of_life, command=self.do_commit_horazon) #, bg='#dfff00')
+        self.button_horazon = tk.Button(self.tab2, image=self.icon_potion_of_life, command=self.do_commit_horazon, bg='#009999')
         self.button_horazon.grid(row=9, column=0, columnspan=5, sticky='ew')
         Hovertip(self.button_horazon, 'All changes made above are hypothetical. Unless you click this here button that will commit them!')
         self.validate_pname_work()
