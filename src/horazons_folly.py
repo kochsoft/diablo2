@@ -1787,13 +1787,13 @@ Motivating example is the --exchange function. Have two characters stuff items i
 Apply this script to both their .d2s files, using the --exchange flag. Then this script will attempt to alter
 both files thus, that the Horadric Cube contents of both players switch places."""
         epilog = f"""Example call:
-$ python3 {Path(sys.argv[0]).name} conan.d2s ormaline.d2s"""
+$ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser = argparse.ArgumentParser(prog='horazons_folly.py', description=desc, epilog=epilog, formatter_class=RawTextHelpFormatter)
         parser.add_argument('--omit_backup', action='store_true',
             help="Per default, target files will be back-upped to .backup files. For safety. This option will disable that safety.")
         parser.add_argument('--pfname_backup', type=str, help='State a pfname to the backup file. Per default a timestamped name will be used. If there are multiple files to backup, the given name will be prefixed with each character\'s name.')
         parser.add_argument('--exchange_horadric', action='store_true', help="Flag. Requires that there are precisely 2 character pfnames given. This will exchange their Horadric Cube contents.")
-        parser.add_argument('--create_rune_cube', type=str, nargs='?', const='enigmatic_rune_cube.cube:jah,ith,ber', help="pfname, ':', then a comma separated list of up to 12 rune names. Creates a cube content with these runes.")
+        parser.add_argument('--create_rune_cube', type=str, nargs='?', const='enigmatic_rune_cube.cube:jah,ith,ber', help="pfname, ':', then a comma separated list of up to 12 rune names and/or gem codes, /[tasredb][0-4]/. Creates a cube content with these runes and socketables.")
         parser.add_argument('--drop_horadric', action='store_true', help="Flag. If given, the Horadric Cube contents of the targeted character will be removed.")
         parser.add_argument('--save_horadric', type=str, help="Write the items found in the Horadric Cube to disk with the given pfname. Only one character allowed.")
         parser.add_argument('--load_horadric', type=str, help="Drop all contents from the Horadric Cube and replace them with the horadric file content, that had been written using --save_horadric earlier.")

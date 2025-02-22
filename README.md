@@ -69,7 +69,7 @@ options:
                         State a pfname to the backup file. Per default a timestamped name will be used. If there are multiple files to backup, the given name will be prefixed with each character's name.
   --exchange_horadric   Flag. Requires that there are precisely 2 character pfnames given. This will exchange their Horadric Cube contents.
   --create_rune_cube [CREATE_RUNE_CUBE]
-                        pfname, ':', then a comma separated list of up to 12 rune names. Creates a cube content with these runes.
+                        pfname, ':', then a comma separated list of up to 12 rune names and/or gem codes, /[tasredb][0-4]/. Creates a cube content with these runes and socketables.
   --drop_horadric       Flag. If given, the Horadric Cube contents of the targeted character will be removed.
   --save_horadric SAVE_HORADRIC
                         Write the items found in the Horadric Cube to disk with the given pfname. Only one character allowed.
@@ -92,5 +92,5 @@ options:
   --info_stats          Flag. Nerd-minded. Detailed info tool on the parsing of attributes and skills.
 
 Example call:
-$ python3 horazons_folly.py conan.d2s ormaline.d2s
+$ python3 horazons_folly.py --info conan.d2s ormaline.d2s
 ```
