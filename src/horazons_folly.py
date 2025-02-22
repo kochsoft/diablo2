@@ -1053,6 +1053,19 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         else:
             _log.warning(f"Failure to set item count for hitherto unsupported block '{block.name}'.")
 
+    def get_rank(self, add_trailing_space_to_non_empty: bool = True) -> str:
+        hc = self.is_hardcore()
+        prog = self.progression
+        ts = ' ' if add_trailing_space_to_non_empty else ''
+        if prog < 5:
+            return ''
+        elif prog < 10:
+            return ('Destroyer' if hc else 'Slayer') + ts
+        elif prog < 15:
+            return ('Conqueror' if hc else 'Champion') + ts
+        else:
+            return ('Guardian' if hc else ('Matriarch' if self.get_class_enum().is_female() else 'Patriarch')) + ts
+
     def get_name(self, as_str: bool = False) -> Union[bytes, str]:
         """:returns the character name. Either as str or as the 16 byte bytes array."""
         b_name = self.data[20:36]
@@ -1119,6 +1132,10 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             return str(E_Characters(val))
         else:
             return val.to_bytes(1, 'little')
+
+    def get_class_enum(self) -> E_Characters:
+        """:returns this character's class as a value of E_Characters."""
+        return E_Characters(int.from_bytes(self.get_class(), 'little'))
 
     def is_dead(self) -> bool:
         """The bit of index 3 in status byte 36 decides if a character is dead."""
@@ -1225,7 +1242,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         skills = self.get_skills()
         if len(skills) < 30:
             return 'Skill getter failed.'
-        character = E_Characters(int.from_bytes(self.get_class(), 'little'))
+        character = self.get_class_enum()
         names = d_skills[character]
         n = len(names)
         res = ''
@@ -1392,12 +1409,13 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
     def __str__(self) -> str:
         core = 'hardcore' if self.is_hardcore() else 'softcore'
         cube_posessing = 'owning' if self.has_horadric_cube else 'lacking'
-        god_status = ('demi-goddess' if self.is_demi_god else 'heroine') if E_Characters(int.from_bytes(self.get_class(), "little")).is_female() else ('demi-god' if self.is_demi_god else 'hero')
+        god_status = ('demi-goddess' if self.is_demi_god else 'heroine') if self.get_class_enum().is_female() else ('demi-god' if self.is_demi_god else 'hero')
         attr = self.get_attributes()
         s_attr = ''
         for key in self.get_attributes():
             s_attr += f"{key.name}: {self.HMS2str(attr[key])},\n" if key.get_attr_sz_bits() == 21 else f"{key.name}: {attr[key]},\n"
-        msg = f"{self.get_name(True)} ({self.pfname}), a Horadric Cube (holding {self.n_cube_contents_shallow} items) {cube_posessing}, level {attr[E_Attributes.AT_LEVEL]} {core} {self.get_class(True)} {god_status}.\n"\
+        msg = f"{self.get_rank()}{self.get_name(True)} ({self.pfname}), a Horadric Cube (holding {self.n_cube_contents_shallow} items) {cube_posessing}, "\
+              f"level {attr[E_Attributes.AT_LEVEL]} {core} {self.get_class(True)} {god_status}.\n"\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}', "\
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
@@ -1408,9 +1426,6 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         item_analysis = Item(self.data)
         for item in item_analysis.get_block_items():
             msg += f"\n{item}"
-        msg += "Quests\n"
-        index = self.data.find(b"Woo!")
-        msg += bytes2bitmap(self.data[index:(index+200)])
         return msg
 
 
@@ -1601,7 +1616,7 @@ class Horadric:
     def reset_attributes(self):
         for data in self.data_all:
             attr = data.get_attributes()
-            character = E_Characters(int.from_bytes(data.get_class()))
+            character = data.get_class_enum()
             attr_start = character.starting_attributes()
             vitality_loss = attr[E_Attributes.AT_VITALITY] - attr_start[E_Attributes.AT_VITALITY]
             energy_loss = attr[E_Attributes.AT_ENERGY] - attr_start[E_Attributes.AT_ENERGY]
