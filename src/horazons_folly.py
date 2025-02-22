@@ -77,20 +77,116 @@ class E_Rune(Enum):
     ER_CHAM = 32
     ER_ZOD = 33
 
+    ER_TOPAZ_CHIPPED = 40
+    ER_AMETHYST_CHIPPED = 41
+    ER_SAPHIRE_CHIPPED = 42
+    ER_RUBY_CHIPPED = 43
+    ER_EMERALD_CHIPPED = 44
+    ER_DIAMOND_CHIPPED = 45
+    ER_SKULL_CHIPPED = 46
+
+    ER_TOPAZ_FLAWED = 50
+    ER_AMETHYST_FLAWED = 51
+    ER_SAPHIRE_FLAWED = 52
+    ER_RUBY_FLAWED = 53
+    ER_EMERALD_FLAWED = 54
+    ER_DIAMOND_FLAWED = 55
+    ER_SKULL_FLAWED = 56
+
+    ER_TOPAZ = 60
+    ER_AMETHYST = 61
+    ER_SAPHIRE = 62
+    ER_RUBY = 63
+    ER_EMERALD = 64
+    ER_DIAMOND = 65
+    ER_SKULL = 66
+
+    ER_TOPAZ_FLAWLESS = 70
+    ER_AMETHYST_FLAWLESS = 71
+    ER_SAPHIRE_FLAWLESS = 72
+    ER_RUBY_FLAWLESS = 73
+    ER_EMERALD_FLAWLESS = 74
+    ER_DIAMOND_FLAWLESS = 75
+    ER_SKULL_FLAWLESS = 76
+
+    ER_TOPAZ_PERFECT = 80
+    ER_AMETHYST_PERFECT = 81
+    ER_SAPHIRE_PERFECT = 82
+    ER_RUBY_PERFECT = 83
+    ER_EMERALD_PERFECT = 84
+    ER_DIAMOND_PERFECT = 85
+    ER_SKULL_PERFECT = 86
+
     @property
     def type_code(self) -> Optional[str]:
-        if not (1 <= self.value <= 33):
+        if self.value == 0:
             return None
-        return "r{0:02d}".format(self.value)
+        if 1 <= self.value <= 33:
+            return "r{0:02d}".format(self.value)
+
+        gem_reference = E_Rune(self.value % 10 + 60)
+        quality = floor(self.value / 10) - 4
+        if quality < 0:
+            quality = 0
+        elif quality > 4:
+            quality = 4
+        if gem_reference == E_Rune.ER_TOPAZ:
+            return ['gcy', 'gfy', 'gsy', 'gly', 'gpy'][quality]
+        elif gem_reference == E_Rune.ER_AMETHYST:
+            return ['gcv', 'gfv', 'gsv', 'gzv', 'gpv'][quality]
+        elif gem_reference == E_Rune.ER_SAPHIRE:
+            return ['gcb', 'gfb', 'gsb', 'glb', 'gpb'][quality]
+        elif gem_reference == E_Rune.ER_RUBY:
+            return ['gcr', 'gfr', 'gsr', 'glr', 'gpr'][quality]
+        elif gem_reference == E_Rune.ER_EMERALD:
+            return ['gcg', 'gfg', 'gsg', 'glg', 'gpg'][quality]
+        elif gem_reference == E_Rune.ER_DIAMOND:
+            return ['gcw', 'gfw', 'gsw', 'glw', 'gpw'][quality]
+        elif gem_reference == E_Rune.ER_SKULL:
+            return ['skc', 'skf', 'sku', 'skl', 'skz'][quality]
+        else:
+            return None
 
     @staticmethod
     def from_name(name: str) -> Optional[E_Rune]:
+        """:param name: Simply by rune name for runes Else /^[tasredb][0-4]$/ for gems and skulls ('b'one, get it?),
+          the number denoting the quality from 0: chipped to 4: perfect."""
+        # > Grand case 1: Gems and Bones (i.e., Skulls). -------------
+        m = re.findall("^([tasredb])([0-4])$", name.lower())
+        if m:
+            tp = m[0][0]
+            quality = floor(int(m[0][1]))
+            if quality < 0:
+                quality = 0
+            elif quality > 4:
+                quality = 4
+            val = 40 + quality * 10
+            if tp == 't':
+                val += 0
+            elif tp == 'a':
+                val += 1
+            elif tp == 's':
+                val += 2
+            elif tp == 'r':
+                val += 3
+            elif tp == 'e':
+                val += 4
+            elif tp == 'd':
+                val += 5
+            elif tp == 'b':
+                val += 6
+            else:
+                return None
+            return E_Rune(val)
+        # < ----------------------------------------------------------
+        # > Runes. ---------------------------------------------------
         try:
             candidate = E_Rune[f"ER_{name}".upper()]
         except KeyError:
             _log.warning(f"Invalid rune name '{name}' encountered.")
             return None
         return candidate if 1 <= candidate.value <= 33  else None
+    # < --------------------------------------------------------------
 
     @staticmethod
     def sample_byte_code_rune_el() -> bytes:
@@ -785,19 +881,19 @@ class Item:
             '10101100' == '5', '01101100' == '6', '11101100' == '7', '00011100' == '8', '10011100' == '9'.]"""
         if isinstance(name, str):
             try:
-                name = E_Rune[name]
+                name = E_Rune.from_name(name)
             except KeyError:
                 _log.warning(f"Invalid rune name string: '{name}'. Returning None.")
                 return None
         if name.type_code is None:
             _log.warning(f"Invalid rune designation: '{name}'. Returning None.")
         rune_el = E_Rune.sample_byte_code_rune_el()  # type: bytes
-        rune = Item(rune_el, index_start=0, index_end=len(rune_el))
-        rune.stash_type = stash_type
-        rune.col = col
-        rune.row = row
-        rune.type_code = name.type_code
-        return rune
+        item_rune = Item(rune_el, index_start=0, index_end=len(rune_el))
+        item_rune.stash_type = stash_type
+        item_rune.col = col
+        item_rune.row = row
+        item_rune.type_code = name.type_code
+        return item_rune
 
     def __str__(self) -> str:
         if self.is_analytical:

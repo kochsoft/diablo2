@@ -420,7 +420,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
     def runic_cube(self, text_runic_cube: str):
-        runes = list(filter(lambda x: x is not None, [E_Rune.from_name(w) for w in re.findall('([a-zA-Z]+)', text_runic_cube)]))
+        runes = list(filter(lambda x: x is not None, [E_Rune.from_name(w) for w in re.findall('([a-zA-Z0-9]+)', text_runic_cube)]))
         if not runes:
             tk.messagebox.showinfo("Runic Cube", "Use a comma-separated list of up to 12 rune names to replace your "
                                                  "Horadric Cube content with that set of runes. E.g., 'ral, ort, tal'.")
@@ -515,8 +515,8 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                 self.button_enable_nightmare.config(state='disabled')
             if data.progression >= 10:
                 self.button_enable_hell.config(state='disabled')
-            self.entry_runic_cube.delete(0, tk.END)
-            self.entry_runic_cube.insert(0, 'ort,sol')
+            #self.entry_runic_cube.delete(0, tk.END)
+            #self.entry_runic_cube.insert(0, 'ort,sol')
             self.entry_boost_skills.delete(0, tk.END)
             self.entry_boost_skills.insert(0, '0')
             self.entry_boost_attributes.delete(0, tk.END)
@@ -671,12 +671,12 @@ Beware!"""
         Hovertip(self.button_enable_hell, 'If still in normal or nightmare mode. Raise your character level to 68 (if necessary) and fill his stash with gold.')
 
         var_runic_cube = tk.StringVar()
-        var_runic_cube.set("ort, sol")
+        var_runic_cube.set("ort, sol, t4, t4, b4, t0, a0")
         self.entry_runic_cube = tk.Entry(self.tab2, textvariable=var_runic_cube)
         self.entry_runic_cube.grid(row=5, column=1, columnspan=4, sticky='ew')
         self.button_runic_cube = tk.Button(self.tab2, text='Runes to Cube', command=lambda: self.runic_cube(var_runic_cube.get()), width=10, height=1, bg='#009999')
         self.button_runic_cube.grid(row=5, column=0)
-        Hovertip(self.button_runic_cube, 'Write a comma-separated list of up to 12 rune names and click this. Will replace your cube contents with these runes.')
+        Hovertip(self.button_runic_cube, 'Write a comma-separated list of up to 12 rune names and/or gem codes, /^[tasredb][0-4]$/ (bone=skull), and click this. Will replace your cube contents with these socketables.')
 
         var_skills = tk.IntVar()
         self.entry_boost_skills = tk.Entry(self.tab2, textvariable=var_skills)
