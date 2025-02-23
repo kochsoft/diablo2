@@ -1373,12 +1373,31 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         for item in items:
             self.drop_item(item)
 
+    @staticmethod
+    def count_main_items(bts: bytes) -> int:
+        """:returns the number of items in bts that are not marked parent 'E_ItemParent.IP_ITEM'.
+        I.e., counting items that also count in .d2s file item counters."""
+        bts = re.sub(b'^.*?JM', b'JM', bts)
+        candidates = bts.split(b'JM')  # type: List[bytes]
+        candidates = [(b'JM' + cand) for cand in candidates]
+        c = 0
+        for candidate in candidates:
+            # [Note: Countable items have >6 bytes. >>6 actually.]
+            if len(candidate) <= 6:
+                continue
+            item = Item(candidate, 0, len(candidate))
+            if item.item_parent != E_ItemParent.IP_ITEM:
+                c = c + 1
+        return c
+
     def add_items_to_player(self, items: bytes) -> int:
         """Warning: Be sure to add multiple items in a sensible order!
         :param items: Byte string of JM...-items. Prefixed with one byte giving the count."""
+        # [Note: For backwards-compatibility. Delete all bytes prior to the first b'JM'.]
+        items = re.sub(b'^.*?JM', b'JM', items)
+        count = self.count_main_items(items)
         index_start = Item(self.data).get_block_index()[E_ItemBlock.IB_PLAYER][0]
-        self.data = self.data[0:index_start] + items[1:] + self.data[index_start:]
-        count = int.from_bytes(items[0:1], 'little')
+        self.data = self.data[0:index_start] + items + self.data[index_start:]
         self.set_item_count(E_ItemBlock.IB_PLAYER_HD, self.get_item_count_player(True) + count)
         print(f"Attempting to add {count} new items to the player's inventory.")
         return 0
