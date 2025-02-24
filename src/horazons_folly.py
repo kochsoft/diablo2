@@ -398,6 +398,23 @@ class E_ItemEquipment(Enum):
     IE_WEAPON_ALT_LEFT = 12
 
 
+class E_ItemProperties(Enum):
+    """Property bit sites taken from https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#single-item-layout
+    Testing this, not all of them seem correct."""
+    IP_NONE = 0
+    #IP_IDENTIFIED = 20  #<< Faulty?
+    IP_BROKEN = 24
+    IP_SOCKETED = 27
+    #IP_STARTER_GEAR = 33  #<< Faulty?
+    #IP_COMPACT = 37  #<< Faulty?  #<< i.e., there is no extended information to this item.
+    #IP_ETHEREAL = 38  #<< Faulty?
+    IP_PERSONALIZED = 40
+    IP_RUNEWORD = 42
+
+    def __str__(self) -> str:
+        return re.sub("^IP_", "", self.name, flags=re.IGNORECASE).lower()
+
+
 d_skills = {
     E_Characters.EC_AMAZON: ["Magic Arrow", "Fire Arrow", "Inner Sight", "Critical Strike", "Jab",
                              "Cold Arrow", "Multiple Shot", "Dodge", "Power Strike", "Poison Javelin",
@@ -592,11 +609,14 @@ class Item:
         else:
             self.data = self.data[0:self.index_start] + bts + self.data[self.index_end:]
 
-    @property
-    def is_identified(self) -> Optional[bool]:
+    def has_item_property(self, prop: E_ItemProperties) -> Optional[bool]:
+        """:returns None, if this Item is analytical. Else True if and only if it has the property in question."""
         if self.is_analytical:
             return None
-        return True if get_range_from_bitmap(bytes2bitmap(self.data_item), 20, 21) else False
+        val = prop.value
+        if len(self.data_item) < val:
+            return False
+        return True if get_range_from_bitmap(bytes2bitmap(self.data_item), val, val+1) else False
 
     @property
     def col(self) -> Optional[int]:
@@ -899,11 +919,18 @@ class Item:
         if self.is_analytical:
             return "Analytic Item instance."
         else:
+            props = ""
+            for prop in E_ItemProperties:
+                val = prop.value
+                if not val:
+                    continue
+                props += f"{prop}: {self.has_item_property(prop)}, "
+
             bm = bytes2bitmap(self.data_item)[::-1]
             bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:76]} {bm[76:84]} {bm[84:96]} {bm[96:106]} {bm[106:]}"
             return f"Item {self.item_block.name} #{self.index_item_block} index: ({self.index_start}, {self.index_end}): " \
                 f"Parent: {self.item_parent.name}, Storage: {self.stash_type.name}, (r:{self.row}, c:{self.col}), Equip: {self.item_equipped.name}\n" \
-                f"identified: {self.is_identified}, type code: {self.type_code}\n" \
+                f"{props}type code: {self.type_code}\n" \
                 f"{bm_col_row_split}\n{self.data_item}"
 
 
