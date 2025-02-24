@@ -1748,7 +1748,7 @@ class Horadric:
             if item.item_parent != E_ItemParent.IP_ITEM:
                 count = count + 1
         print(f"Grepped {len(items)} items ({count} counting).")
-        return count.to_bytes(1, 'little') + res
+        return res
 
     def save_horadric(self, pfname_out: str):
         """Writes the horadric cube raw contents to disk. Employs that these contents are in order.
@@ -1772,7 +1772,6 @@ class Horadric:
                 continue
             content = content + item.data_item
             print(f"Adding: {item}")
-        content = len(runes).to_bytes(1, 'little') + content
         with open(pfname, 'wb') as OUT:
             OUT.write(content)
         print(f"Wrote runic cube with {len(runes)} runes to '{pfname}'")

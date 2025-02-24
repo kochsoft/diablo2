@@ -224,6 +224,7 @@ that fit your system.""", dim=(60,17))
             return
         self.replace_entry_text(self.entry_pfname1, pfname_1)
         self.ta_insert_character_data(self.horadric_exchange, pfname_1, self.ta_desc1)
+        self.tabControl.select(self.tab1)
         self.update_button_horadric()
 
     def load_2(self):
@@ -236,6 +237,7 @@ that fit your system.""", dim=(60,17))
             return
         self.replace_entry_text(self.entry_pfname2, pfname_2)
         self.ta_insert_character_data(self.horadric_exchange, pfname_2, self.ta_desc2)
+        self.tabControl.select(self.tab1)
         self.update_button_horadric()
 
     def select_pname_work(self):
@@ -362,6 +364,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         err = self.ta_insert_character_data(self.horadric_horazon, pfname_hero, self.ta_hero)
         if err == 0:
             self.update_hero_widgets(err == 0)
+            self.tabControl.select(self.tab2)
 
     def load_cube(self):
         data = self.verify_hero()
