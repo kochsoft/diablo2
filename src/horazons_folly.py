@@ -405,6 +405,7 @@ class E_ItemProperties(Enum):
     IP_IDENTIFIED = 20
     IP_BROKEN = 24
     IP_SOCKETED = 27
+    IP_NEWLY_FOUND = 29
     IP_STARTER_GEAR = 33
     IP_COMPACT = 37  #<< i.e., there is no extended information to this item.
     IP_ETHEREAL = 38

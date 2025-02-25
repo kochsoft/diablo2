@@ -354,18 +354,42 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
             return None
 
     def load_hero(self):
-        pfname_hero = tkinter.filedialog.askopenfilename(parent=self.root, title="Select Hero Save-Game", filetypes=[("d2s save-game","*.d2s *.backup")], initialdir=self.pname_d2)
+        pfname_hero = tkinter.filedialog.askopenfilename(parent=self.root, title="Select Hero Save-Game",
+                        filetypes=[("d2s save-game","*.d2s *.backup"),("cube file", "*.cube")], initialdir=self.pname_d2)
         if not pfname_hero:
             return
         self.replace_entry_text(self.entry_pname_hero, pfname_hero)
-        self.horadric_horazon.data_all = [Data(pfname_hero, pname_backup=os.path.expanduser(self.pname_work))]
-        self.data_hero_backup = deepcopy(self.horadric_horazon.data_all[0])
-        self.data_hero_backup.pfname = self.pfname2pfname_backup(pfname_hero)
-        err = self.ta_insert_character_data(self.horadric_horazon, pfname_hero, self.ta_hero)
-        if err == 0:
-            self.update_hero_widgets(err == 0)
+        # >> Loading a cube for pure review. -------------------------
+        if pfname_hero.lower().endswith(".cube"):
+            with open(pfname_hero, 'rb') as IN:
+                code = IN.read()
+            n = len(code)
+            items = list()  # type: List[Item]
+            index0 = 0
+            while index0 != n:
+                index1 = code.find(b"JM", index0+2)
+                index1 = index1 if index1 > 0 else n
+                items.append(Item(code, index0, index1))
+                index0 = index1
+            info = 'Cube content.\n=============\n'
+            for item in items:
+                info += f"{item}\n"
+            self.ta_hero.delete(0.0, tk.END)
+            self.ta_hero.insert(0.0, info)
+            self.horadric_horazon.data_all.clear()
+            self.update_hero_widgets(False)
             self.tabControl.select(self.tab2)
-
+        # << ---------------------------------------------------------
+        # >> Loading a character. ------------------------------------
+        else:
+            self.horadric_horazon.data_all = [Data(pfname_hero, pname_backup=os.path.expanduser(self.pname_work))]
+            self.data_hero_backup = deepcopy(self.horadric_horazon.data_all[0])
+            self.data_hero_backup.pfname = self.pfname2pfname_backup(pfname_hero)
+            err = self.ta_insert_character_data(self.horadric_horazon, pfname_hero, self.ta_hero)
+            if err == 0:
+                self.update_hero_widgets(err == 0)
+                self.tabControl.select(self.tab2)
+        # << ---------------------------------------------------------
     def load_cube(self):
         data = self.verify_hero()
         if not data:
@@ -637,7 +661,9 @@ Beware!"""
         ta_introduction.insert(0.0, msg_horazon)
         ta_introduction.config(state='disabled', bg='#fffaa0')
 
-        tk.Button(self.tab2, text='Select Hero', command=self.load_hero, width=10, height=1, bg='#009999').grid(row=1, column=0)
+        button_load_hero = tk.Button(self.tab2, text='Select Hero', command=self.load_hero, width=10, height=1, bg='#009999')
+        button_load_hero.grid(row=1, column=0)
+        Hovertip(button_load_hero, 'Select .d2s hero file. Or, for review only, a .cube file.')
         self.entry_pname_hero = tk.Entry(self.tab2, width=self.width_column - 7, state='readonly')
         self.entry_pname_hero.grid(row=1, column=1, columnspan=4, sticky='ew')
 
