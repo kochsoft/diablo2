@@ -984,10 +984,10 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         return self.data[37]
 
     @progression.setter
-    def progression(self, progression: E_Progression):
+    def progression(self, progression: Union[E_Progression, int]):
         """Setter for progression. Set to 5 to enable nightmare. Set to 10 to enable hell."""
         if len(self.data) >= 37:
-            self.data = self.data[:37] + int.to_bytes(progression.value) + self.data[38:]
+            self.data = self.data[:37] + int.to_bytes(progression.value if isinstance(progression, E_Progression) else int(progression)) + self.data[38:]
 
     @property
     def has_hell(self) -> bool:
@@ -1476,7 +1476,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         for key in self.get_attributes():
             s_attr += f"{key.name}: {self.HMS2str(attr[key])},\n" if key.get_attr_sz_bits() == 21 else f"{key.name}: {attr[key]},\n"
         msg = f"{self.get_rank()}{self.get_name(True)} ({self.pfname}), a Horadric Cube (holding {self.n_cube_contents_shallow} items) {cube_posessing}, "\
-              f"level {attr[E_Attributes.AT_LEVEL]} (hd: {self.level_by_header}) {core} {self.get_class(True)} {god_status}.\n"\
+              f"level {attr[E_Attributes.AT_LEVEL]} (hd: {self.level_by_header}/prog: {self.progression}) {core} {self.get_class(True)} {god_status}.\n"\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}', "\
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
