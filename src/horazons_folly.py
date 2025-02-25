@@ -402,12 +402,12 @@ class E_ItemProperties(Enum):
     """Property bit sites taken from https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#single-item-layout
     Testing this, not all of them seem correct."""
     IP_NONE = 0
-    #IP_IDENTIFIED = 20  #<< Faulty?
+    IP_IDENTIFIED = 20
     IP_BROKEN = 24
     IP_SOCKETED = 27
-    #IP_STARTER_GEAR = 33  #<< Faulty?
-    #IP_COMPACT = 37  #<< Faulty?  #<< i.e., there is no extended information to this item.
-    #IP_ETHEREAL = 38  #<< Faulty?
+    IP_STARTER_GEAR = 33
+    IP_COMPACT = 37  #<< i.e., there is no extended information to this item.
+    IP_ETHEREAL = 38
     IP_PERSONALIZED = 40
     IP_RUNEWORD = 42
 
@@ -514,7 +514,7 @@ def get_range_from_bitmap(bitmap: str, index_start: int, index_end: int, *, do_i
     #  we have to invert the indices to start on the right side of the numeral.
     #  Thus, the index [start:end] becomes [n-end:n-start].]
     n = len(bitmap)
-    bm = bitmap[n-index_end:n-index_start]
+    bm = bitmap[(n-index_end):(n-index_start)]
     if len(bm) == 0:
         return None
     return int(bm[::-1] if do_invert else bm, 2)
@@ -614,7 +614,7 @@ class Item:
         if self.is_analytical:
             return None
         val = prop.value
-        if len(self.data_item) < val:
+        if (len(self.data_item) * 8) < val:
             return False
         return True if get_range_from_bitmap(bytes2bitmap(self.data_item), val, val+1) else False
 
