@@ -969,6 +969,14 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         return False
 
     @property
+    def level_by_header(self) -> int:
+        return self.data[43]
+
+    @level_by_header.setter
+    def level_by_header(self, value: int):
+        self.data = self.data[:43] + int.to_bytes(value, 1, 'little') + self.data[44:]
+
+    @property
     def progression(self) -> int:
         return self.data[37]
 
@@ -1211,6 +1219,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 continue
             if vals[key] == 0:
                 continue
+            if key == E_Attributes.AT_LEVEL:
+                self.level_by_header = vals[key]
             bitmap = set_range_to_bitmap(bitmap, index, index + 9, key.value)
             index = index + 9
             bitmap = set_range_to_bitmap(bitmap, index, index + key.get_attr_sz_bits(), vals[key], do_invert=False)
@@ -1461,7 +1471,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         for key in self.get_attributes():
             s_attr += f"{key.name}: {self.HMS2str(attr[key])},\n" if key.get_attr_sz_bits() == 21 else f"{key.name}: {attr[key]},\n"
         msg = f"{self.get_rank()}{self.get_name(True)} ({self.pfname}), a Horadric Cube (holding {self.n_cube_contents_shallow} items) {cube_posessing}, "\
-              f"level {attr[E_Attributes.AT_LEVEL]} {core} {self.get_class(True)} {god_status}.\n"\
+              f"level {attr[E_Attributes.AT_LEVEL]} (hd: {self.level_by_header}) {core} {self.get_class(True)} {god_status}.\n"\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}', "\
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
