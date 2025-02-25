@@ -970,6 +970,9 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     @property
     def level_by_header(self) -> int:
+        """Character level in main header. This is not to be confused with the E_Attributes.AT_LEVEL, the
+        actual in-game character level. level_by_header is used for display on the character selection screen.
+        However, as a matter of policy, both values should match."""
         return self.data[43]
 
     @level_by_header.setter
@@ -1220,6 +1223,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             if vals[key] == 0:
                 continue
             if key == E_Attributes.AT_LEVEL:
+                # [Note: There is a level in .d2s main header that is used in character selection screen.
+                #  It should match the attribute of the same name.]
                 self.level_by_header = vals[key]
             bitmap = set_range_to_bitmap(bitmap, index, index + 9, key.value)
             index = index + 9
