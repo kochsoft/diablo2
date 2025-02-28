@@ -746,7 +746,7 @@ class Item:
             return E_ItemEquipment.IE_UNSPECIFIED
 
     def get_known_mods_and_socket_data(self):
-        """EXPERIMENTAL! Certain to not work properly for sockets, since only a few mods are known to the program!
+        """
         :returns a dict of lists.
           'known_mods': List of Mod_BitShapes from known_mods that have been found in the item.
           'sockets': If present contains a sub-dict of 'index0', 'index1' and 'count', describing
@@ -767,7 +767,14 @@ class Item:
                     bm = re.sub(regexp, '', bm)
                     index0 = len(bm)
                     mods.append({'index0': index0, 'index1': index1, 'mod': km})
-        res = {'known_mods': mods}
+        res = {
+            'known_mods': mods,
+            'bits_unmodded': len(bm) + 9,  # << Re-adding the 9 bit from the terminating 0x1ff.
+            'bytes_unmodded': ceil((len(bm) + 9) / 8)  # << Actual bytes length if there were no known mods.
+        }
+        # Paladin Starter Shield: 194 bit, Paladin Starter Sword: 183 bit.
+        # Superior Cap: 197 bit, Superior Cap socketed: 201.
+        # TODO: Hier war ich. Determine eligibility for socketing.
         if self.has_item_property(E_ItemProperties.IP_SOCKETED):
             n = len(bm)
             res['sockets'] = {
@@ -779,10 +786,11 @@ class Item:
 
     def known_mods_and_socket_data_to_str(self) -> str:
         info = self.get_known_mods_and_socket_data()
+        res = f'Item has {info['bits_unmodded']} unmodded bits ({info['bytes_unmodded']} unmodded bytes)'
         if 'sockets' in info:
-            res = f'sockets: {info['sockets']['count']} [{info['sockets']['index0']}:{info['sockets']['index1']}]'
+            res += f'\nsockets: {info['sockets']['count']} [{info['sockets']['index0']}:{info['sockets']['index1']}]'
         else:
-            res = 'no sockets'
+            res += 'no sockets'
         for mod in info['known_mods']:
             res += f"\n{mod['mod']} [{mod['index0']}:{mod['index1']}]"
         return res
@@ -971,11 +979,13 @@ class Item:
                 props += f"{prop}: {self.has_item_property(prop)}, "
 
             bm = bytes2bitmap(self.data_item)[::-1]
+            bl = len(re.sub("0*$","",bm))
+
             bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:76]} {bm[76:84]} {bm[84:96]} {bm[96:106]} {bm[106:]}"
-            # #f"{self.known_mods_and_socket_data_to_str()}\n"
-            return f"Item {self.item_block.name} #{self.index_item_block} index: ({self.index_start}, {self.index_end}): " \
+            return f"Item ({len(self.data_item)} bytes) {self.item_block.name} #{self.index_item_block} index: ({self.index_start}, {self.index_end}): " \
                 f"Parent: {self.item_parent.name}, Storage: {self.stash_type.name}, (r:{self.row}, c:{self.col}), Equip: {self.item_equipped.name}\n" \
-                f"{props}type code: {self.type_code}\n" \
+                f"{props}type code: {self.type_code}, Bit length: {bl} ({bl/8} bytes)\n" \
+                f"{self.known_mods_and_socket_data_to_str()}\n" \
                 f"{bm_col_row_split}\n{self.data_item}"
 
 
