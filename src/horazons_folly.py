@@ -540,34 +540,35 @@ def set_bitrange_value_to_bytes(data: bytes, index_start: int, index_end: int, v
     return bitmap2bytes(bm)
 
 
-class BitMaster:
-    """Class for reading and writing arbitrary, bitty sites in the bytes code that is a .d2s file.
-    :param index_start_bit: 0-starting index that will count the BITs within a given data structure.
-      Marks the first bit of consequence.
-    :param index_end_bit: BIT-counting index marking the end of the target sequence.
-      Note: It is legal to have index_end_bit < index_start_bit. The constructor will remedy this
-      and set a flag 'is_reversed'. If that is set bits will be interpreted in reversed order. E.g., 0100 -> 2.
-    :param name: An optional name string. Human-readable. To name and qualify this object."""
-    def __init__(self, index_start_bit: int, index_end_bit: int, name: str = 'nameless'):
-        self.name = name
-        self.index_start_bit = index_start_bit
-        self.index_end_bit = index_end_bit
-        self.is_reversed = False
-        if index_end_bit < index_start_bit:
-            self.is_reversed = True
-            h = self.index_start_bit
-            self.index_start_bit = self.index_end_bit
-            self.index_end_bit = h
+class Mod_BitShape:
+    """For the socket science project. Mods are at the end of an item, merely followed by the
+    0x1ff item end code and a 0-padding filling up the final byte. Mods are explained in
+    https://github.com/WalterCouto/D2CE/blob/main/source/res/TXT/global/excel/itemstatcost.txt
+    and there seem to have the general name prefix 'item_'."""
+    def __init__(self, id_9bit: int, len_data_bit: int, is_signed: bool, name: str):
+        self.id_9bit = id_9bit  # type: int
+        self.len_data_bit = len_data_bit  # type: int
+        self.is_signed = is_signed  # type: bool
+        self.name = name  # type: str
 
-    def get_value(self, data: bytes) -> int:
-        return get_bitrange_value_from_bytes(data, self.index_start_bit, self.index_end_bit, do_invert=self.is_reversed)
+    @property
+    def regexp_binary_code(self):
+        """:returns forward binary code regexp for this bit shape. Apply to forward bitmap."""
+        return r'.' * self.len_data_bit + '{:0{width}b}'.format(self.id_9bit, width=9)
 
-    def set_value(self, data: bytes, val: int):
-        return set_bitrange_value_to_bytes(data, self.index_start_bit, self.index_end_bit, val, do_invert=self.is_reversed)
+    def __str__(self):
+        prefix_signed = '' if self.is_signed else 'un'
+        return f'{self.name} ({prefix_signed}signed, 9+{self.len_data_bit} bit): {self.regexp_binary_code}'
 
-    def __str__(self) -> str:
-        direction = 'Inverted' if self.is_reversed else 'Forward'
-        return f"{direction} BitMaster '{self.name}' ranging in bits [{self.index_start_bit}, {self.index_end_bit}]."
+"""On superior weapons and armor: https://diablo.fandom.com/wiki/Superior_Items"""
+known_mods = [
+    Mod_BitShape(16, 9, True, 'item_armor_percent'),
+    Mod_BitShape(75, 7, True, 'item_maxdurability_percent'),
+    Mod_BitShape(17, 9, True, 'item_maxdamage_percent'),
+    Mod_BitShape(18, 9, True, 'item_mindamage_percent'),
+    Mod_BitShape(22, 7, True, 'maxdamage'),
+    Mod_BitShape(68, 7, True, 'attackrate')
+]  # type: List[Mod_BitShape]
 
 
 class Item:
@@ -743,6 +744,48 @@ class Item:
             if val != 0:
                 _log.warning(f"Encountered weird equipment code {val}.")
             return E_ItemEquipment.IE_UNSPECIFIED
+
+    def get_known_mods_and_socket_data(self):
+        """EXPERIMENTAL! Certain to not work properly for sockets, since only a few mods are known to the program!
+        :returns a dict of lists.
+          'known_mods': List of Mod_BitShapes from known_mods that have been found in the item.
+          'sockets': If present contains a sub-dict of 'index0', 'index1' and 'count', describing
+            socket number. Present if and only if this item is socketed.
+        """
+        mods = list()
+        bm = bytes2bitmap(self.data_item)
+        # Cut of the 0x1ff terminator and final padding.
+        bm = re.sub('^0*111111111', '', bm)
+        found_anything = True
+        while found_anything:
+            found_anything = False
+            for km in known_mods:
+                regexp = '^' + km.regexp_binary_code
+                if len(re.findall (regexp, bm)) > 0:
+                    found_anything = True
+                    index1 = len(bm)
+                    bm = re.sub(regexp, '', bm)
+                    index0 = len(bm)
+                    mods.append({'index0': index0, 'index1': index1, 'mod': km})
+        res = {'known_mods': mods}
+        if self.has_item_property(E_ItemProperties.IP_SOCKETED):
+            n = len(bm)
+            res['sockets'] = {
+                'index0': n - 4,
+                'index1': n,
+                'count': get_range_from_bitmap(bm, len(bm)-4, len(bm))
+            }
+        return res
+
+    def known_mods_and_socket_data_to_str(self) -> str:
+        info = self.get_known_mods_and_socket_data()
+        if 'sockets' in info:
+            res = f'sockets: {info['sockets']['count']} [{info['sockets']['index0']}:{info['sockets']['index1']}]'
+        else:
+            res = 'no sockets'
+        for mod in info['known_mods']:
+            res += f"\n{mod['mod']} [{mod['index0']}:{mod['index1']}]"
+        return res
 
     @staticmethod
     def drop_empty_block_indices(block_indices: Dict[E_ItemBlock, Tuple[int, int]]) -> Dict[E_ItemBlock, Tuple[int, int]]:
@@ -929,6 +972,7 @@ class Item:
 
             bm = bytes2bitmap(self.data_item)[::-1]
             bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:76]} {bm[76:84]} {bm[84:96]} {bm[96:106]} {bm[106:]}"
+            # #f"{self.known_mods_and_socket_data_to_str()}\n"
             return f"Item {self.item_block.name} #{self.index_item_block} index: ({self.index_start}, {self.index_end}): " \
                 f"Parent: {self.item_parent.name}, Storage: {self.stash_type.name}, (r:{self.row}, c:{self.col}), Equip: {self.item_equipped.name}\n" \
                 f"{props}type code: {self.type_code}\n" \
@@ -960,7 +1004,9 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         return self.pfname != other.pfname
 
     def get_file_version(self) -> int:
-        return BitMaster(32,64,'file version').get_value(self.data[0:8])
+        """File version. Encoded into main header bytes [4:8]. Value 96 is for versions 1.10-1.14d."""
+        bm = bytes2bitmap(self.data[4:8])
+        return get_range_from_bitmap(bm, 0, 16)
 
     @property
     def has_horadric_cube(self) -> bool:
