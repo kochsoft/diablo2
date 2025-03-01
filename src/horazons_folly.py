@@ -362,6 +362,10 @@ class E_ItemBlock(Enum):
     IB_IRONGOLEM = 7
     IB_UNSPECIFIED = 10
 
+    @property
+    def is_header(self) -> bool:
+        return self in (E_ItemBlock.IB_PLAYER_HD, E_ItemBlock.IB_CORPSE_HD, E_ItemBlock.IB_MERCENARY_HD, E_ItemBlock.IB_IRONGOLEM_HD)
+
 
 class E_ItemParent(Enum):
     """Bits 58-60 in the item putatively store the major site where the Item is equipped. 
@@ -1014,6 +1018,18 @@ class Item:
     def __str__(self) -> str:
         if self.is_analytical:
             return "Analytic Item instance."
+        elif self.item_block.is_header:
+            code = self.item_block
+            if code == E_ItemBlock.IB_PLAYER_HD:
+                return "=== Player ========================================================="
+            elif code == E_ItemBlock.IB_CORPSE_HD:
+                return "=== Corpse ========================================================="
+            elif code == E_ItemBlock.IB_MERCENARY_HD:
+                return "=== Mercenary ======================================================"
+            elif code == E_ItemBlock.IB_IRONGOLEM_HD:
+                return "=== Iron Golem ====================================================="
+            else:
+                return "===================================================================="
         else:
             props = ""
             for prop in E_ItemBitProperties:
@@ -1588,6 +1604,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         item_analysis = Item(self.data)
         for item in item_analysis.get_block_items():
             msg += f"\n{item}"
+            if not item.item_block.is_header:
+                msg += "\n"
         return msg
 
 
