@@ -766,11 +766,13 @@ class Item:
         if self.is_analytical:
             return None
         bm = bytes2bitmap(self.data_item)
-        if len(bm) < 115:
+        #if len(bm) < 115:
+        if len(bm) < 155:
             return E_Quality.EQ_NONE
-        val = get_range_from_bitmap(bm, 111, 115)
-        #val = get_range_from_bitmap(bm, 104, 108)
-        #print(f"{self.type_code} ({self.item_equipped}): {val}")
+        #val = get_range_from_bitmap(bm, 111, 115)
+        # https://d2mods.info/forum/viewtopic.php?t=9011
+        # Jarulf describes how the quality bits will start at bit 150 rather than 111.
+        val = get_range_from_bitmap(bm, 150, 154)
         try:
             return E_Quality(val)
         except ValueError:
