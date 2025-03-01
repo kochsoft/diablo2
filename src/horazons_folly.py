@@ -6,9 +6,12 @@ Literature:
 ===========
 [1] https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md
   Description of the Diablo 2 save game format. Quite good. Principal source of information.
-[2] https://www.gmstemple.com/Diablo2/itemcodes.html
+[2] https://d2mods.info/forum/viewtopic.php?t=9011
+  Another comprehensive file format analysis is hidden within this thread. It differs from [1]
+  For instance: Item bit index [150:154] is quality and [143:150] ist der item level.
+[3] https://www.gmstemple.com/Diablo2/itemcodes.html
   Large list of 3-letter item codes. E.g., the item codes for the runes are 'r01'-'r33'
-[3] Python >=3.6 seems to guarantee key order in dicts.
+[4] Python >=3.6 seems to guarantee key order in dicts.
   https://discuss.codecademy.com/t/does-the-dictionary-keys-function-return-the-keys-in-any-specific-order/354717
 
 Fun facts:
@@ -592,8 +595,8 @@ class E_ExtProperty(Enum):
     """Extended item properties that are not covered by above. They begin at bit 108. After that it becomes complicated.
     Order of the enum follows the order of the entries in the extended section.
     Invaluable source: https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#extended-item-data"""
-    EP_QUEST_SOCKETS = 1  # At bit [108:111]
-    EP_QUALITY = 2  # At bit [111:115]
+    EP_QUEST_SOCKETS = 1  # At bits [108:111]
+    EP_QUALITY = 2  # at bits [150:154] says [2] (at bit [111:115] says [1])
     EP_CUSTOM_GRAPHICS = 3  # 1 or 4, depending on first bit.  I.e., 4 bit, if bit 1 is set, else 1 bit.
     EP_CLASS_SPECIFIC = 4  # 1 or 12, depending on first bit.
     EP_QUALITY_ATTRIBUTES = 5  # Quality Attributes. Complicated list depending on value of Quality above.
@@ -766,18 +769,25 @@ class Item:
         if self.is_analytical:
             return None
         bm = bytes2bitmap(self.data_item)
-        #if len(bm) < 115:
         if len(bm) < 155:
             return E_Quality.EQ_NONE
-        #val = get_range_from_bitmap(bm, 111, 115)
-        # https://d2mods.info/forum/viewtopic.php?t=9011
-        # Jarulf describes how the quality bits will start at bit 150 rather than 111.
+        # Jarulf describes how the quality bits will start at bit 150 rather than 111. See [2].
         val = get_range_from_bitmap(bm, 150, 154)
         try:
             return E_Quality(val)
         except ValueError:
             _log.warning(f"Invalid quality value '{val}' encountered in item of tp '{self.type_code}'.")
             return E_Quality.EQ_NONE
+
+    @property
+    def item_level(self) -> Optional[int]:
+        """:returns the ilevel of this object if such extended information is available. Else None."""
+        if self.is_analytical:
+            return None
+        bm = bytes2bitmap(self.data_item)
+        if len(bm) < 150:
+            return None
+        return get_range_from_bitmap(bm, 144, 150)  # << [2] states 7 bits volume [143:150]. However, [144:150] seems better.
 
     def get_known_mods_and_socket_data(self):
         """
@@ -1015,10 +1025,10 @@ class Item:
             bm = bytes2bitmap(self.data_item)[::-1]
             bl = len(bm)
 
-            bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:76]} {bm[76:84]} {bm[84:96]} {bm[96:106]} {bm[106:111]} {bm[111:115]} {bm[115:]}"
+            bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:76]} {bm[76:144]} {bm[144:150]} {bm[150:154]} {bm[154:]}"
             return f"Item ({len(self.data_item)} bytes) {self.item_block.name} #{self.index_item_block} index: ({self.index_start}, {self.index_end}): " \
                 f"Parent: {self.item_parent.name}, Storage: {self.stash_type.name}, (r:{self.row}, c:{self.col}), Equip: {self.item_equipped.name}\n" \
-                f"{props}type code: {self.type_code}, quality: {self.quality}, is charm: {self.is_charm}, Bit length: {bl} ({bl/8} bytes)\n" \
+                f"{props}\ntype code: {self.type_code}, quality: {self.quality}, ilevel: {self.item_level}, is charm: {self.is_charm}, Bit length: {bl} ({bl/8} bytes)\n" \
                 f"{self.known_mods_and_socket_data_to_str()}\n" \
                 f"{bm_col_row_split}\n{self.data_item}"
 
