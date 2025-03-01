@@ -398,19 +398,20 @@ class E_ItemEquipment(Enum):
     IE_WEAPON_ALT_LEFT = 12
 
 
-class E_ItemProperties(Enum):
-    """Property bit sites taken from https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#single-item-layout
-    Testing this, not all of them seem correct."""
+class E_ItemBitProperties(Enum):
+    """Boolean property bit sites taken from https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#single-item-layout
+    Item.get_item_property(..) may be used to query these bits."""
     IP_NONE = 0
     IP_IDENTIFIED = 20
     IP_BROKEN = 24
     IP_SOCKETED = 27
     IP_NEWLY_FOUND = 29
     IP_STARTER_GEAR = 33
-    IP_COMPACT = 37  #<< i.e., there is no extended information to this item.
+    IP_COMPACT = 37  #<< i.e., there is no extended information to this item. These appear to have 112 bits, i.e. 14 bytes.
     IP_ETHEREAL = 38
     IP_PERSONALIZED = 40
     IP_RUNEWORD = 42
+
 
     def __str__(self) -> str:
         return re.sub("^IP_", "", self.name, flags=re.IGNORECASE).lower()
@@ -571,6 +572,36 @@ known_mods = [
 ]  # type: List[Mod_BitShape]
 
 
+class E_Quality(Enum):
+    """https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#quality"""
+    EQ_NONE = 100
+    EQ_INFERIOR = 1  # Followed by 3 bits in the Quality Attributes section later on.
+    EQ_NORMAL = 2  # Followed by 12 bits if this is a charm, else by 0 bits.
+    EQ_SUPERIOR = 3  # Followed by 0.
+    EQ_MAGICALLY_ENHANCED = 4  # Followed by 22 bits (11 for prefix, 11 for suffix)
+    EQ_SET = 5  # Followed by 12 bit set id.
+    EQ_RARE = 6  # Followed by 16 bits (8 for prefix, 8 for suffix)
+    EQ_UNIQUE = 7  # Followed by 12 bit unique bits.
+    EQ_CRAFT = 8  # Followed by 2 blocks of length 1 if bit 1 is not set or of length 12 otherwise. So, in {2, 13, 24}
+    #EQ_TEMPERED = 9  # Tempered. Like Craft of attributes length {2, 13, 24}.
+
+    def __str__(self):
+        return re.sub("^eq_", "", self.name.lower()) + f"({self.value})"
+
+class E_ExtProperty(Enum):
+    """Extended item properties that are not covered by above. They begin at bit 108. After that it becomes complicated.
+    Order of the enum follows the order of the entries in the extended section.
+    Invaluable source: https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#extended-item-data"""
+    EP_QUEST_SOCKETS = 1  # At bit [108:111]
+    EP_QUALITY = 2  # At bit [111:115]
+    EP_CUSTOM_GRAPHICS = 3  # 1 or 4, depending on first bit.  I.e., 4 bit, if bit 1 is set, else 1 bit.
+    EP_CLASS_SPECIFIC = 4  # 1 or 12, depending on first bit.
+    EP_QUALITY_ATTRIBUTES = 5  # Quality Attributes. Complicated list depending on value of Quality above.
+
+    def __str__(self):
+        return re.sub("^ep_", "", self.name.lower())
+
+
 class Item:
     """Specialized class for managing the entirety of blocks concerned with items.
     This class serves two purposes. It may act as an actual item with properties attached to one item.
@@ -611,8 +642,9 @@ class Item:
         else:
             self.data = self.data[0:self.index_start] + bts + self.data[self.index_end:]
 
-    def has_item_property(self, prop: E_ItemProperties) -> Optional[bool]:
-        """:returns None, if this Item is analytical. Else True if and only if it has the property in question."""
+    def get_item_property(self, prop: E_ItemBitProperties) -> Optional[bool]:
+        """:returns None, if this Item is analytical or otherwise too short.
+        Else True if the ItemProperty bit in question is 1, and False if it is 0."""
         if self.is_analytical:
             return None
         val = prop.value
@@ -684,6 +716,14 @@ class Item:
         self.data_item = set_bitrange_value_to_bytes(self.data_item, 76, 100, val)
 
     @property
+    def is_charm(self) -> Optional[bool]:
+        """:returns True if and only if this item is a small, large or grand charm."""
+        tc = self.type_code
+        if tc is None:
+            return None
+        return self.type_code in ('cm1', 'cm2', 'cm3')
+
+    @property
     def item_parent(self) -> Optional[E_ItemParent]:
         """Simple items Version 96: Bits 58-60"""
         if self.is_analytical:
@@ -713,37 +753,29 @@ class Item:
         data_item = self.data_item
         if len(data_item) < 9:
             return E_ItemEquipment.IE_UNSPECIFIED
-        # From 56-63 Bits 61-63 and bit 64.
-        val = (data_item[7] >> 5) & 7
-        val += data_item[8] & 1
-        if val == 1:
-            return E_ItemEquipment.IE_HELMET
-        elif val == 2:
-            return E_ItemEquipment.IE_AMULET
-        elif val == 3:
-            return E_ItemEquipment.IE_ARMOR
-        elif val == 4:
-            return E_ItemEquipment.IE_WEAPON_RIGHT
-        elif val == 5:
-            return E_ItemEquipment.IE_WEAPON_LEFT
-        elif val == 6:
-            return E_ItemEquipment.IE_RING_RIGHT
-        elif val == 7:
-            return E_ItemEquipment.IE_RING_LEFT
-        elif val == 8:
-            return E_ItemEquipment.IE_BELT
-        elif val == 9:
-            return E_ItemEquipment.IE_BOOTS
-        elif val == 10:
-            return E_ItemEquipment.IE_GLOVES
-        elif val == 11:
-            return E_ItemEquipment.IE_WEAPON_ALT_RIGHT
-        elif val == 12:
-            return E_ItemEquipment.IE_WEAPON_ALT_LEFT
-        else:
-            if val != 0:
-                _log.warning(f"Encountered weird equipment code {val}.")
+        bm = bytes2bitmap(data_item)
+        val = get_range_from_bitmap(bm, 61, 65)
+        try:
+            return E_ItemEquipment(val)
+        except ValueError:
+            _log.warning(f"Encountered weird equipment code {val} on item of type '{self.type_code}'.")
             return E_ItemEquipment.IE_UNSPECIFIED
+
+    @property
+    def quality(self) -> Optional[E_Quality]:
+        if self.is_analytical:
+            return None
+        bm = bytes2bitmap(self.data_item)
+        if len(bm) < 115:
+            return E_Quality.EQ_NONE
+        val = get_range_from_bitmap(bm, 111, 115)
+        #val = get_range_from_bitmap(bm, 104, 108)
+        #print(f"{self.type_code} ({self.item_equipped}): {val}")
+        try:
+            return E_Quality(val)
+        except ValueError:
+            _log.warning(f"Invalid quality value '{val}' encountered in item of tp '{self.type_code}'.")
+            return E_Quality.EQ_NONE
 
     def get_known_mods_and_socket_data(self):
         """
@@ -775,7 +807,7 @@ class Item:
         # Paladin Starter Shield: 194 bit, Paladin Starter Sword: 183 bit.
         # Superior Cap: 197 bit, Superior Cap socketed: 201.
         # TODO: Hier war ich. Determine eligibility for socketing.
-        if self.has_item_property(E_ItemProperties.IP_SOCKETED):
+        if self.get_item_property(E_ItemBitProperties.IP_SOCKETED):
             n = len(bm)
             res['sockets'] = {
                 'index0': n - 4,
@@ -972,19 +1004,19 @@ class Item:
             return "Analytic Item instance."
         else:
             props = ""
-            for prop in E_ItemProperties:
+            for prop in E_ItemBitProperties:
                 val = prop.value
                 if not val:
                     continue
-                props += f"{prop}: {self.has_item_property(prop)}, "
+                props += f"{prop}: {self.get_item_property(prop)}, "
 
             bm = bytes2bitmap(self.data_item)[::-1]
-            bl = len(re.sub("0*$","",bm))
+            bl = len(bm)
 
-            bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:76]} {bm[76:84]} {bm[84:96]} {bm[96:106]} {bm[106:]}"
+            bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:76]} {bm[76:84]} {bm[84:96]} {bm[96:106]} {bm[106:111]} {bm[111:115]} {bm[115:]}"
             return f"Item ({len(self.data_item)} bytes) {self.item_block.name} #{self.index_item_block} index: ({self.index_start}, {self.index_end}): " \
                 f"Parent: {self.item_parent.name}, Storage: {self.stash_type.name}, (r:{self.row}, c:{self.col}), Equip: {self.item_equipped.name}\n" \
-                f"{props}type code: {self.type_code}, Bit length: {bl} ({bl/8} bytes)\n" \
+                f"{props}type code: {self.type_code}, quality: {self.quality}, is charm: {self.is_charm}, Bit length: {bl} ({bl/8} bytes)\n" \
                 f"{self.known_mods_and_socket_data_to_str()}\n" \
                 f"{bm_col_row_split}\n{self.data_item}"
 
