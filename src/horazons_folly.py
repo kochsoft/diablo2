@@ -40,8 +40,138 @@ from enum import Enum
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',datefmt='%H:%M:%S')
 _log = logging.getLogger()
 
-
 regexp_invalid_pfname_chars = r'[/\\?%*:|"<> !]'
+
+
+class E_ItemClass(Enum):
+    IC_OTHER = 0
+    IC_HELM = 1
+    IC_BODY_ARMOR = 2
+    IC_SHIELDS = 3
+    IC_GLOVES = 4
+    IC_BOOTS = 5
+    IC_BELTS = 6
+    IC_DRUID_PELTS = 7
+    IC_BARBARIAN_HELMS = 8
+    IC_PALADIN_SHIELDS = 9
+    IC_SHRUNKEN_HEADS = 10
+    IC_CIRCLETS = 11
+    IC_AXES = 12
+    IC_MACES = 13
+    IC_SWORDS = 14
+    IC_DAGGERS = 15
+    IC_THROWING = 16
+    IC_JAVELINS = 17
+    IC_SPEARS = 18
+    IC_POLEARMS = 19
+    IC_BOWS = 20
+    IC_CROSSBOWS = 21
+    IC_STAVES = 22
+    IC_WANDS = 23
+    IC_SCEPTERS = 24
+    IC_ASSASSIN_KATARS = 25
+    IC_SORCERESS_ORBS = 26
+    IC_AMAZON_WEAPONS = 27
+
+    def __str__(self):
+        return re.sub("^IC_", "", self.name).lower()
+
+class E_ItemGroup(Enum):
+    IG_NONE = 10
+    IG_NORMAL = 0
+    IG_EXCEPTIONAL = 1
+    IG_ELITE = 2
+    IG_POSTELITE = 3  # << Exclusively for circlets.
+
+
+"""Based on [3]. Maps item type codes to actual items. Also gives insight in some meta-information on the topic."""
+l_item_families = list()  # type: List[ItemFamily]
+
+class ItemFamily:
+    def __init__(self, code_names: OrderedDict[str, str], item_class: E_ItemClass):
+        """An ItemFamily is concerned with a row from the beautiful table [3].
+        It associates the entries with each other and explains whether they are armor or weapon.
+        :param code_names: Keys are item codes. E.g., cap, xap, or uap.
+        Ordered by group: Normal first, then exceptional, elite, and, in the case of circlets,
+          post-elite.
+        Values are item names. In this example: Cap, War Hat and Shako.
+        :param item_class: What is it at first glance? An axe? A shrunken head? Or what?"""
+        self.code_names = code_names
+        self.item_class = item_class
+
+    @property
+    def is_armor(self) -> bool:
+        return 1 <= self.item_class.value <= 11
+
+    @property
+    def is_weapon(self) -> bool:
+        return 12 <= self.item_class.value <= 27
+
+    @property
+    def is_stack(self) -> bool:
+        return self.item_class in [E_ItemClass.IC_THROWING, E_ItemClass.IC_JAVELINS]
+
+    def __str__(self):
+        return f"{self.item_class}: {self.code_names}"
+
+    @staticmethod
+    def get_family_by_code(code: str, data: Optional[List[ItemFamily]] = None) -> Optional[ItemFamily]:
+        if not data:
+            data = l_item_families
+        for item_family in data:
+            if code in item_family.code_names:
+                return item_family
+        return None
+
+    @staticmethod
+    def get_neighboring_group_code(code: str, target: E_ItemGroup, data: Optional[List[ItemFamily]] = None) -> Optional[str]:
+        if not data:
+            data = l_item_families
+        it_fam = ItemFamily.get_family_by_code(code, data)
+        if not it_fam:
+            return None
+        keys = list(it_fam.code_names.keys())
+        return keys[target.value] if target.value < len(it_fam.code_names) else None
+
+    @staticmethod
+    def get_name_by_code(code: str, data: Optional[List[ItemFamily]] = None) -> Optional[str]:
+        if not data:
+            data = l_item_families
+        it_fam = ItemFamily.get_family_by_code(code, data)
+        if not it_fam:
+            return None
+        else:
+            return it_fam.code_names[code]
+
+    @staticmethod
+    def load_item_family_list(pfname: Optional[str] = None) -> List[ItemFamily]:
+        if not pfname:
+            pfname = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'item_codes.csv')
+        if not os.path.isfile(pfname):
+            _log.warning(f"Failure to open item code file '{pfname}' for reading. Continuing without item codes.")
+            return list()
+        res = list()  # type: List[ItemFamily]
+        current_class = E_ItemClass.IC_OTHER
+        with open(pfname, 'r') as IN:
+            for line in IN:
+                if re.findall("^\\s*#", line) or re.findall("^\\s*$", line):
+                    continue  # << Ignore comment and empty lines.
+                # Drop the trailing newline character.
+                line = re.sub("\n$", "", line)
+                line = re.split("\t", line)
+                if len(line) == 1:
+                    current_class = E_ItemClass['IC_' + line[0].upper()]
+                    continue
+                if len(line) % 2 > 0:
+                    _log.warning(f"Ignoring strange item code line of odd entry number: '{line}'.")
+                    continue
+                od = odict()
+                for j in range(round(len(line) / 2)):
+                    od[line[2*j + 1]] = line[2*j]
+                res.append(ItemFamily(od, current_class))
+            return res
+
+l_item_families = ItemFamily.load_item_family_list()
 
 
 class E_Rune(Enum):
@@ -2085,5 +2215,6 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         return parsed
 
 if __name__ == '__main__':
-    hor = Horadric()
+    print(ItemFamily.get_name_by_code('92a'))
+    #hor = Horadric()
     print("Done.")
