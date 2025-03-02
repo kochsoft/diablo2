@@ -36,10 +36,10 @@ Bone Shield	bsh	Grim Shield	xsh	Troll Nest	ush
 Spiked Shield	spk	Barbed Shield	xpk	Blade Barrier	upk
 
 GLOVES
-Leather Gloves	lgl	Demonhide Glove	xlg	Bramble Mitts	ulg
-Heavy Gloves	vgl	Sharkskin Glove	xvg	Vampirebone Gl	uvg
+Leather Gloves	lgl	Demonhide Gloves	xlg	Bramble Mitts	ulg
+Heavy Gloves	vgl	Sharkskin Gloves	xvg	Vampirebone Gloves	uvg
 Chain Gloves	mgl	Heavy Bracers	xmg	Vambraces	umg
-Light Gauntlets	tgl	Battle Gauntlet	xtg	Crusader Gaunt	utg
+Light Gauntlets	tgl	Battle Gauntlets	xtg	Crusader Gauntlets	utg
 Gauntlets	hgl	War Gauntlets	xhg	Ogre Gauntlets	uhg
 
 BOOTS
@@ -353,7 +353,7 @@ Arrows	aqv
 Bolts	cqv
 Jewel	jew
 Skeleton Key	key
-amulet	amu
+Amulet	amu
 gold	gld
-ring	rin
+Ring	rin
 Ear	ear
