@@ -144,6 +144,10 @@ Short Spear	ssp	Simbilan	9s9	Balrog Spear	7s7
 Glaive	glv	Spiculum	9gl	Ghost Glaive	7gl
 Throwing Spear	tsp	Harpoon	9ts	Winged Harpoon	7ts
 
+THROWING_POTIONS
+Rancid Gas Pot	gps	Choking Gas Pot	gpm	Strangling Gas	gpl
+Oil Potion	ops	Exploding Pot	opm	Fulminating Pot	opl
+
 SPEARS
 Spear	spr	War Spear	9sr	Hyperion Spear	7sr
 Trident	tri	Fuscina	9tr	Stygian Pike	7tr
@@ -215,3 +219,141 @@ Reflex Bow	am2	Ceremonial Bow	am7	Grnd Matron Bow	amc
 Maiden Spear	am3	Ceremonial Spr	am8	Matriarchal Spr	amd
 Maiden Pike	am4	Ceremonial Pike	am9	Matriarchal Pik	ame
 Maiden Javelin	am5	Ceremonial Jav	ama	Matriarchal Jav	amf
+
+QUEST_ITEMS
+Wirt’s Leg	leg
+Horadric Malus	hdm
+Scroll of Inifuss 1	bks
+Scroll of Inifuss 2	bkd
+Book of Skill	ass
+Horadric Cube	box
+Horadric Scroll	tr1
+Staff of Kings	msf
+Viper Amulet	vip
+Horadric Staff	hst
+Potion of Life	xyz
+A Jade Figurine	j34
+The Golden Bird	g34
+Lam Esen’s Tome	bbb
+Gidbinn	g33
+Khalim’s Flail	qf1
+Khalim’s Will	qf2
+Khalim’s Eye	qey
+Khalim’s Heart	qhr
+Khalim’s Brain	qbr
+Mephisto’s Soulstone	mss
+Hellforge Hammr	hfh
+Malah’s Potion	ice
+Scroll of Resistance	tr2
+
+GEMS
+Chipped Amethyst	gcv
+Chipped Diamond	gcw
+Chipped Emerald	gcg
+Chipped Ruby	gcr
+Chipped Saphire	gc
+Chipped Skull	skc
+Chipped Topaz	gcy
+Flawed Amethyst	gfv
+Flawed Diamond	gfw
+Flawed Emerald	gfg
+Flawed Ruby	gfr
+Flawed Saphire	gfb
+Flawed Skull	skf
+Flawed Topaz	gfy
+Amethyst	gsv
+Diamond	gsw
+Emerald	gsg
+Ruby	gsr
+Saphire	gsb
+Skull	sku
+Topaz	gsy
+Flawless Amethyst	gzv
+Flawless Diamond	glw
+Flawless Emerald	glg
+Flawless Ruby	glr
+Flawless Saphire	glb
+Flawless Skull	skl
+Flawless Topaz	gly
+Perfect Diamond	gpw
+Perfect Amethyst	gpv
+Perfect Sapphire	gpb
+Perfect Topaz	gpy
+Perfect Ruby	gpr
+Perfect Skull	skz
+Perfect Emerald	gpg
+
+RUNES
+El Rune	r01
+Eld Rune	r02
+Tir Rune	r03
+Nef Rune	r04
+Eth Rune	r05
+Ith Rune	r06
+Tal Rune	r07
+Ral Rune	r08
+Ort Rune	r09
+Thul Rune	r10
+Amn Rune	r11
+Sol Rune	r12
+Shael Rune	r13
+Dol Rune	r14
+Hel Rune	r15
+Io Rune	r16
+Lum Rune	r17
+Ko Rune	r18
+Fal Rune	r19
+Lem Rune	r20
+Pul Rune	r21
+Um Rune	r22
+Mal Rune	r23
+Ist Rune	r24
+Gul Rune	r25
+Vex Rune	r26
+Ohm Rune	r27
+Lo Rune	r28
+Sur Rune	r29
+Ber Rune	r30
+Jah Rune	r31
+Cham Rune	r32
+Zod Rune	r33
+
+POTIONS
+Antidote Potion	yps
+Stamina Potion	vps
+Thawing Potion	wms
+Minor Healing Potion	hp1
+Minor Mana Potion	mp1
+Light Healing Potion	hp2
+Light Mana Potion	mp2
+Healing Potion	hp3
+Mana Potion	mp3
+Greater Healing Potion	hp4
+Greater Mana Potion	mp4
+Super Healing Potion	hp5
+Super Mana Potion	mp5
+Rejuv Potion	rvs
+Full Rejuv Potion	rvl
+
+CHARMS
+Charm Small	cm1
+Charm Large	cm2
+Charm Grand	cm3
+
+SCROLLS
+Identify Scroll	isc
+Town Portal Scroll	tsc
+
+TOMES
+Tome of Town Portal	tbk
+Tome of Identify	ibk
+
+MISC
+Arrows	aqv
+Bolts	cqv
+Jewel	jew
+Skeleton Key	key
+amulet	amu
+gold	gld
+ring	rin
+Ear	ear

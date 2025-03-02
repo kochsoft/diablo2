@@ -62,16 +62,25 @@ class E_ItemClass(Enum):
     IC_DAGGERS = 15
     IC_THROWING = 16
     IC_JAVELINS = 17
-    IC_SPEARS = 18
-    IC_POLEARMS = 19
-    IC_BOWS = 20
-    IC_CROSSBOWS = 21
-    IC_STAVES = 22
-    IC_WANDS = 23
-    IC_SCEPTERS = 24
-    IC_ASSASSIN_KATARS = 25
-    IC_SORCERESS_ORBS = 26
-    IC_AMAZON_WEAPONS = 27
+    IC_THROWING_POTIONS = 18
+    IC_SPEARS = 19
+    IC_POLEARMS = 20
+    IC_BOWS = 21
+    IC_CROSSBOWS = 22
+    IC_STAVES = 23
+    IC_WANDS = 24
+    IC_SCEPTERS = 25
+    IC_ASSASSIN_KATARS = 26
+    IC_SORCERESS_ORBS = 27
+    IC_AMAZON_WEAPONS = 28
+    IC_QUEST_ITEMS = 29
+    IC_GEMS = 30
+    IC_RUNES = 31
+    IC_POTIONS = 32
+    IC_CHARMS = 33
+    IC_SCROLLS = 34
+    IC_TOMES = 35
+    IC_MISC = 36
 
     def __str__(self):
         return re.sub("^IC_", "", self.name).lower()
@@ -105,17 +114,19 @@ class ItemFamily:
 
     @property
     def is_weapon(self) -> bool:
-        return 12 <= self.item_class.value <= 27
+        return 12 <= self.item_class.value <= 28
 
     @property
     def is_stack(self) -> bool:
-        return self.item_class in [E_ItemClass.IC_THROWING, E_ItemClass.IC_JAVELINS]
+        return self.item_class in [E_ItemClass.IC_THROWING, E_ItemClass.IC_JAVELINS, E_ItemClass.IC_THROWING_POTIONS]
 
     def __str__(self):
         return f"{self.item_class}: {self.code_names}"
 
     @staticmethod
     def get_family_by_code(code: str, data: Optional[List[ItemFamily]] = None) -> Optional[ItemFamily]:
+        if not code:
+            return None
         if not data:
             data = l_item_families
         for item_family in data:
@@ -125,6 +136,8 @@ class ItemFamily:
 
     @staticmethod
     def get_neighboring_group_code(code: str, target: E_ItemGroup, data: Optional[List[ItemFamily]] = None) -> Optional[str]:
+        if not code:
+            return None
         if not data:
             data = l_item_families
         it_fam = ItemFamily.get_family_by_code(code, data)
@@ -135,6 +148,8 @@ class ItemFamily:
 
     @staticmethod
     def get_name_by_code(code: str, data: Optional[List[ItemFamily]] = None) -> Optional[str]:
+        if not code:
+            return None
         if not data:
             data = l_item_families
         it_fam = ItemFamily.get_family_by_code(code, data)
@@ -842,6 +857,10 @@ class Item:
         l3 = chr(int(bm[92:100][::-1], 2))
         return l1 + l2 + l3
 
+    @property
+    def type_name(self) -> Optional[str]:
+        return ItemFamily.get_name_by_code(self.type_code)
+
     @type_code.setter
     def type_code(self, code: str):
         if len(code) != 3:
@@ -861,6 +880,26 @@ class Item:
         if tc is None:
             return None
         return self.type_code in ('cm1', 'cm2', 'cm3')
+
+    @property
+    def is_armor(self) -> Optional[bool]:
+        if self.is_analytical:
+            return None
+        fam = ItemFamily.get_family_by_code(self.type_code)
+        return fam.is_armor if fam else None
+
+    @property
+    def is_weapon(self) -> Optional[bool]:
+        if self.is_analytical:
+            return None
+        fam = ItemFamily.get_family_by_code(self.type_code)
+        return fam.is_weapon if fam else None
+
+    def is_stack(self) -> Optional[bool]:
+        if self.is_analytical:
+            return None
+        fam = ItemFamily.get_family_by_code(self.type_code)
+        return fam.is_stack if fam else None
 
     @property
     def item_parent(self) -> Optional[E_ItemParent]:
@@ -1041,7 +1080,6 @@ class Item:
         n = round(len(bm_short) / 8)
         for j in range(n):
             bm_letter = bm_short[(j*7):((j+1)*7)][::-1]
-            print(bm_letter)
             c = chr(int(bm_letter,2))
             if c == '\x00':
                 break
@@ -1247,8 +1285,10 @@ class Item:
             bm = bytes2bitmap(self.data_item)[::-1]
             bl = len(bm)
 
+            classification = f"armor: {self.is_armor}, weapon: {self.is_weapon}, stack: {self.is_stack()}"
+
             bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:76]} {bm[76:144]} {bm[144:150]} {bm[150:154]} {bm[154:]}"
-            return f"Item ({len(self.data_item)} bytes) {self.item_block.name} #{self.index_item_block} personalization: {self.personalization}, index: ({self.index_start}, {self.index_end}): " \
+            return f"Item '{self.type_name}' ({len(self.data_item)} bytes) ({classification}) {self.item_block.name} #{self.index_item_block} personalization: {self.personalization}, index: ({self.index_start}, {self.index_end}): " \
                 f"Parent: {self.item_parent.name}, Storage: {self.stash_type.name}, (r:{self.row}, c:{self.col}), Equip: {self.item_equipped.name}\n" \
                 f"{props}\ntype code: {self.type_code}, quality: {self.quality}, ilevel: {self.item_level}, is charm: {self.is_charm}, Bit length: {bl} ({bl/8} bytes)\n" \
                 f"{self.known_mods_and_socket_data_to_str()}\n" \
