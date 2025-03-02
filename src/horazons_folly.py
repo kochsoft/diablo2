@@ -604,6 +604,8 @@ class E_ExtProperty(Enum):
     EP_CUSTOM_GRAPHICS = 3  # 1 or 4, depending on first bit.  I.e., 4 bit, if bit 1 is set, else 1 bit.
     EP_CLASS_SPECIFIC = 4  # 1 or 12, depending on first bit.
     EP_QUALITY_ATTRIBUTES = 5  # Quality Attributes. Complicated list depending on value of Quality above.
+    EP_RUNEWORD = 6  # 16 bit or 0, depending on whether this is a rune word item. 12 first bits encode rune word name.
+    EP_PERSONALIZATION = 7  # 105 bits of personalization name as written by Anya.
 
     def __str__(self):
         return re.sub("^ep_", "", self.name.lower())
@@ -786,6 +788,7 @@ class Item:
     @property
     def item_level(self) -> Optional[int]:
         """:returns the ilevel of this object if such extended information is available. Else None."""
+        # TODO: Not quite sure if this really works.
         if self.is_analytical:
             return None
         bm = bytes2bitmap(self.data_item)
@@ -841,6 +844,79 @@ class Item:
             res += 'no sockets'
         for mod in info['known_mods']:
             res += f"\n{mod['mod']} [{mod['index0']}:{mod['index1']}]"
+        return res
+
+    def get_extended_item_index(self) -> Dict[E_ExtProperty, Tuple[int,int]]:
+        """Sophisticated function for determining the index0, index1 intervals for each extended item property."""
+        res = {
+            E_ExtProperty.EP_QUEST_SOCKETS: (108, 111),
+            E_ExtProperty.EP_QUALITY: (150, 154)
+        }
+        index_bit = 154
+        bm = bytes2bitmap(self.data_item)
+
+        sz_custom_graphics = 4 if get_range_from_bitmap(bm, index_bit, index_bit+1) > 0 else 1
+        res[E_ExtProperty.EP_CUSTOM_GRAPHICS] = index_bit, (index_bit + sz_custom_graphics)
+        index_bit = index_bit + sz_custom_graphics
+
+        sz_class_specific = 12 if get_range_from_bitmap(bm, index_bit, index_bit+1) > 0 else 1
+        res[E_ExtProperty.EP_CLASS_SPECIFIC] = index_bit, (index_bit + sz_class_specific)
+        index_bit = index_bit + sz_class_specific
+
+        quality = self.quality
+        val_len = 0
+        if quality == E_Quality.EQ_NONE:
+            val_len = 0
+        elif quality == E_Quality.EQ_INFERIOR:
+            val_len = 3
+        elif quality == E_Quality.EQ_NORMAL:
+            val_len = 12 if self.is_charm else 0
+        elif quality == E_Quality.EQ_SUPERIOR:
+            val_len = 0
+        elif quality == E_Quality.EQ_MAGICALLY_ENHANCED:
+            val_len = 22
+        elif quality == E_Quality.EQ_SET:
+            val_len = 12
+        elif quality == E_Quality.EQ_RARE:
+            val_len = 16
+        elif quality == E_Quality.EQ_UNIQUE:
+            val_len = 12
+        elif quality == E_Quality.EQ_CRAFT:
+            len0 = 12 if get_range_from_bitmap(bm, index_bit, index_bit + 1) else 1
+            len1 = 12 if get_range_from_bitmap(bm, index_bit + len0, index_bit + len0 + 1) else 1
+            val_len = len0 + len1
+        res[E_ExtProperty.EP_QUALITY_ATTRIBUTES] = index_bit, (index_bit + val_len)
+        index_bit = index_bit + val_len
+
+        sz_runeword = 16 if self.get_item_property(E_ItemBitProperties.IP_RUNEWORD) else 0
+        res[E_ExtProperty.EP_RUNEWORD] = index_bit, (index_bit + sz_runeword)
+        index_bit = index_bit + sz_runeword
+
+        sz_personalization = 105 if self.get_item_property(E_ItemBitProperties.IP_PERSONALIZED) else 0
+        res[E_ExtProperty.EP_PERSONALIZATION] = index_bit, (index_bit + sz_personalization)
+        return res
+
+    @property
+    def personalization(self) -> Optional[str]:
+        """:returns None if this item has not been personalized by Anya. Else the personalization name."""
+        if self.is_analytical or not self.get_item_property(E_ItemBitProperties.IP_PERSONALIZED):
+            return None
+        index0, index1 = self.get_extended_item_index()[E_ExtProperty.EP_PERSONALIZATION]
+        bm = bytes2bitmap(self.data_item)[::-1]
+        bm_short = bm[index0:index1]
+        # [Note: The letters are encoded in 7 bit Ascii.]
+        while len(bm_short) % 7 != 0:
+            bm_short += '0'
+        res = ""
+        n = round(len(bm_short) / 8)
+        for j in range(n):
+            bm_letter = bm_short[(j*7):((j+1)*7)][::-1]
+            print(bm_letter)
+            c = chr(int(bm_letter,2))
+            if c == '\x00':
+                break
+            else:
+                res += c
         return res
 
     @staticmethod
@@ -1042,7 +1118,7 @@ class Item:
             bl = len(bm)
 
             bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:76]} {bm[76:144]} {bm[144:150]} {bm[150:154]} {bm[154:]}"
-            return f"Item ({len(self.data_item)} bytes) {self.item_block.name} #{self.index_item_block} index: ({self.index_start}, {self.index_end}): " \
+            return f"Item ({len(self.data_item)} bytes) {self.item_block.name} #{self.index_item_block} personalization: {self.personalization}, index: ({self.index_start}, {self.index_end}): " \
                 f"Parent: {self.item_parent.name}, Storage: {self.stash_type.name}, (r:{self.row}, c:{self.col}), Equip: {self.item_equipped.name}\n" \
                 f"{props}\ntype code: {self.type_code}, quality: {self.quality}, ilevel: {self.item_level}, is charm: {self.is_charm}, Bit length: {bl} ({bl/8} bytes)\n" \
                 f"{self.known_mods_and_socket_data_to_str()}\n" \
