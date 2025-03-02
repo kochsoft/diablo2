@@ -895,11 +895,18 @@ class Item:
         fam = ItemFamily.get_family_by_code(self.type_code)
         return fam.is_weapon if fam else None
 
+    @property
     def is_stack(self) -> Optional[bool]:
         if self.is_analytical:
             return None
         fam = ItemFamily.get_family_by_code(self.type_code)
         return fam.is_stack if fam else None
+
+    @property
+    def is_set(self) -> Optional[bool]:
+        if self.is_analytical:
+            return None
+        return False if self.quality is None else self.quality == E_Quality.EQ_SET
 
     @property
     def item_parent(self) -> Optional[E_ItemParent]:
@@ -1285,10 +1292,10 @@ class Item:
             bm = bytes2bitmap(self.data_item)[::-1]
             bl = len(bm)
 
-            classification = f"armor: {self.is_armor}, weapon: {self.is_weapon}, stack: {self.is_stack()}"
+            classification = f"armor: {self.is_armor}, weapon: {self.is_weapon}, stack: {self.is_stack}, set: {self.is_set}"
 
             bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:76]} {bm[76:144]} {bm[144:150]} {bm[150:154]} {bm[154:]}"
-            return f"Item '{self.type_name}' ({len(self.data_item)} bytes) ({classification}) {self.item_block.name} #{self.index_item_block} personalization: {self.personalization}, index: ({self.index_start}, {self.index_end}): " \
+            return f"Item '{self.type_name}' ({len(self.data_item)} bytes) ({classification}) {self.item_block.name} #{self.index_item_block} personalization: '{self.personalization}', index: ({self.index_start}, {self.index_end})\n" \
                 f"Parent: {self.item_parent.name}, Storage: {self.stash_type.name}, (r:{self.row}, c:{self.col}), Equip: {self.item_equipped.name}\n" \
                 f"{props}\ntype code: {self.type_code}, quality: {self.quality}, ilevel: {self.item_level}, is charm: {self.is_charm}, Bit length: {bl} ({bl/8} bytes)\n" \
                 f"{self.known_mods_and_socket_data_to_str()}\n" \
