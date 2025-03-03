@@ -26,11 +26,11 @@ Ancient Armor	aar	Ornate Armor	xar	Sacred Armor	uar
 Light Plate	ltp	Mage Plate	xtp	Archon Plate	utp
 
 SHIELDS
-Buckler	buc	Defender	xuc	Heater	uuc
-Small Shield	sml	Round Shield	xml	Luna	uml
-Large Shield	lrg	Scutum	xrg	Hyperion	urg
-Kite Shield	kit	Dragon Shield	xit	Monarch	uit
-Tower Shield	tow	Pavise	xow	Aegis	uow
+Buckler	buc	Defender	xuc	Heater	uuc; 2,2
+Small Shield	sml	Round Shield	xml	Luna	uml; 2,2
+Large Shield	lrg	Scutum	xrg	Hyperion	urg; 3,2
+Kite Shield	kit	Dragon Shield	xit	Monarch	uit; 3,2
+Tower Shield	tow	Pavise	xow	Aegis	uow;
 Gothic Shield	gts	Ancient Shield	xts	Ward	uts
 Bone Shield	bsh	Grim Shield	xsh	Troll Nest	ush
 Spiked Shield	spk	Barbed Shield	xpk	Blade Barrier	upk
@@ -71,7 +71,7 @@ Assault Helmet	ba4	Savage Helmet	ba9	Conqueror Crown	bae
 Avenger Guard	ba5	Slayer Guard	baa	Guardian Crown	baf
 
 PALADIN_SHIELDS
-Targe	pa1	Akaran Targe	pa6	Sacred Targe	pab
+Targe	pa1	Akaran Targe	pa6	Sacred Targe	pab; 2,2
 Rondache	pa2	Akaran Rondache	pa7	Sacred Rondache	pac
 Heraldic Shield	pa3	Protector Shld	pa8	Kurast Shield	pad
 Aerin Shield	pa4	Guilded Shield	pa9	Zakarum Shield	pae
@@ -88,10 +88,10 @@ CIRCLETS
 Circlet	ci0	Coronet	ci1	Tiara	ci2	Diadem	ci3
 
 AXES
-Hand Axe	hax	Hatchet	9ha	Tomahawk	7ha
-Axe	axe	Cleaver	9ax	Small Crescent	7ax
-Double Axe	2ax	Twin Axe	92a	Ettin Axe	72a
-Military Pick	mpi	Crowbill	9mp	War Spike	7mp
+Hand Axe	hax	Hatchet	9ha	Tomahawk	7ha; 3,1
+Axe	axe	Cleaver	9ax	Small Crescent	7ax; 3,2
+Double Axe	2ax	Twin Axe	92a	Ettin Axe	72a; 3,2
+Military Pick	mpi	Crowbill	9mp	War Spike	7mp; 3,2
 War Axe	wax	Naga	9wa	Berserker Axe	7wa
 Large Axe	lax	Military Axe	9la	Feral Axe	7la
 Broad Axe	bax	Bearded Axe	9ba	Silver Edged Ax	7ba
@@ -100,36 +100,36 @@ Great Axe	gax	Gothic Axe	9ga	Champion Axe	7ga
 Giant Axe	gix	Ancient Axe	9gi	Glorious Axe	7gi
 
 MACES
-Club	clb	Cudgel	9cl	Truncheon	7cl
-Spiked Club	spc	Barbed Club	9sp	Tyrant Club	7sp
-Mace	mac	Flanged Mace	9ma	Reinforced Mace	7ma
-Morning Star	mst	Jagged Star	9mt	Devil Star	7mf
-Flail	fla	Knout	9fl	Scourge	7fl
+Club	clb	Cudgel	9cl	Truncheon	7cl; 3,1
+Spiked Club	spc	Barbed Club	9sp	Tyrant Club	7sp; 3,1
+Mace	mac	Flanged Mace	9ma	Reinforced Mace	7ma; 3,1
+Morning Star	mst	Jagged Star	9mt	Devil Star	7mf; 3,1
+Flail	fla	Knout	9fl	Scourge	7fl; 3,2
 War Hammer	whm	Battle Hammer	9wh	Legendary Mallt	7wh
-Maul	mau	War Club	9m9	Ogre Maul	7m7
-Great Maul	gma	Martel de Fer	9gm	Thunder Maul	7gm
+Maul	mau	War Club	9m9	Ogre Maul	7m7; 4,2
+Great Maul	gma	Martel de Fer	9gm	Thunder Maul	7gm; 4,2
 
 SWORDS
-Short Swrod	ssd	Gladius	9ss	Falcata	7ss
-Scimitar	scm	Cutlass	9sm	Ataghan	7sm
-Saber	sbr	Shamshir	9sb	Elegant Blade	7sb
-Falchion	flc	Tulwar	9fc	Hydra Edge	7fc
-Crystal Sword	crs	Dimensional Bld	9cr	Phase Blade	7cr
-Broad Sword	bsd	Battle Sword	9bs	Conquest Sword	7bs
-Long Sword	lsd	Rune Sword	9ls	Cryptic Sword	7ls
-War Sword	wsd	Ancient Sword	9wd	Mythical Sword	7wd
-Two-handed Swrd	2hs	Espadon	92h	Legend Sword	72h
-Claymore	clm	Dacian Falx	9cm	Highland Blade	7cm
+Short Swrod	ssd	Gladius	9ss	Falcata	7ss; 3,1
+Scimitar	scm	Cutlass	9sm	Ataghan	7sm; 3,1
+Saber	sbr	Shamshir	9sb	Elegant Blade	7sb; 3,1
+Falchion	flc	Tulwar	9fc	Hydra Edge	7fc; 3,1
+Crystal Sword	crs	Dimensional Bld	9cr	Phase Blade	7cr; 3,2
+Broad Sword	bsd	Battle Sword	9bs	Conquest Sword	7bs; 3,2
+Long Sword	lsd	Rune Sword	9ls	Cryptic Sword	7ls; 3,2
+War Sword	wsd	Ancient Sword	9wd	Mythical Sword	7wd; 3,2
+Two-handed Swrd	2hs	Espadon	92h	Legend Sword	72h; 3,2
+Claymore	clm	Dacian Falx	9cm	Highland Blade	7cm; 4,1
 Giant Sword	gis	Tusk Sword	9gs	Balrog Blade	7gs
 Bastard Sword	bsw	Gothic Sword	9b9	Champion Sword	7b7
 Flamberge	flb	Zweihander	9fb	Colossal Sword	7fb
 Great Sword	gsd	Executioner Swr	9gd	Colossus Blade	7gd
 
 DAGGERS
-Dagger	dgr	Poignard	9dg	Bone Knife	7dg
-Dirk	dir	Rondel	9di	Mithral Point	7di
-Kriss	kri	Cinquedeas	9kr	Fanged Knife	7kr
-Blade	bld	Stilleto	9bl	Legend Spike	7bl
+Dagger	dgr	Poignard	9dg	Bone Knife	7dg; 2,1
+Dirk	dir	Rondel	9di	Mithral Point	7di; 2,1
+Kriss	kri	Cinquedeas	9kr	Fanged Knife	7kr; 3,1
+Blade	bld	Stilleto	9bl	Legend Spike	7bl; 3,1
 
 THROWING
 Throwing Knife	tkf	Battle Dart	9tk	Flying Knife	7tk
@@ -164,27 +164,27 @@ Halberd	hal	Bec-de-Corbin	9h9	Great Poleaxe	7h7
 War Scythe	wsc	Grim Scythe	9wc	Giant Thresher	7wc
 
 BOWS
-Short Bow	sbw	Edge Bow	8sb	Spider Bow	6sb
-Hunter’s Bow	hbw	Razor Bow	8hb	Blade Bow	6hb
+Short Bow	sbw	Edge Bow	8sb	Spider Bow	6sb; 3,2
+Hunter’s Bow	hbw	Razor Bow	8hb	Blade Bow	6hb; 3,2
 Long Bow	lbw	Cedar Bow	8lb	Shadow Bow	6lb
-Composite Bow	cbw	Double Bow	8cb	Great Bow	6cb
-Shrt Battle Bow	sbb	Short Siege Bow	8s8	Diamond Bow	6s7
+Composite Bow	cbw	Double Bow	8cb	Great Bow	6cb; 3,2
+Shrt Battle Bow	sbb	Short Siege Bow	8s8	Diamond Bow	6s7; 3,2
 Long Battle Bow	lbb	Long Siege Bow	8l8	Crusader Bow	6l7
-Short War Bow	swb	Rune Bow	8sw	Ward Bow	6sw
+Short War Bow	swb	Rune Bow	8sw	Ward Bow	6sw; 3,2
 Long War Bow	lwb	Gothic Bow	8lw	Hydra Bow	6lw
 
 CROSSBOWS
-Light Crossbow	lxb	Arbalest	8lx	Pellet Bow	6lx
-Crossbow	mxb	Siege Crossbow	8mx	Gorgon Crossbow	6mx
+Light Crossbow	lxb	Arbalest	8lx	Pellet Bow	6lx; 3,2
+Crossbow	mxb	Siege Crossbow	8mx	Gorgon Crossbow	6mx; 3,2
 Heavy Crossbow	hxb	Ballista	8hx	Colossus x-bow	6hx
 Repeating X-bow	rxb	Chu-Ko-Nu	8rx	Demon Crossbow	6rx
 
 STAVES
-Short Staff	sst	Jo Staff	8ss	Walking Stick	6ss
-Long Staff	lst	Quarterstaff	8ls	Stalagmite	6ls
-Gnarled Staff	gst	Cedar Staff	8cs	Elder Staff	6cs
-Battle Staff	bst	Gothic Staff	8bs	Shillelagh	6bs
-War Staff	wst	Rune Staff	8ws	Archon Staff	6ws
+Short Staff	sst	Jo Staff	8ss	Walking Stick	6ss; 3,1
+Long Staff	lst	Quarterstaff	8ls	Stalagmite	6ls; 4,1
+Gnarled Staff	gst	Cedar Staff	8cs	Elder Staff	6cs; 4,1
+Battle Staff	bst	Gothic Staff	8bs	Shillelagh	6bs; 3,2
+War Staff	wst	Rune Staff	8ws	Archon Staff	6ws; 3,2
 
 WANDS
 Wand	wnd	Burnt Wand	9wn	Polished Wand	7wn
@@ -193,7 +193,7 @@ Bone Wand	bwn	Tomb Wand	9bw	Lich Wand	7bw
 Grim Wand	gwn	Grave Wand	9gw	Unearthed Wand	7gw
 
 SCEPTERS
-Sceptre	scp	Rune Sceptre	9sc	Mighty Sceptre	7sc
+Sceptre	scp	Rune Sceptre	9sc	Mighty Sceptre	7sc; 3,1
 Grand Sceptre	gsc	Holy Water Spri	9qs	Seraph Rod	7qs
 War Sceptre	wsp	Divine Sceptre	9ws	Caduceus	7ws
 
@@ -221,30 +221,30 @@ Maiden Pike	am4	Ceremonial Pike	am9	Matriarchal Pik	ame
 Maiden Javelin	am5	Ceremonial Jav	ama	Matriarchal Jav	amf
 
 QUEST_ITEMS
-Wirt’s Leg	leg
-Horadric Malus	hdm
-Scroll of Inifuss 1	bks
-Scroll of Inifuss 2	bkd
-Book of Skill	ass
-Horadric Cube	box
-Horadric Scroll	tr1
-Staff of Kings	msf
-Viper Amulet	vip
-Horadric Staff	hst
-Potion of Life	xyz
-A Jade Figurine	j34
-The Golden Bird	g34
-Lam Esen’s Tome	bbb
-Gidbinn	g33
-Khalim’s Flail	qf1
-Khalim’s Will	qf2
-Khalim’s Eye	qey
-Khalim’s Heart	qhr
-Khalim’s Brain	qbr
-Mephisto’s Soulstone	mss
-Hellforge Hammr	hfh
-Malah’s Potion	ice
-Scroll of Resistance	tr2
+Wirt’s Leg	leg; 3,1
+Horadric Malus	hdm; 2,1
+Scroll of Inifuss 1	bks; 2,2
+Scroll of Inifuss 2	bkd; 2,2
+Book of Skill	ass; 2,2
+Horadric Cube	box; 2,2
+Horadric Scroll	tr1; 2,2
+Staff of Kings	msf; 3,1
+Viper Amulet	vip; 1,1
+Horadric Staff	hst; 4,1
+Potion of Life	xyz; 1,1
+A Jade Figurine	j34; 2,1
+The Golden Bird	g34; 2,1
+Lam Esen’s Tome	bbb; 2,2
+Gidbinn	g33; 3,1
+Khalim’s Flail	qf1; 3,2
+Khalim’s Will	qf2; 3,2
+Khalim’s Eye	qey; 1,1
+Khalim’s Heart	qhr; 1,1
+Khalim’s Brain	qbr; 1,1
+Mephisto’s Soulstone	mss; 1,1
+Hellforge Hammr	hfh; 3,2
+Malah’s Potion	ice; 1,1
+Scroll of Resistance	tr2; 2,2
 
 GEMS
 Chipped Amethyst	gcv
@@ -336,9 +336,9 @@ Rejuv Potion	rvs
 Full Rejuv Potion	rvl
 
 CHARMS
-Charm Small	cm1
-Charm Large	cm2
-Charm Grand	cm3
+Charm Small	cm1; 1,1
+Charm Large	cm2; 2,1
+Charm Grand	cm3; 3,1
 
 SCROLLS
 Identify Scroll	isc
@@ -349,11 +349,11 @@ Tome of Town Portal	tbk
 Tome of Identify	ibk
 
 MISC
-Arrows	aqv
-Bolts	cqv
-Jewel	jew
-Skeleton Key	key
-Amulet	amu
-gold	gld
-Ring	rin
-Ear	ear
+Arrows	aqv; 3,1
+Bolts	cqv; 3,1
+Jewel	jew; 1,1
+Skeleton Key	key; 1,1
+Amulet	amu; 1,1
+gold	gld; 1,1
+Ring	rin; 1,1
+Ear	ear; 1,1

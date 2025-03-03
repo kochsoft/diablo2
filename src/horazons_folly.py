@@ -82,31 +82,67 @@ class E_ItemClass(Enum):
     IC_TOMES = 35
     IC_MISC = 36
 
+    def volume_default(self) -> Tuple[int, int]:
+        """:returns (rows,cols) an item of this class typically takes in inventory, prefering large sizes.
+        This is not always correct. In these cases the file item_codes.tsv may hold a correction.
+        See implementation of load_item_family_list(..) below for details."""
+        if self in [E_ItemClass.IC_OTHER, E_ItemClass.IC_SCROLLS, E_ItemClass.IC_THROWING_POTIONS,
+                    E_ItemClass.IC_POTIONS, E_ItemClass.IC_RUNES, E_ItemClass.IC_GEMS]:
+            return 1, 1
+        elif self == E_ItemClass.IC_BELTS:
+            return 1, 2
+        elif self in [E_ItemClass.IC_THROWING, E_ItemClass.IC_WANDS, E_ItemClass.IC_SORCERESS_ORBS, E_ItemClass.IC_TOMES]:
+            return 2, 1
+        elif self in [E_ItemClass.IC_HELM, E_ItemClass.IC_GLOVES, E_ItemClass.IC_BOOTS, E_ItemClass.IC_DRUID_PELTS,
+                      E_ItemClass.IC_BARBARIAN_HELMS, E_ItemClass.IC_SHRUNKEN_HEADS, E_ItemClass.IC_CIRCLETS]:
+            return 2, 2
+        elif self in [E_ItemClass.IC_DAGGERS, E_ItemClass.IC_JAVELINS,
+                      E_ItemClass.IC_ASSASSIN_KATARS, E_ItemClass.IC_CHARMS]:
+            return 3, 1
+        elif self in [E_ItemClass.IC_BODY_ARMOR, E_ItemClass.IC_SCEPTERS, E_ItemClass.IC_MISC]:
+            return 3, 2
+        elif self in [E_ItemClass.IC_SHIELDS, E_ItemClass.IC_PALADIN_SHIELDS, E_ItemClass.IC_AXES,
+                      E_ItemClass.IC_MACES, E_ItemClass.IC_SWORDS, E_ItemClass.IC_SPEARS, E_ItemClass.IC_POLEARMS,
+                      E_ItemClass.IC_BOWS, E_ItemClass.IC_CROSSBOWS, E_ItemClass.IC_STAVES,
+                      E_ItemClass.IC_AMAZON_WEAPONS, E_ItemClass.IC_QUEST_ITEMS]:
+            return 4, 2
+        else:
+            _log.warning(f"Unsupported ItemClass '{self}' encountered. Returning conservative (4,2).")
+            return 4, 2
+
     def __str__(self):
         return re.sub("^IC_", "", self.name).lower()
 
-class E_ItemGroup(Enum):
+class E_ItemGrade(Enum):
     IG_NONE = 10
     IG_NORMAL = 0
     IG_EXCEPTIONAL = 1
     IG_ELITE = 2
     IG_POSTELITE = 3  # << Exclusively for circlets.
 
+    def __str__(self):
+        return re.sub("^IG_", "", self.name).lower()
 
 """Based on [3]. Maps item type codes to actual items. Also gives insight in some meta-information on the topic."""
 l_item_families = list()  # type: List[ItemFamily]
 
 class ItemFamily:
-    def __init__(self, code_names: OrderedDict[str, str], item_class: E_ItemClass):
+    def __init__(self, code_names: OrderedDict[str, str], item_class: E_ItemClass, *, rows: Optional[int]=None, cols: Optional[int]=None):
         """An ItemFamily is concerned with a row from the beautiful table [3].
         It associates the entries with each other and explains whether they are armor or weapon.
         :param code_names: Keys are item codes. E.g., cap, xap, or uap.
         Ordered by group: Normal first, then exceptional, elite, and, in the case of circlets,
           post-elite.
         Values are item names. In this example: Cap, War Hat and Shako.
-        :param item_class: What is it at first glance? An axe? A shrunken head? Or what?"""
+        :param item_class: What is it at first glance? An axe? A shrunken head? Or what?
+        :param rows: Number of rows this item should take. If not given will use hint from E_ItemClass entry."""
         self.code_names = code_names
         self.item_class = item_class
+        try:
+            self._rows = None if rows is None else int(rows)
+            self._cols = None if cols is None else int(cols)
+        except ValueError as err:
+            _log.warning(f"Unparsable rows '{rows}' or cols '{cols}': {err}")
 
     @property
     def is_armor(self) -> bool:
@@ -120,8 +156,18 @@ class ItemFamily:
     def is_stack(self) -> bool:
         return self.item_class in [E_ItemClass.IC_THROWING, E_ItemClass.IC_JAVELINS, E_ItemClass.IC_THROWING_POTIONS]
 
+    @property
+    def rows(self) -> int:
+        """Number of rows this item takes up in inventory. At most. Accuracy depends on item_codes.tsv."""
+        return self.item_class.volume_default()[0] if self._rows is None else self._rows
+
+    @property
+    def cols(self) -> int:
+        """Number of cols this item takes up in inventory. At most. Accuracy depends on item_codes.tsv."""
+        return self.item_class.volume_default()[1] if self._cols is None else self._cols
+
     def __str__(self):
-        return f"{self.item_class}: {self.code_names}"
+        return f"{self.item_class} ({self.rows},{self.cols}): {self.code_names}"
 
     @staticmethod
     def get_family_by_code(code: str, data: Optional[List[ItemFamily]] = None) -> Optional[ItemFamily]:
@@ -135,7 +181,7 @@ class ItemFamily:
         return None
 
     @staticmethod
-    def get_neighboring_group_code(code: str, target: E_ItemGroup, data: Optional[List[ItemFamily]] = None) -> Optional[str]:
+    def get_neighboring_group_code(code: str, target: E_ItemGrade, data: Optional[List[ItemFamily]] = None) -> Optional[str]:
         if not code:
             return None
         if not data:
@@ -173,6 +219,10 @@ class ItemFamily:
                     continue  # << Ignore comment and empty lines.
                 # Drop the trailing newline character.
                 line = re.sub("\n$", "", line)
+                try:
+                    line, extension = re.split("\\s*;\\s*", line, maxsplit=1)
+                except ValueError:
+                    extension = ''
                 line = re.split("\t", line)
                 if len(line) == 1:
                     current_class = E_ItemClass['IC_' + line[0].upper()]
@@ -183,7 +233,11 @@ class ItemFamily:
                 od = odict()
                 for j in range(round(len(line) / 2)):
                     od[line[2*j + 1]] = line[2*j]
-                res.append(ItemFamily(od, current_class))
+                volume = re.findall("[0-9]+", extension)
+                if len(volume) == 2:
+                    res.append(ItemFamily(od, current_class, rows=volume[0], cols=volume[1]))
+                else:
+                    res.append(ItemFamily(od, current_class))
             return res
 
 l_item_families = ItemFamily.load_item_family_list()
@@ -911,6 +965,14 @@ class Item:
         return fam.is_stack if fam else None
 
     @property
+    def volume(self) -> Optional[Tuple[int, int]]:
+        """:returns rows and cols this item takes up at most in inventory."""
+        if self.is_analytical:
+            return None
+        fam = ItemFamily.get_family_by_code(self.type_code)
+        return fam.rows, fam.cols
+
+    @property
     def is_set(self) -> Optional[bool]:
         if self.is_analytical:
             return None
@@ -1054,19 +1116,13 @@ class Item:
 
     def known_mods_to_str(self) -> str:
         """:returns the list of known mods found within this item as a human-readable string."""
-        res = ''
         mods = self.get_known_mods()
+        if not mods:
+            return "No known mods recognized."
+        res = ''
         for mod in mods:
             res += f"\n{mod['mod']} [{mod['index0']}:{mod['index1']}]"
         return res
-
-    def get_extended_item_int_value(self, prop_ext: E_ExtProperty) -> Optional[int]:
-        indices = self.get_extended_item_index()
-        if indices is None or prop_ext not in indices:
-            return None
-        bm = bytes2bitmap(self.data_item)
-        index0, index1 = indices[prop_ext]
-        return get_range_from_bitmap(bm, index0, index1)
 
     def get_extended_item_index(self) -> Optional[Dict[E_ExtProperty, Tuple[int,int]]]:
         """Sophisticated function for determining the index0, index1 intervals for each extended item property."""
@@ -1162,6 +1218,33 @@ class Item:
         sz_mods = len(mods)
         res[E_ExtProperty.EP_MODS] = index_bit, (index_bit + sz_mods)
 
+        return res
+
+    def get_extended_item_int_value(self, prop_ext: E_ExtProperty) -> Optional[int]:
+        """Convenience function for getting a specific value from an extended item index.
+        :param prop_ext: The extended property in question.
+        :returns the value associated with the extended property as int. Or None, in case of failure."""
+        indices = self.get_extended_item_index()
+        if indices is None or prop_ext not in indices:
+            return None
+        bm = bytes2bitmap(self.data_item)
+        index0, index1 = indices[prop_ext]
+        return get_range_from_bitmap(bm, index0, index1)
+
+    def get_extended_item_index_as_str(self) -> str:
+        """Debugging function, turning the extended item intex into something human-readable."""
+        if self.is_analytical:
+            return "Analytical item has no extended section."
+        indices = self.get_extended_item_index()
+        if indices is None:
+            return "No extended item index."
+        res = ""
+        bmr = bytes2bitmap(self.data_item)[::-1]
+        for key in indices:
+
+            res += f"  {key}: [{indices[key][0]}:{indices[key][1]}], {bmr[indices[key][0]:indices[key][1]]}"
+            if key != E_ExtProperty.EP_MODS:
+                res += "\n"
         return res
 
     @staticmethod
@@ -1304,6 +1387,56 @@ class Item:
                 found_cube = False
         return res
 
+    def get_index1(self, index0):
+        """Tool function. Given an index0, pointing at a b'JM' item starting code.
+        :return the index1 that goes with it."""
+        if self.data[index0:(index0+2)] != b'JM':
+            _log.warning(f"Given index0=={index0} does not point at a b'JM' marker.")
+            return None
+        index1 = index0 + 14  # << 112 bit would mean a compact item. Compare bit 37.
+        if len(self.data) < index1 or self.data[(index0+4):(index0+6)] == b'JM':
+            return index0 + 4  # << Section marker pseudo-item.
+        bm = bytes2bitmap(self.data[index0:index1])
+        is_compact = True if get_range_from_bitmap(bm, 37, 38) else False
+        if is_compact:
+            return index1
+        index_sufficient = len(re.split(b'JM', self.data[index0+2:],maxsplit=1)[0]) + 2
+        bm = bytes2bitmap(self.data[index0:index_sufficient])
+        # A compact item really has only 106 bit. The rest to the 14 bytes is padding.
+        finds = re.findall('.'*106 + ".*?111111111", bm[::-1])  # type: List[str]
+        if not finds:
+            _log.warning(f"Non-compact item without extended section terminator encountered at index0 == {index0}.")
+            return index1
+        index1 = index0 + ceil(len(finds[0]) / 8.0)
+        return index1
+
+    def get_next_item(self) -> Optional[Item]:
+        """:returns the next item if it exists and is not a section separator."""
+        if self.is_analytical:
+            return None
+        index1 = self.get_index1(self.index_end)
+        if index1 - self.index_end < 14:  # << Shorter than a compact item.
+            return None
+        else:
+            return Item(self.data, self.index_end, index1, self.item_block, self.index_item_block + 1)
+
+    def get_item_dismantled(self) -> Optional[List[Item]]:
+        """:returns a list holding this item and any item that is socketed into it."""
+        if self.is_analytical:
+            return None
+        res = [self]  # type: List[Item]
+        n_sockets = self.n_sockets
+        if not n_sockets:
+            return res
+        item = self
+        for j in range(n_sockets):
+            item = item.get_next_item()
+            if item.item_parent == E_ItemParent.IP_ITEM:
+                res.append(item)
+            else:
+                break
+        return res
+
     @staticmethod
     def create_rune(name: E_Rune, stash_type = E_ItemStorage.IS_CUBE, row: int = 0, col: int = 0) -> Optional[Item]:
         """Creates an 'JM...' byte string with the specified rune.
@@ -1362,15 +1495,18 @@ class Item:
             bm = bytes2bitmap(self.data_item)[::-1]
             bl = len(bm)
 
-            classification = f"armor: {self.is_armor}, weapon: {self.is_weapon}, sockets: {self.n_sockets}, stack: {self.is_stack}, set: {self.is_set}"
+            classification = f"armor: {self.is_armor}, weapon: {self.is_weapon}, sockets(<=): {self.n_sockets}, stack: {self.is_stack}, set: {self.is_set}"
+            known_mods_str = self.known_mods_to_str()
+            if known_mods_str:
+                known_mods_str += "\n"
 
             bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:76]} {bm[76:144]} {bm[144:150]} {bm[150:154]} {bm[154:]}"
             return f"Item '{self.type_name}' ({len(self.data_item)} bytes) ({classification}) {self.item_block.name} #{self.index_item_block} personalization: '{self.personalization}', index: ({self.index_start}, {self.index_end})\n" \
-                f"Defense: {self.defense}, Durability: {self.durability}, Stack: {self.stack},\n" \
+                f"Max size in inventory: {self.volume}, Defense (base): {self.defense}, Durability (base): {self.durability}, Stack: {self.stack},\n" \
                 f"Parent: {self.item_parent.name}, Storage: {self.stash_type.name}, (r:{self.row}, c:{self.col}), Equip: {self.item_equipped.name}\n" \
                 f"{props}\ntype code: {self.type_code}, quality: {self.quality}, ilevel: {self.item_level}, is charm: {self.is_charm}, Bit length: {bl} ({bl/8} bytes)\n" \
-                f"{self.known_mods_to_str()}\n" \
-                f"{self.get_extended_item_index()}\n" \
+                f"{known_mods_str}" \
+                f"{self.get_extended_item_index_as_str()}\n" \
                 f"{bm_col_row_split}\n{self.data_item}"
 
 
@@ -1924,7 +2060,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
               f"direct player item count: {self.get_item_count_player(True)}, is dead: {self.is_dead()}, direct mercenary item count: {self.get_item_count_mercenary(True)}, \n" \
               f"Progress: {self.progression}.\n" \
-              f"attributes: {s_attr}, \n" \
+              f"attributes: {s_attr}" \
               f"learned skill-set : {self.skills2str()}"
         item_analysis = Item(self.data)
         for item in item_analysis.get_block_items():
