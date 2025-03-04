@@ -32,8 +32,8 @@ Large Shield	lrg	Scutum	xrg	Hyperion	urg; 3,2
 Kite Shield	kit	Dragon Shield	xit	Monarch	uit; 3,2
 Tower Shield	tow	Pavise	xow	Aegis	uow; 3,2
 Gothic Shield	gts	Ancient Shield	xts	Ward	uts
-Bone Shield	bsh	Grim Shield	xsh	Troll Nest	ush
-Spiked Shield	spk	Barbed Shield	xpk	Blade Barrier	upk
+Bone Shield	bsh	Grim Shield	xsh	Troll Nest	ush; 3,2
+Spiked Shield	spk	Barbed Shield	xpk	Blade Barrier	upk; 3,2
 
 GLOVES
 Leather Gloves	lgl	Demonhide Gloves	xlg	Bramble Mitts	ulg
@@ -123,7 +123,7 @@ Claymore	clm	Dacian Falx	9cm	Highland Blade	7cm; 4,1
 Giant Sword	gis	Tusk Sword	9gs	Balrog Blade	7gs; 4,1
 Bastard Sword	bsw	Gothic Sword	9b9	Champion Sword	7b7
 Flamberge	flb	Zweihander	9fb	Colossal Sword	7fb
-Great Sword	gsd	Executioner Swr	9gd	Colossus Blade	7gd
+Great Sword	gsd	Executioner Swr	9gd	Colossus Blade	7gd; 4,2
 
 DAGGERS
 Dagger	dgr	Poignard	9dg	Bone Knife	7dg; 2,1
@@ -251,7 +251,7 @@ Chipped Amethyst	gcv
 Chipped Diamond	gcw
 Chipped Emerald	gcg
 Chipped Ruby	gcr
-Chipped Saphire	gc
+Chipped Saphire	gcb
 Chipped Skull	skc
 Chipped Topaz	gcy
 Flawed Amethyst	gfv

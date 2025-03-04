@@ -984,6 +984,8 @@ class Item:
         if self.is_analytical:
             return None
         fam = ItemFamily.get_family_by_code(self.type_code)
+        if fam is None:
+            return None
         return fam.rows, fam.cols
 
     @property
@@ -1561,6 +1563,15 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         return False
 
     @property
+    def has_iron_golem(self) -> bool:
+        item_analysis = Item(self.data)
+        hd = item_analysis.get_block_items(E_ItemBlock.IB_IRONGOLEM_HD)
+        if not hd:
+            return False
+        data = hd[0].data_item[2]
+        return data > 0
+
+    @property
     def level_by_header(self) -> int:
         """Character level in main header. This is not to be confused with the E_Attributes.AT_LEVEL, the
         actual in-game character level. level_by_header is used for display on the character selection screen.
@@ -2042,6 +2053,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             if item.stash_type != storage or item.item_parent != E_ItemParent.IP_STORED:
                 continue
             vol = item.volume
+            if item.volume is None:
+                continue
             y = item.row
             x = item.col
             for j in range(vol[0]):
@@ -2050,7 +2063,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                     bm = bm[:index] + '1' + bm[(index+1):]
         return bm
 
-    def add_items_to_player(self, items: bytes) -> int:
+    def add_items_to_player(self, items: bytes):
         """Warning: Be sure to add multiple items in a sensible order!
         :param items: Byte string of JM...-items. Prefixed with one byte giving the count."""
         # [Note: For backwards-compatibility. Delete all bytes prior to the first b'JM'.]
@@ -2060,7 +2073,69 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         self.data = self.data[0:index_start] + items + self.data[index_start:]
         self.set_item_count(E_ItemBlock.IB_PLAYER_HD, self.get_item_count_player(True) + count)
         print(f"Attempting to add {count} new items to the player's inventory.")
-        return 0
+
+    def find_space_for_item(self, item: Item, storage: E_ItemStorage) -> Optional[Tuple[int,int]]:
+        """:returns the coordinates of the top left corner for the item where it would fit."""
+        smap = self.get_storage_occupation_maps(storage)
+        volume = item.volume
+        if any([x is None for x in [smap, volume]]):
+            return None
+        n_y = storage.size[0] - volume[0] + 1
+        n_x = storage.size[1] - volume[1] + 1
+        for pos_x in range(n_x):
+            for pos_y in range(n_y):
+                position_is_good = True
+                for j in range(volume[0]):
+                    for k in range(volume[1]):
+                        if smap[storage.size[1] * (pos_y+j) + (pos_x+k)] == '1':
+                            position_is_good = False
+                            break
+                    if not position_is_good:
+                        break
+                if position_is_good:
+                    return pos_y, pos_x
+        return None
+
+    def place_items_into_storage_maps(self, items: List[Item], storage: Optional[Union[E_ItemStorage, List[E_ItemStorage]]] = None) -> List[Item]:
+        """Places the given items into storage. Scanning for free space. Correcting item count.
+        :param items: Items to be placed. May also be socketed items.
+        :param storage: Storage targets. If None all targets will be tried in order cube, stash, inventory.
+        :returns remaining items that could not be placed. Empty list in case of complete success."""
+        # > Preliminaries. -------------------------------------------
+        if not items:
+            return []  #<< Nothing to do.
+        if storage is None:
+            storage = [E_ItemStorage.IS_CUBE, E_ItemStorage.IS_STASH, E_ItemStorage.IS_INVENTORY]
+        if isinstance(storage, list):
+            for st in storage:
+                items = self.place_items_into_storage_maps(items, st)
+            return items
+        # < ----------------------------------------------------------
+        res = list()  # type: List[Item]
+        bts = b''
+        am_in_sockets = False
+        for item in items:
+            if item.item_parent == E_ItemParent.IP_ITEM:
+                if am_in_sockets:
+                    bts += item.data_item
+                else:
+                    res.append(item)
+            else:
+                am_in_sockets = False
+                coords = self.find_space_for_item(item, storage)
+                if (coords is None) or (item.type_code == 'box' and storage == E_ItemStorage.IS_CUBE):
+                    # ^Cannot place the Horadric Cube into the Horadric Cube.
+                    res.append(item)
+                else:
+                    item.row = coords[0]
+                    item.col = coords[1]
+                    item.stash_type = storage
+                    item.item_parent = E_ItemParent.IP_STORED
+                    bts += item.data_item
+                    if item.n_sockets:
+                        am_in_sockets = True
+        self.add_items_to_player(bts)
+        return res
 
     @staticmethod
     def get_time(frmt: str = "%y%m%d_%H%M%S", unix_time_s: Optional[int] = None) -> str:
@@ -2088,12 +2163,13 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
     def __str__(self) -> str:
         core = 'hardcore' if self.is_hardcore() else 'softcore'
         cube_posessing = 'owning' if self.has_horadric_cube else 'lacking'
+        golem = 'golem commanding, ' if self.has_iron_golem else ''
         god_status = ('demi-goddess' if self.is_demi_god else 'heroine') if self.get_class_enum().is_female() else ('demi-god' if self.is_demi_god else 'hero')
         attr = self.get_attributes()
         s_attr = ''
         for key in self.get_attributes():
             s_attr += f"{key.name}: {self.HMS2str(attr[key])},\n" if key.get_attr_sz_bits() == 21 else f"{key.name}: {attr[key]},\n"
-        msg = f"{self.get_rank()}{self.get_name(True)} ({self.pfname}), a Horadric Cube (holding {self.n_cube_contents_shallow} items) {cube_posessing}, "\
+        msg = f"{self.get_rank()}{self.get_name(True)} ({self.pfname}), a Horadric Cube (holding {self.n_cube_contents_shallow} items) {cube_posessing}, {golem}"\
               f"level {attr[E_Attributes.AT_LEVEL]} (hd: {self.level_by_header}/prog: {self.progression}) {core} {self.get_class(True)} {god_status}.\n"\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}', "\
@@ -2141,6 +2217,10 @@ class Horadric:
             print("Both, set to hardcore and set to softcore has been requested. Ignoring both.")
         elif parsed.softcore or parsed.hardcore:
             self.set_hardcore(parsed.hardcore)
+
+        if parsed.redeem_golem:
+            for data in self.data_all:
+                self.redeem_golem(data)
 
         if parsed.drop_horadric:
             for data in self.data_all:
@@ -2370,6 +2450,21 @@ class Horadric:
                 data.update_all()
                 data.save2disk()
 
+    def redeem_golem(self, data: Data):
+        item_analysis = Item(data.data)
+        if not data.has_iron_golem:
+            print("There is no golem to redeem.")
+            return
+        items = item_analysis.get_block_items(E_ItemBlock.IB_IRONGOLEM)
+        if not items:
+            return
+        index_golem_code = items[0].index_start - 1
+        data.data = data.data[:index_golem_code] + b'\x00'
+        data.place_items_into_storage_maps(items)
+        if self.is_standalone:
+            data.update_all()
+            data.save2disk()
+
     def drop_horadric(self, data: Data):
         """Drops all items from the Horadric Cube. If standalone mode, also saves the results to disk."""
         items = Item(data.data).get_cube_contents()  # type: List[Item]
@@ -2450,8 +2545,8 @@ class Horadric:
         Replaces old contents.
         After this is done the character file is saved automatically."""
         self.drop_horadric(data)
-        err = data.add_items_to_player(items)
-        if self.is_standalone and (err == 0):
+        data.add_items_to_player(items)
+        if self.is_standalone:
             data.update_all()
             data.save2disk()
 
@@ -2502,6 +2597,7 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--ensure_horadric', action='store_true', help="Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")
         parser.add_argument('--softcore', action='store_true', help="Flag. Set target characters to soft core mode.")
+        parser.add_argument('--redeem_golem', action='store_true', help="Flag. If there is an iron golem, dispel it and return its items into the player's inventory.")
         parser.add_argument('--boost_attributes', type=int, help='Set this number to the given value.')
         parser.add_argument('--boost_skills', type=int, help='Set this number to the given value.')
         parser.add_argument('--reset_attributes', action="store_true", help="Flag. Returns all spent attribute points for redistribution.")
@@ -2517,6 +2613,5 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         return parsed
 
 if __name__ == '__main__':
-    print(ItemFamily.get_name_by_code('92a'))
-    #hor = Horadric()
+    hor = Horadric()
     print("Done.")

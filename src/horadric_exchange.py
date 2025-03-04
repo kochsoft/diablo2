@@ -123,6 +123,7 @@ class Horadric_GUI:
         self.button_load_cube = None  # type: Optional[tk.Button]
         self.button_save_cube = None  # type: Optional[tk.Button]
         self.button_runic_cube = None  # type: Optional[tk.Button]
+        self.button_redeem_golem = None  # type: Optional[tk.Button]
         self.button_ensure_cube = None  # type: Optional[tk.Button]
         self.button_enable_nightmare = None  # type: Optional[tk.Button]
         self.button_enable_hell = None  # type: Optional[tk.Button]
@@ -425,6 +426,13 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         self.horadric_horazon.reset_attributes()
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
+    def redeem_golem(self):
+        data = self.verify_hero()
+        if not data:
+            return
+        self.horadric_horazon.redeem_golem(data)
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
     def ensure_cube(self):
         data = self.verify_hero()
         if not data:
@@ -524,13 +532,15 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                        self.button_reset_attributes, self.button_boost_skills, self.button_boost_attributes,
                        self.check_hardcore, self.check_godmode, self.entry_boost_skills, self.entry_runic_cube,
                        self.entry_boost_attributes, self.button_horazon, self.button_ensure_cube,
-                       self.button_enable_nightmare, self.button_enable_hell]:
+                       self.button_enable_nightmare, self.button_enable_hell, self.button_redeem_golem]:
             if enable:
                 widget.config(state='normal')
             else:
                 widget.config(state='disabled')
         if do_update and enable and len(self.horadric_horazon.data_all):
             data = self.horadric_horazon.data_all[0]  # type: Data
+            if not data.has_iron_golem:
+                self.button_redeem_golem.config(state='disabled')
             if not data.has_horadric_cube:
                 self.button_load_cube.config(state='disabled')
                 self.button_save_cube.config(state='disabled')
@@ -686,6 +696,10 @@ Beware!"""
         self.button_reset_attributes = tk.Button(self.tab2, text='Untrain Attrib.', command=self.reset_attributes, width=10, height=1, bg='#009999')
         self.button_reset_attributes.grid(row=4, column=1, sticky='w')
         Hovertip(self.button_reset_attributes, 'Return all hard attribute points for redistribution.')
+
+        self.button_redeem_golem = tk.Button(self.tab2, text='Redeem Golem', command=self.redeem_golem, width=15, height=1, bg='#009999')
+        self.button_redeem_golem.grid(row=3, column=2, sticky='w')
+        Hovertip(self.button_redeem_golem, 'If your character commands an iron golem, dispel that golem and, if there is space, return the item to inventory.')
 
         self.button_ensure_cube = tk.Button(self.tab2, text='Ensure Cube', command=self.ensure_cube, width=10, height=1, bg='#009999')
         self.button_ensure_cube.grid(row=3, column=3, sticky='w')
