@@ -585,6 +585,20 @@ class E_ItemStorage(Enum):
     IS_STASH =5
     IS_UNSPECIFIED = 10
 
+    @property
+    def size(self) -> Tuple[int, int]:
+        """The Horadric Cube is 4x3. The Stash is 8x6. The inventory is 4x10."""
+        if self == E_ItemStorage.IS_CUBE:
+            return 4,3
+        elif self == E_ItemStorage.IS_STASH:
+            return 8,6
+        elif self == E_ItemStorage.IS_INVENTORY:
+            return 4,10
+        return 0,0
+
+    def __str__(self) -> str:
+        return re.sub("^IS_", "", self.name).lower()
+
 
 class E_ItemEquipment(Enum):
     """Relevant for equipped items.
@@ -2010,6 +2024,32 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 c = c + 1
         return c
 
+    def get_storage_occupation_maps(self, storage: E_ItemStorage) -> str:
+        """:returns for the selected ItemStorage a line-wise (row major) bitmap string. Each number stands
+        for a slot in the respective storage type (cube, stash, inventory). '0' says: free slot,
+        '1' says: slot is occupied by some item.
+        The Horadric Cube is 4x3. The Stash is 8x6. The inventory is 4x10."""
+        size = storage.size
+        n_y = size[0]
+        n_x = size[1]
+        n = n_x * n_y
+        if not n:
+            return ''
+        bm = '0' * n
+        item_analysis = Item(self.data)
+        items = item_analysis.get_block_items(E_ItemBlock.IB_PLAYER)
+        for item in items:
+            if item.stash_type != storage or item.item_parent != E_ItemParent.IP_STORED:
+                continue
+            vol = item.volume
+            y = item.row
+            x = item.col
+            for j in range(vol[0]):
+                for k in range(vol[1]):
+                    index = (j+y) * n_x + (k+x)
+                    bm = bm[:index] + '1' + bm[(index+1):]
+        return bm
+
     def add_items_to_player(self, items: bytes) -> int:
         """Warning: Be sure to add multiple items in a sensible order!
         :param items: Byte string of JM...-items. Prefixed with one byte giving the count."""
@@ -2067,6 +2107,13 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             msg += f"\n{item}"
             if not item.item_block.is_header:
                 msg += "\n"
+        msg += "\nStorage Occupation:\n"
+        for storage in [E_ItemStorage.IS_CUBE, E_ItemStorage.IS_STASH, E_ItemStorage.IS_INVENTORY]:
+            bm = self.get_storage_occupation_maps(storage)
+            n_x = storage.size[1]
+            msg += f"{storage}:\n"
+            for j in range(storage.size[0]):
+                msg += bm[j*n_x:(j+1)*n_x] + "\n"
         return msg
 
 
