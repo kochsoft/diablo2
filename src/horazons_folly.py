@@ -181,7 +181,26 @@ class ItemFamily:
         return None
 
     @staticmethod
-    def get_neighboring_group_code(code: str, target: E_ItemGrade, data: Optional[List[ItemFamily]] = None) -> Optional[str]:
+    def get_grade_for_code(code: str, data: Optional[List[ItemFamily]] = None) -> Optional[E_ItemGrade]:
+        fam = ItemFamily.get_family_by_code(code, data)
+        if not fam:
+            return None
+        c = 0
+        for key in fam.code_names:
+            if key == code:
+                return E_ItemGrade(c)
+            else:
+                c = c + 1
+        return None
+
+    @staticmethod
+    def get_sibling_code_for_grade(code: str, grade_target: E_ItemGrade, data: Optional[List[ItemFamily]] = None) -> Optional[str]:
+        """Get the partner code for a given code from the same family that matches the given item grade.
+        :param code: item 3 letter type_code.
+        :param data: List of ItemFamilies. Will default to global l_item_families.
+        :param grade_target: Target grade.
+        :return None in case of failure. Else the 3-letter type code of the item within the same family as givne code
+          matching the given grade_target."""
         if not code:
             return None
         if not data:
@@ -190,7 +209,7 @@ class ItemFamily:
         if not it_fam:
             return None
         keys = list(it_fam.code_names.keys())
-        return keys[target.value] if target.value < len(it_fam.code_names) else None
+        return keys[grade_target.value] if grade_target.value < len(it_fam.code_names) else None
 
     @staticmethod
     def get_name_by_code(code: str, data: Optional[List[ItemFamily]] = None) -> Optional[str]:
@@ -939,8 +958,9 @@ class Item:
 
     @type_code.setter
     def type_code(self, code: str):
-        if len(code) != 3:
-            _log.warning("Item Code string needs to be 3 characters exactly.")
+        if (not code) or (len(code) != 3):
+            _log.warning(f"Item Code string needs to be 3 characters exactly. '{code}' was given.")
+            return
         if self.is_analytical:
             return
         bm = bytes2bitmap(self.data_item)
@@ -1000,6 +1020,20 @@ class Item:
             return None
         fam = ItemFamily.get_family_by_code(self.type_code)  # type: Optional[ItemFamily]
         return fam.item_class if fam else None
+
+    @property
+    def item_grade(self) -> Optional[E_ItemGrade]:
+        """:returns this item's grade. Normal, Exceptional, Elite, or Post-Elite."""
+        if self.is_analytical:
+            return None
+        return ItemFamily.get_grade_for_code(self.type_code)  # type: Optional[E_ItemGrade]
+
+    @item_grade.setter
+    def item_grade(self, grade: E_ItemGrade):
+        if self.is_analytical:
+            return
+        code = ItemFamily.get_sibling_code_for_grade(self.type_code, grade)
+        self.type_code = code
 
     @property
     def item_parent(self) -> Optional[E_ItemParent]:
@@ -1511,7 +1545,7 @@ class Item:
             bm = bytes2bitmap(self.data_item)[::-1]
             bl = len(bm)
 
-            classification = f"armor: {self.is_armor}, weapon: {self.is_weapon}, sockets(<=): {self.n_sockets}, stack: {self.is_stack}, set: {self.is_set}"
+            classification = f"{self.item_grade}, armor: {self.is_armor}, weapon: {self.is_weapon}, sockets(<=): {self.n_sockets}, stack: {self.is_stack}, set: {self.is_set}"
             known_mods_str = self.known_mods_to_str()
             if known_mods_str:
                 known_mods_str += "\n"
@@ -2594,6 +2628,10 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--drop_horadric', action='store_true', help="Flag. If given, the Horadric Cube contents of the targeted character will be removed.")
         parser.add_argument('--save_horadric', type=str, help="Write the items found in the Horadric Cube to disk with the given pfname. Only one character allowed.")
         parser.add_argument('--load_horadric', type=str, help="Drop all contents from the Horadric Cube and replace them with the horadric file content, that had been written using --save_horadric earlier.")
+        # --regrade_horadric
+        # --dispel_horadric
+        # --sharpen_horadric
+        # --socket_horadric
         parser.add_argument('--ensure_horadric', action='store_true', help="Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")
         parser.add_argument('--softcore', action='store_true', help="Flag. Set target characters to soft core mode.")
