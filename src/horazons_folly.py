@@ -827,6 +827,13 @@ class E_Quality(Enum):
     def __str__(self):
         return re.sub("^eq_", "", self.name.lower()) + f"({self.value})"
 
+class E_InferiorQuality(Enum):
+    EQ_NONE = 100
+    EQ_CRUDE = 0
+    EQ_CRACKED = 1
+    EQ_DAMAGED = 2
+    EQ_LOW_QUALITY = 3
+
 class E_ExtProperty(Enum):
     """Extended item properties that are not covered by above. They begin at bit 108. After that it becomes complicated.
     Order of the enum follows the order of the entries in the extended section.
@@ -900,6 +907,18 @@ class Item:
         if (len(self.data_item) * 8) < val:
             return False
         return True if get_range_from_bitmap(bytes2bitmap(self.data_item), val, val+1) else False
+
+    def copy_with_item_property_set(self, prop: E_ItemBitProperties, enabled: bool) -> Optional[bytes]:
+        """Copies this item's byte string, and sets the given value to the given item property."""
+        if self.is_analytical:
+            return None
+        val = prop.value
+        if (len(self.data_item) * 8) < val:
+            return
+        bm = bytes2bitmap(self.data_item)
+        # bm = bm[0:val] + ('1' if enabled else '0') + bm[(val+1):]
+        bm = set_range_to_bitmap(bm, val, val+1, 1 if enabled else 0)
+        return bitmap2bytes(bm)
 
     @property
     def col(self) -> Optional[int]:
@@ -1222,7 +1241,16 @@ class Item:
         res[E_ExtProperty.EP_RUNEWORD] = index_bit, (index_bit + sz_runeword)
         index_bit = index_bit + sz_runeword
 
-        sz_personalization = 105 if self.get_item_property(E_ItemBitProperties.IP_PERSONALIZED) else 0
+        sz_personalization = 0
+        if self.get_item_property(E_ItemBitProperties.IP_PERSONALIZED):
+            # Personalization is encoded in 7 bit ASCII and stopped by a traditional 0-entry.
+            # [Note: Do not use self.personalization here, lest you enter an infinite recursion!]
+            sz_personalization = 0
+            bmp = bm[::-1][index_bit:(index_bit+105)]
+            while bmp[sz_personalization:(sz_personalization + 7)] != '0000000':
+                # current_char = chr(int(bmp[sz_personalization:(sz_personalization + 7)][::-1],2))
+                sz_personalization = sz_personalization + 7
+            sz_personalization = sz_personalization + 7
         res[E_ExtProperty.EP_PERSONALIZATION] = index_bit, (index_bit + sz_personalization)
         index_bit = index_bit + sz_personalization
 
@@ -1291,7 +1319,6 @@ class Item:
         res = ""
         bmr = bytes2bitmap(self.data_item)[::-1]
         for key in indices:
-
             res += f"  {key}: [{indices[key][0]}:{indices[key][1]}], {bmr[indices[key][0]:indices[key][1]]}"
             if key != E_ExtProperty.EP_MODS:
                 res += "\n"
@@ -1439,7 +1466,8 @@ class Item:
 
     def get_index1(self, index0):
         """Tool function. Given an index0, pointing at a b'JM' item starting code.
-        :return the index1 that goes with it."""
+        :return the index1 that goes with it. Meaning: The item lives in self.data[index0:index1].
+          This does not include items that may be socketed into it."""
         if self.data[index0:(index0+2)] != b'JM':
             _log.warning(f"Given index0=={index0} does not point at a b'JM' marker.")
             return None
@@ -1625,17 +1653,6 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         """Setter for progression. Set to 5 to enable nightmare. Set to 10 to enable hell."""
         if len(self.data) >= 37:
             self.data = self.data[:37] + int.to_bytes(progression.value if isinstance(progression, E_Progression) else int(progression)) + self.data[38:]
-
-    @property
-    def has_hell(self) -> bool:
-        return self.data[170] & 128 != 0
-
-    @has_hell.setter
-    def has_hell(self, enable: bool):
-        if enable:
-            self.data = self.data[:170] + int.to_bytes(self.data[170] | 128) + self.data[171:]
-        else:
-            self.data = self.data[:170] + int.to_bytes(self.data[170] & 127) + self.data[171:]
 
     @property
     def n_cube_contents_shallow(self) -> int:
@@ -2108,9 +2125,10 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         self.set_item_count(E_ItemBlock.IB_PLAYER_HD, self.get_item_count_player(True) + count)
         print(f"Attempting to add {count} new items to the player's inventory.")
 
-    def find_space_for_item(self, item: Item, storage: E_ItemStorage) -> Optional[Tuple[int,int]]:
+    def find_space_for_item(self, item: Item, storage: E_ItemStorage, smap: Optional[str] = None) -> Optional[Tuple[int,int]]:
         """:returns the coordinates of the top left corner for the item where it would fit."""
-        smap = self.get_storage_occupation_maps(storage)
+        if not smap:
+            smap = self.get_storage_occupation_maps(storage)
         volume = item.volume
         if any([x is None for x in [smap, volume]]):
             return None
@@ -2149,6 +2167,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         bts = b''
         am_in_sockets = False
         for item in items:
+            if isinstance(item, bytes):
+                item = Item(item, 0, len(item))
             if item.item_parent == E_ItemParent.IP_ITEM:
                 if am_in_sockets:
                     bts += item.data_item
@@ -2168,8 +2188,34 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                     bts += item.data_item
                     if item.n_sockets:
                         am_in_sockets = True
-        self.add_items_to_player(bts)
+                    self.add_items_to_player(bts)
+                    bts = b''
         return res
+
+    def separate_socketed_items_from_item(self, item: Item):
+        """Will remove socketed items from the given item and put them into the player's inventory.
+        Preferably close to that item, else into the cube, stash, or backpack inventory.
+        :param item: A socketed item that has items socketed into it."""
+        if item is None or not item.n_sockets:
+            return
+        new_items = list()  # type: List[Union[Item, bytes]]
+        target_inventories = [E_ItemStorage.IS_CUBE, E_ItemStorage.IS_STASH, E_ItemStorage.IS_INVENTORY]
+        if item.stash_type in target_inventories:
+            target_inventories = list(filter(lambda x: x != item.stash_type, target_inventories))
+            target_inventories.insert(0, item.stash_type)
+        former_child = item
+        while True:
+            child = former_child.get_next_item()
+            if child.item_parent != E_ItemParent.IP_ITEM:
+                break
+            child.item_parent = E_ItemParent.IP_STORED
+            former_child = child
+            new_items.append(child)
+        self.drop_item(item)
+        if item.get_item_property(E_ItemBitProperties.IP_RUNEWORD):
+            _log.warning("This item is a runeword. Drop the respective extended qualities.")  # TODO! Drop non-superior rune word properties!
+            new_items.insert(0, item.copy_with_item_property_set(E_ItemBitProperties.IP_RUNEWORD, False))
+        self.place_items_into_storage_maps(new_items, target_inventories)
 
     @staticmethod
     def get_time(frmt: str = "%y%m%d_%H%M%S", unix_time_s: Optional[int] = None) -> str:
@@ -2265,6 +2311,10 @@ class Horadric:
                 self.save_horadric(parsed.save_horadric)
             else:
                 _log.warning("Saving of Horadric Cube content requires 1 target character exactly.")
+
+        if parsed.empty_sockets_horadric:
+            for data in self.data_all:
+                self.empty_sockets_horadric(data)
 
         if parsed.ensure_horadric:
             for data in self.data_all:
@@ -2508,7 +2558,16 @@ class Horadric:
         if self.is_standalone:
             data.update_all()
             data.save2disk()
-        print(f"Dropped {len(items)} items from the Horadric cube.")
+            print(f"Dropped {len(items)} items from the Horadric cube.")
+
+    def empty_sockets_horadric(self, data: Data):
+        items = Item(data.data).get_cube_contents()  # type: List[Item]
+        for item in items:
+            data.separate_socketed_items_from_item(item)
+        if self.is_standalone:
+            data.update_all()
+            data.save2disk()
+            print(f"Attempts were made to desocket. {len(items)} items were involved (socketed and base).")
 
     def ensure_horadric(self, data: Data):
         if data.has_horadric_cube:
@@ -2630,6 +2689,7 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--load_horadric', type=str, help="Drop all contents from the Horadric Cube and replace them with the horadric file content, that had been written using --save_horadric earlier.")
         # --regrade_horadric
         # --dispel_horadric
+        parser.add_argument('--empty_sockets_horadric', action='store_true', help="Flag. Pull all socketed items from items in the horadric cube. Try to preserve these socketables.")
         # --sharpen_horadric
         # --socket_horadric
         parser.add_argument('--ensure_horadric', action='store_true', help="Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.")
