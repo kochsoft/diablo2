@@ -1573,7 +1573,7 @@ class Item:
             bm = bytes2bitmap(self.data_item)[::-1]
             bl = len(bm)
 
-            classification = f"{self.item_grade}, armor: {self.is_armor}, weapon: {self.is_weapon}, sockets(<=): {self.n_sockets}, stack: {self.is_stack}, set: {self.is_set}"
+            classification = f"{self.item_grade}, armor: {self.is_armor}, weapon: {self.is_weapon}, sockets: {self.n_sockets}, stack: {self.is_stack}, set: {self.is_set}"
             known_mods_str = self.known_mods_to_str()
             if known_mods_str:
                 known_mods_str += "\n"
@@ -2192,6 +2192,26 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                     bts = b''
         return res
 
+    @staticmethod
+    def _normalize_rune_item(item: Item) -> bytes:
+        """Dispels magic (dropping mod section), removes runeword-powers (not the runes though,
+        use self.separate_socketed_items_from_item for that and sets the quality to normal."""
+        bmr = bytes2bitmap(item.copy_with_item_property_set(E_ItemBitProperties.IP_RUNEWORD, False))[::-1]
+        quality = item.quality
+        if quality not in (E_Quality.EQ_NORMAL, E_Quality.EQ_SUPERIOR) or 8 * len(bmr) < 154 or item.n_sockets == 0:
+            return item.data_item  # << Nothing to do.
+        ext_index = item.get_extended_item_index()
+        bmr = bmr[:ext_index[E_ExtProperty.EP_MODS][0]]
+        bmr = bmr[:ext_index[E_ExtProperty.EP_RUNEWORD][0]] + bmr[ext_index[E_ExtProperty.EP_RUNEWORD][1]:]
+        bmr = bmr[:ext_index[E_ExtProperty.EP_QUEST_SOCKETS][0]] + '000' + bmr[ext_index[E_ExtProperty.EP_QUEST_SOCKETS][1]:]
+        bm = bmr[::-1]
+        bm =  '111111111' + set_range_to_bitmap(bm, 150, 154, E_Quality.EQ_NORMAL.value)
+        if len(bm) % 8 > 0:
+            bm = ((8 - (len(bm) % 8)) * '0') + bm
+        with open("kaese.cube", 'wb') as OUT: # TODO! Hier war ich.
+            OUT.write(bitmap2bytes(bm))
+        return bitmap2bytes(bm)
+
     def separate_socketed_items_from_item(self, item: Item):
         """Will remove socketed items from the given item and put them into the player's inventory.
         Preferably close to that item, else into the cube, stash, or backpack inventory.
@@ -2208,13 +2228,17 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             child = former_child.get_next_item()
             if child.item_parent != E_ItemParent.IP_ITEM:
                 break
-            child.item_parent = E_ItemParent.IP_STORED
             former_child = child
             new_items.append(child)
+        # [Note: Fragile code here. It is important to delete the items in reverse order, so that the
+        #  internal indices of the yet un-handled Item objects in the list remain intact.
+        #  It is also important to set the property IP_STORED after removal, so that the main item count stays intact.]
+        for j in reversed(range(len(new_items))):
+            self.drop_item(new_items[j])
+            new_items[j].item_parent = E_ItemParent.IP_STORED
         self.drop_item(item)
         if item.get_item_property(E_ItemBitProperties.IP_RUNEWORD):
-            _log.warning("This item is a runeword. Drop the respective extended qualities.")  # TODO! Drop non-superior rune word properties!
-            new_items.insert(0, item.copy_with_item_property_set(E_ItemBitProperties.IP_RUNEWORD, False))
+            new_items.insert(0, self._normalize_rune_item(item))
         self.place_items_into_storage_maps(new_items, target_inventories)
 
     @staticmethod
