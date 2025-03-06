@@ -1221,7 +1221,7 @@ class Item:
         elif quality == E_Quality.EQ_NORMAL:
             val_len = 12 if self.is_charm else 0
         elif quality == E_Quality.EQ_SUPERIOR:
-            val_len = 0
+            val_len = 3
         elif quality == E_Quality.EQ_MAGICALLY_ENHANCED:
             val_len = 22
         elif quality == E_Quality.EQ_SET:
@@ -2208,8 +2208,6 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         bm =  '111111111' + set_range_to_bitmap(bm, 150, 154, E_Quality.EQ_NORMAL.value)
         if len(bm) % 8 > 0:
             bm = ((8 - (len(bm) % 8)) * '0') + bm
-        with open("kaese.cube", 'wb') as OUT: # TODO! Hier war ich.
-            OUT.write(bitmap2bytes(bm))
         return bitmap2bytes(bm)
 
     def separate_socketed_items_from_item(self, item: Item):
