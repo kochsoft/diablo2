@@ -110,6 +110,16 @@ class E_ItemClass(Enum):
             _log.warning(f"Unsupported ItemClass '{self}' encountered. Returning conservative (4,2).")
             return 4, 2
 
+    @property
+    def is_socketable(self) -> bool:
+        return self in [E_ItemClass.IC_HELM, E_ItemClass.IC_BODY_ARMOR, E_ItemClass.IC_SHIELDS,
+                        E_ItemClass.IC_PALADIN_SHIELDS, E_ItemClass.IC_DRUID_PELTS, E_ItemClass.IC_BARBARIAN_HELMS,
+                        E_ItemClass.IC_SHRUNKEN_HEADS, E_ItemClass.IC_CIRCLETS, E_ItemClass.IC_AXES,
+                        E_ItemClass.IC_MACES, E_ItemClass.IC_SWORDS, E_ItemClass.IC_DAGGERS,
+                        E_ItemClass.IC_SPEARS, E_ItemClass.IC_POLEARMS, E_ItemClass.IC_BOWS, E_ItemClass.IC_CROSSBOWS,
+                        E_ItemClass.IC_STAVES, E_ItemClass.IC_WANDS, E_ItemClass.IC_SCEPTERS,
+                        E_ItemClass.IC_ASSASSIN_KATARS, E_ItemClass.IC_SORCERESS_ORBS, E_ItemClass.IC_AMAZON_WEAPONS]
+
     def __str__(self):
         return re.sub("^IC_", "", self.name).lower()
 
@@ -1159,6 +1169,10 @@ class Item:
     @property
     def n_sockets(self) -> Optional[int]:
         return self.get_extended_item_int_value(E_ExtProperty.EP_SOCKETS)
+
+    @property
+    def is_socketable(self) -> Optional[bool]:
+        return self.item_class.is_socketable
 
     def get_known_mods(self):
         """:returns List of Mod_BitShapes from known_mods that have been found in the item."""
@@ -2239,6 +2253,53 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             new_items.insert(0, self._normalize_rune_item(item))
         self.place_items_into_storage_maps(new_items, target_inventories)
 
+    def set_sockets(self, item, count: int):
+        """Will set or remove sockets. Won't delete so many sockets that existing items
+        would hang in the air.
+        :param item: Target socketable item which's byte code will be altered in this
+          data.data. Note that this may invalidate any index_start and index_end
+          in existing Item objects. Consider refreshing these.
+        :param count: How many sockets? 6 is the absolute maximum. Note, that the
+          game actually will ensure that this is capped by whatever the item supports.
+          This may be thanks to the Larzuk mechanic."""
+        if item.is_analytical:
+            return
+        if count > (item.volume[0] * item.volume[1]):
+            count = (item.volume[0] * item.volume[1])
+        if count < 0:
+            count = 0
+        if (not item.is_socketable) or item.get_item_property(E_ItemBitProperties.IP_COMPACT):
+            return
+        ext_index = item.get_extended_item_index()
+        n_occupied = item.get_extended_item_int_value(E_ExtProperty.EP_QUEST_SOCKETS)
+        if count < n_occupied:
+            count = n_occupied
+        if item.n_sockets == count:
+            return  # << Nothing to do.
+        index_sockets = ext_index[E_ExtProperty.EP_SOCKETS]
+        _log.info(f"Attempting to set {count} sockets to item {item.type_name}.")
+        if item.n_sockets:
+            if count > 0:
+                # Set socket count to new value.
+                bts = set_bitrange_value_to_bytes(item.data_item, index_sockets[0], index_sockets[1], count)
+            else:
+                # Remove all sockets.
+                bts = item.copy_with_item_property_set(E_ItemBitProperties.IP_SOCKETED, False)
+                bmr = bytes2bitmap(bts)[::-1]
+                bmr = bmr[:index_sockets[0]] + bmr[index_sockets[1]:]
+                index_quest_sockets = ext_index[E_ExtProperty.EP_QUEST_SOCKETS]
+                bmr = bmr[:index_quest_sockets[0]] + '000' + bmr[index_quest_sockets[1]:]
+        else:
+            # Create sockets ex nihilo.
+            bts = item.copy_with_item_property_set(E_ItemBitProperties.IP_SOCKETED, True)
+            bmr = bytes2bitmap(bts)[::-1]
+            bmr = bmr[:index_sockets[0]] + '{:0{width}b}'.format(count,width=4)[::-1] + bmr[index_sockets[1]:]
+        bmr = re.sub('0+$', "", bmr)
+        if len(bmr) % 8:
+            bmr += '0' * (8 - len(bmr) % 8)
+        bts = bitmap2bytes(bmr[::-1])
+        self.data = self.data[:item.index_start] + bts + self.data[item.index_end:]
+
     @staticmethod
     def get_time(frmt: str = "%y%m%d_%H%M%S", unix_time_s: Optional[int] = None) -> str:
         """:return Time string aiming to become part of a backup pfname."""
@@ -2337,6 +2398,10 @@ class Horadric:
         if parsed.empty_sockets_horadric:
             for data in self.data_all:
                 self.empty_sockets_horadric(data)
+
+        if isinstance(parsed.set_sockets_horadric, int):
+            for data in self.data_all:
+                self.set_sockets_horadric(data, parsed.set_sockets_horadric)
 
         if parsed.ensure_horadric:
             for data in self.data_all:
@@ -2589,7 +2654,15 @@ class Horadric:
         if self.is_standalone:
             data.update_all()
             data.save2disk()
-            print(f"Attempts were made to desocket. {len(items)} items were involved (socketed and base).")
+            print(f"Attempts were made to desocket Horadric Cube content. {len(items)} items were involved (socketed and base).")
+
+    def set_sockets_horadric(self, data: Data, count: int):
+        items = Item(data.data).get_cube_contents()  # type: List[Item]
+        for j in reversed(range(len(items))):
+            data.set_sockets(items[j], count)
+        if self.is_standalone:
+            data.update_all()
+            data.save2disk()
 
     def ensure_horadric(self, data: Data):
         if data.has_horadric_cube:
@@ -2710,10 +2783,8 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--save_horadric', type=str, help="Write the items found in the Horadric Cube to disk with the given pfname. Only one character allowed.")
         parser.add_argument('--load_horadric', type=str, help="Drop all contents from the Horadric Cube and replace them with the horadric file content, that had been written using --save_horadric earlier.")
         # --regrade_horadric
-        # --dispel_horadric
         parser.add_argument('--empty_sockets_horadric', action='store_true', help="Flag. Pull all socketed items from items in the horadric cube. Try to preserve these socketables.")
-        # --sharpen_horadric
-        # --socket_horadric
+        parser.add_argument('--set_sockets_horadric', type=int, help="Attempt to set this many sockets to the socket-able items in the horadric cube.")
         parser.add_argument('--ensure_horadric', action='store_true', help="Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")
         parser.add_argument('--softcore', action='store_true', help="Flag. Set target characters to soft core mode.")

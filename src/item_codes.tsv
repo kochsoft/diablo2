@@ -110,7 +110,7 @@ Maul	mau	War Club	9m9	Ogre Maul	7m7; 4,2
 Great Maul	gma	Martel de Fer	9gm	Thunder Maul	7gm; 4,2
 
 SWORDS
-Short Swrod	ssd	Gladius	9ss	Falcata	7ss; 3,1
+Short Sword	ssd	Gladius	9ss	Falcata	7ss; 3,1
 Scimitar	scm	Cutlass	9sm	Ataghan	7sm; 3,1
 Saber	sbr	Shamshir	9sb	Elegant Blade	7sb; 3,1
 Falchion	flc	Tulwar	9fc	Hydra Edge	7fc; 3,1
@@ -122,8 +122,8 @@ Two-handed Swrd	2hs	Espadon	92h	Legend Sword	72h; 3,2
 Claymore	clm	Dacian Falx	9cm	Highland Blade	7cm; 4,1
 Giant Sword	gis	Tusk Sword	9gs	Balrog Blade	7gs; 4,1
 Bastard Sword	bsw	Gothic Sword	9b9	Champion Sword	7b7
-Flamberge	flb	Zweihander	9fb	Colossal Sword	7fb
-Great Sword	gsd	Executioner Swr	9gd	Colossus Blade	7gd; 4,2
+Flamberge	flb	Zweihaender	9fb	Colossal Sword	7fb
+Great Sword	gsd	Executioner Swd	9gd	Colossus Blade	7gd; 4,2
 
 DAGGERS
 Dagger	dgr	Poignard	9dg	Bone Knife	7dg; 2,1
@@ -354,6 +354,6 @@ Bolts	cqv; 3,1
 Jewel	jew; 1,1
 Skeleton Key	key; 1,1
 Amulet	amu; 1,1
-gold	gld; 1,1
+Gold	gld; 1,1
 Ring	rin; 1,1
 Ear	ear; 1,1

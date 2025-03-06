@@ -44,8 +44,11 @@ usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
                          [--exchange_horadric]
                          [--create_rune_cube [CREATE_RUNE_CUBE]]
                          [--drop_horadric] [--save_horadric SAVE_HORADRIC]
-                         [--load_horadric LOAD_HORADRIC] [--ensure_horadric]
-                         [--hardcore] [--softcore] [--redeem_golem]
+                         [--load_horadric LOAD_HORADRIC]
+                         [--empty_sockets_horadric]
+                         [--set_sockets_horadric SET_SOCKETS_HORADRIC]
+                         [--ensure_horadric] [--hardcore] [--softcore]
+                         [--redeem_golem]
                          [--boost_attributes BOOST_ATTRIBUTES]
                          [--boost_skills BOOST_SKILLS] [--reset_attributes]
                          [--reset_skills] [--enable_nightmare] [--enable_hell]
@@ -75,6 +78,10 @@ options:
                         Write the items found in the Horadric Cube to disk with the given pfname. Only one character allowed.
   --load_horadric LOAD_HORADRIC
                         Drop all contents from the Horadric Cube and replace them with the horadric file content, that had been written using --save_horadric earlier.
+  --empty_sockets_horadric
+                        Flag. Pull all socketed items from items in the horadric cube. Try to preserve these socketables.
+  --set_sockets_horadric SET_SOCKETS_HORADRIC
+                        Attempt to set this many sockets to the socket-able items in the horadric cube.
   --ensure_horadric     Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.
   --hardcore            Flag. Set target characters to hard core mode.
   --softcore            Flag. Set target characters to soft core mode.
