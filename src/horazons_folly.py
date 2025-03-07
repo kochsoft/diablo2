@@ -1511,7 +1511,7 @@ class Item:
         finds = re.findall('.'*106 + ".*?111111111", bm_extended[::-1])  # type: List[str]
         if not finds:
             _log.warning(f"Non-compact item without extended section terminator encountered at index0 == {index0}.")
-            return index1  # TODO: Hier war ich. Debug Double Item desocket.
+            return index1
         index1 = index0 + ceil(len(finds[0]) / 8.0)
         return index1
 

@@ -131,11 +131,14 @@ class Horadric_GUI:
         self.button_reset_attributes = None  # type: Optional[tk.Button]
         self.button_boost_skills = None  # type: Optional[tk.Button]
         self.button_boost_attributes = None  # type: Optional[tk.Button]
+        self.button_set_sockets = None  # type: Optional[tk.Button]
+        self.button_empty_sockets = None  # type: Optional[tk.Button]
         self.check_hardcore = None  # type: Optional[tk.Checkbutton]
         self.check_godmode = None  # type: Optional[tk.Checkbutton]
         self.entry_runic_cube = None  # type: Optional[tk.Entry]
         self.entry_boost_skills = None  # type: Optional[tk.Entry]
         self.entry_boost_attributes = None  # type: Optional[tk.Entry]
+        self.entry_set_sockets = None  # type: Optional[tk.Entry]
         self.button_horazon = None  # type: Optional[tk.Button]
         self.build_gui()
         if self.root:
@@ -503,6 +506,22 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         self.horadric_horazon.boost(E_Attributes.AT_UNUSED_STATS, val)
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
+    def set_sockets(self, count: int):
+        data = self.verify_hero()
+        if not data:
+            return
+        items = Item(data.data).get_cube_contents()
+        for item in items:
+            data.set_sockets(item, count)
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
+    def empty_sockets(self):
+        data = self.verify_hero()
+        if not data:
+            return
+        self.horadric_horazon.empty_sockets_horadric(data)
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
     def set_hardcore(self, enable: bool):
         data = self.verify_hero()
         if not data:
@@ -532,8 +551,9 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         for widget in [self.button_load_cube, self.button_save_cube, self.button_reset_skills, self.button_runic_cube,
                        self.button_reset_attributes, self.button_boost_skills, self.button_boost_attributes,
                        self.check_hardcore, self.check_godmode, self.entry_boost_skills, self.entry_runic_cube,
-                       self.entry_boost_attributes, self.button_horazon, self.button_ensure_cube,
-                       self.button_enable_nightmare, self.button_enable_hell, self.button_redeem_golem]:
+                       self.entry_boost_attributes, self.entry_set_sockets, self.button_horazon, self.button_ensure_cube,
+                       self.button_enable_nightmare, self.button_enable_hell, self.button_redeem_golem,
+                       self.button_set_sockets, self.button_empty_sockets]:
             if enable:
                 widget.config(state='normal')
             else:
@@ -731,10 +751,21 @@ Beware!"""
 
         var_attributes = tk.IntVar()
         self.entry_boost_attributes = tk.Entry(self.tab2, textvariable=var_attributes)
-        self.entry_boost_attributes.grid(row=7, column=1, columnspan=4, sticky='ew')
+        self.entry_boost_attributes.grid(row=7, column=1, columnspan=1, sticky='ew')
         self.button_boost_attributes = tk.Button(self.tab2, text='Boost Attrib.', command=lambda: self.boost_attributes(var_attributes.get()), width=10, height=1, bg='#009999')
         self.button_boost_attributes.grid(row=7, column=0)
         Hovertip(self.button_boost_attributes, 'Get some extra attribute points.')
+
+        var_n_sockets = tk.IntVar()
+        var_n_sockets.set(6)
+        self.entry_set_sockets = tk.Entry(self.tab2, textvariable=var_n_sockets)
+        self.entry_set_sockets.grid(row=7, column=2, sticky='ew')
+        self.button_set_sockets = tk.Button(self.tab2, text='Set Sockets', command=lambda: self.set_sockets(var_n_sockets.get()), bg='#009999')
+        self.button_set_sockets.grid(row=7, column=3, sticky='ew')
+        Hovertip(self.button_set_sockets, 'Within the items of the Horadric Cube, attempt to set this number of sockets ({0,..,6}).')
+        self.button_empty_sockets = tk.Button(self.tab2, text='Empty Sockets', command=self.empty_sockets, bg='#009999')
+        self.button_empty_sockets.grid(row=7, column=4, sticky='ew')
+        Hovertip(self.button_empty_sockets, 'Remove all socketed items from the items in the Horadric Cube and return them to inventory.')
 
         var_hardcore = tk.IntVar()
         self.check_hardcore = tk.Checkbutton(self.tab2, text='Hardcore', variable=var_hardcore, command=lambda: self.set_hardcore(bool(var_hardcore.get())))
