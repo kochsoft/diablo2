@@ -795,11 +795,17 @@ class Mod_BitShape:
     0x1ff item end code and a 0-padding filling up the final byte. Mods are explained in
     https://github.com/WalterCouto/D2CE/blob/main/source/res/TXT/global/excel/itemstatcost.txt
     and there seem to have the general name prefix 'item_'."""
-    def __init__(self, id_9bit: int, len_data_bit: int, is_signed: bool, name: str):
+    def __init__(self, id_9bit: int, len_data_bit: int, is_signed: bool, name: str, *,
+                 is_mod_superior_weapon: bool = False, is_mod_superior_armor: bool = False):
+        """:param is_mod_superior_weapon: Is this mod one of the mods associated with superior weapons?
+        :param is_mod_superior_armor: Is this mod one of the mods associated with superior armor?
+        """
         self.id_9bit = id_9bit  # type: int
         self.len_data_bit = len_data_bit  # type: int
         self.is_signed = is_signed  # type: bool
         self.name = name  # type: str
+        self.is_mod_superior_weapon = is_mod_superior_weapon  # type: bool
+        self.is_mod_superior_armor = is_mod_superior_armor  # type: bool
 
     @property
     def regexp_binary_code(self):
@@ -812,12 +818,12 @@ class Mod_BitShape:
 
 """On superior weapons and armor: https://diablo.fandom.com/wiki/Superior_Items"""
 known_mods = [
-    Mod_BitShape(16, 9, True, 'item_armor_percent'),
-    Mod_BitShape(75, 7, True, 'item_maxdurability_percent'),
-    Mod_BitShape(17, 9, True, 'item_maxdamage_percent'),
+    Mod_BitShape(16, 9, True, 'item_armor_percent', is_mod_superior_armor=True),
+    Mod_BitShape(75, 7, True, 'item_maxdurability_percent', is_mod_superior_weapon=True, is_mod_superior_armor=True),
+    Mod_BitShape(17, 9, True, 'item_maxdamage_percent', is_mod_superior_weapon=True),
     Mod_BitShape(18, 9, True, 'item_mindamage_percent'),
-    Mod_BitShape(22, 7, True, 'maxdamage'),
-    Mod_BitShape(68, 7, True, 'attackrate')
+    Mod_BitShape(22, 7, True, 'maxdamage', is_mod_superior_weapon=True),
+    Mod_BitShape(68, 7, True, 'attackrate', is_mod_superior_weapon=True)
 ]  # type: List[Mod_BitShape]
 
 
@@ -1186,27 +1192,36 @@ class Item:
     def is_socketable(self) -> Optional[bool]:
         return self.item_class.is_socketable
 
-    def get_known_mods(self):
-        """:returns List of Mod_BitShapes from known_mods that have been found in the item."""
+    def get_known_mods(self, *, is_mod_superior_weapon: bool = False, is_mod_superior_armor: bool = False) -> Optional[List[Dict[str, Mod_BitShape]]]:
+        """:returns List of Dicts of Mod_BitShapes from known_mods that have been found in the item.
+        Keys: index0, index1: data_item forward bit index of the mod. mod: ModBitShape."""
         if self.is_analytical:
             return None
         if self.get_item_property(E_ItemBitProperties.IP_COMPACT):
             return list()
-        mods = list()
-        bm = bytes2bitmap(self.data_item)
-        # Cut of the 0x1ff terminator and final padding.
-        bm = re.sub('^0*111111111', '', bm)
+        ext_index = self.get_extended_item_index()
+        index0_mods = ext_index[E_ExtProperty.EP_MODS][0]
+        bmr = bytes2bitmap(self.data_item)[::-1][index0_mods:]
+        mods = list()  # type: List[Dict[str, Mod_BitShape]]
+        index_offset = 0
         found_anything = True
         while found_anything:
             found_anything = False
             for km in known_mods:
-                regexp = '^' + km.regexp_binary_code
-                if len(re.findall (regexp, bm)) > 0:
+                regexp = km.regexp_binary_code[::-1]
+                ms = [(m.start(0), m.end(0)) for m in re.finditer(regexp, bmr[index_offset:])]
+                if ms and ms[0][0] == 0:
+                    mods.append(
+                        {
+                            'index0': ms[0][0] + index0_mods + index_offset,
+                            'index1': ms[0][1] + index0_mods + index_offset,
+                            'mod': km,
+                            'bmr': bmr[ms[0][0]:ms[0][1]]
+                        }
+                    )
+                    index_offset += ms[0][1]
                     found_anything = True
-                    index1 = len(bm)
-                    bm = re.sub(regexp, '', bm)
-                    index0 = len(bm)
-                    mods.append({'index0': index0, 'index1': index1, 'mod': km})
+                    break
         return mods
 
     def known_mods_to_str(self) -> str:
@@ -2227,12 +2242,17 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         quality = item.quality
         if quality not in (E_Quality.EQ_NORMAL, E_Quality.EQ_SUPERIOR) or 8 * len(bmr) < 154 or item.n_sockets == 0:
             return item.data_item  # << Nothing to do.
+        bm_mods_superior = ''
+        if quality == E_Quality.EQ_SUPERIOR:
+            d_mods_superior = item.get_known_mods(is_mod_superior_weapon=item.is_weapon, is_mod_superior_armor=item.is_armor)
+            for j in range(len(d_mods_superior)):
+                bm_mods_superior += d_mods_superior[j]['bmr']
         ext_index = item.get_extended_item_index()
         bmr = bmr[:ext_index[E_ExtProperty.EP_MODS][0]]
         bmr = bmr[:ext_index[E_ExtProperty.EP_RUNEWORD][0]] + bmr[ext_index[E_ExtProperty.EP_RUNEWORD][1]:]
         bmr = bmr[:ext_index[E_ExtProperty.EP_QUEST_SOCKETS][0]] + '000' + bmr[ext_index[E_ExtProperty.EP_QUEST_SOCKETS][1]:]
-        bm = bmr[::-1]
-        bm =  '111111111' + set_range_to_bitmap(bm, 150, 154, E_Quality.EQ_NORMAL.value)
+        bmr += bm_mods_superior
+        bm =  '111111111' + bmr[::-1]
         if len(bm) % 8 > 0:
             bm = ((8 - (len(bm) % 8)) * '0') + bm
         return bitmap2bytes(bm)
@@ -2296,12 +2316,15 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             if count > 0:
                 # Set socket count to new value.
                 bts = set_bitrange_value_to_bytes(item.data_item, index_sockets[0], index_sockets[1], count)
+                bmr = bytes2bitmap(bts)[::-1]
+                bmr = bmr[:index_sockets[0]] + '{:0{width}b}'.format(count,width=4)[::-1] + bmr[index_sockets[1]:]
             else:
                 # Remove all sockets.
                 bts = item.copy_with_item_property_set(E_ItemBitProperties.IP_SOCKETED, False)
                 bmr = bytes2bitmap(bts)[::-1]
                 bmr = bmr[:index_sockets[0]] + bmr[index_sockets[1]:]
                 index_quest_sockets = ext_index[E_ExtProperty.EP_QUEST_SOCKETS]
+                # [Note: For non-quest items this number counts the number of employed sockets.]
                 bmr = bmr[:index_quest_sockets[0]] + '000' + bmr[index_quest_sockets[1]:]
         else:
             # Create sockets ex nihilo.
