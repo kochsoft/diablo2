@@ -722,19 +722,19 @@ Beware!"""
         Hovertip(self.button_reset_attributes, 'Return all hard attribute points for redistribution.')
 
         self.button_redeem_golem = tk.Button(self.tab2, text='Redeem Golem', command=self.redeem_golem, width=15, height=1, bg='#009999')
-        self.button_redeem_golem.grid(row=3, column=2, sticky='w')
+        self.button_redeem_golem.grid(row=3, column=3, sticky='w')
         Hovertip(self.button_redeem_golem, 'If your character commands an iron golem, dispel that golem and, if there is space, return the item to inventory.')
 
         self.button_ensure_cube = tk.Button(self.tab2, text='Ensure Cube', command=self.ensure_cube, width=10, height=1, bg='#009999')
-        self.button_ensure_cube.grid(row=3, column=3, sticky='w')
+        self.button_ensure_cube.grid(row=3, column=4, sticky='ew')
         Hovertip(self.button_ensure_cube, 'If your character has no Horadric Cube. Get one into your inventory. Supplanted items will be moved into the cube.')
 
         self.button_enable_nightmare = tk.Button(self.tab2, text='Enable Nightmare', command=self.enable_nightmare, width=15, height=1, bg='#009999')
-        self.button_enable_nightmare.grid(row=4, column=2, sticky='w')
+        self.button_enable_nightmare.grid(row=4, column=3, sticky='w')
         Hovertip(self.button_enable_nightmare, 'If still in normal mode. Raise your character level to 38 (if necessary) and fill his stash with gold.')
 
         self.button_enable_hell = tk.Button(self.tab2, text='Enable Hell', command=self.enable_hell, width=10, height=1, bg='#009999')
-        self.button_enable_hell.grid(row=4, column=3, sticky='w')
+        self.button_enable_hell.grid(row=4, column=4, sticky='ew')
         Hovertip(self.button_enable_hell, 'If still in normal or nightmare mode. Raise your character level to 68 (if necessary) and fill his stash with gold.')
 
         var_runic_cube = tk.StringVar()
