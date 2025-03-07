@@ -2257,7 +2257,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             new_items.append(child)
         # [Note: Fragile code here. It is important to delete the items in reverse order, so that the
         #  internal indices of the yet un-handled Item objects in the list remain intact.
-        #  It is also important to set the property IP_STORED after removal, so that the main item count stays intact.]
+        #  It is also important to set move the parent property IP_ITEM to IP_STORED only after removal, so that
+        #  the main item count stays intact during the call to drop_item(..).]
         for j in reversed(range(len(new_items))):
             self.drop_item(new_items[j])
             new_items[j].item_parent = E_ItemParent.IP_STORED
@@ -2312,6 +2313,19 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             bmr += '0' * (8 - len(bmr) % 8)
         bts = bitmap2bytes(bmr[::-1])
         self.data = self.data[:item.index_start] + bts + self.data[item.index_end:]
+
+    def set_ethereal(self, item: Item, enable: Optional[bool] = None):
+        if item.is_analytical or item.get_item_property(E_ItemBitProperties.IP_COMPACT):
+            return
+        if enable is None:
+            enable = not item.get_item_property(E_ItemBitProperties.IP_ETHEREAL)
+        if item.get_item_property(E_ItemBitProperties.IP_ETHEREAL) == enable:
+            return  # << Nothing to do.
+        bts = item.copy_with_item_property_set(E_ItemBitProperties.IP_ETHEREAL, enable)
+        if not bts:
+            return
+        self.data = self.data[:item.index_start] + bts + self.data[item.index_end:]
+        print(f"Attempting to set item '{item.type_name}' to {'' if enable else 'not '}ethereal.")
 
     @staticmethod
     def get_time(frmt: str = "%y%m%d_%H%M%S", unix_time_s: Optional[int] = None) -> str:
@@ -2415,6 +2429,10 @@ class Horadric:
         if isinstance(parsed.set_sockets_horadric, int):
             for data in self.data_all:
                 self.set_sockets_horadric(data, parsed.set_sockets_horadric)
+
+        if parsed.toggle_ethereal:
+            for data in self.data_all:
+                self.toggle_ethereal(data)
 
         if parsed.ensure_horadric:
             for data in self.data_all:
@@ -2663,6 +2681,7 @@ class Horadric:
     def empty_sockets_horadric(self, data: Data):
         # [Note: A bit convoluted. This function alters item locations and hence item indices are obsoleted.
         #  To compensate, get_cube_contents() is called anew on each iteration.]
+        items = list()  # type: List[Item]
         c = 0
         found_a_target = True
         while (c < 6) and found_a_target:
@@ -2683,6 +2702,14 @@ class Horadric:
         items = Item(data.data).get_cube_contents()  # type: List[Item]
         for j in reversed(range(len(items))):
             data.set_sockets(items[j], count)
+        if self.is_standalone:
+            data.update_all()
+            data.save2disk()
+
+    def toggle_ethereal(self, data: Data):
+        items = Item(data.data).get_cube_contents()  # type: List[Item]
+        for item in items:
+            data.set_ethereal(item)
         if self.is_standalone:
             data.update_all()
             data.save2disk()
@@ -2808,6 +2835,7 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         # --regrade_horadric
         parser.add_argument('--empty_sockets_horadric', action='store_true', help="Flag. Pull all socketed items from items in the horadric cube. Try to preserve these socketables.")
         parser.add_argument('--set_sockets_horadric', type=int, help="Attempt to set this many sockets to the socket-able items in the horadric cube.")
+        parser.add_argument('--toggle_ethereal', action='store_true', help="Flag. For each item within the Horadric Cube toggle the ethereal state.")
         parser.add_argument('--ensure_horadric', action='store_true', help="Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")
         parser.add_argument('--softcore', action='store_true', help="Flag. Set target characters to soft core mode.")
