@@ -466,7 +466,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
             tk.messagebox.showinfo("Runic Cube", "Use a comma-separated list of up to 12 rune names to replace your "
                                                  "Horadric Cube content with that set of runes. E.g., 'ral, ort, tal'.")
             return
-        runes = runes[:12]
+        #runes = runes[:12]
         items = list()  # type: List[Item]
         for j in range(len(runes)):
             row = floor(j / 3)

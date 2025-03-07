@@ -2787,7 +2787,7 @@ class Horadric:
     @staticmethod
     def create_rune_cube(cmd: str):
         (pfname, runes) = cmd.split(":",1)
-        runes = list(filter(lambda x: x is not None, [E_Rune.from_name(r) for r in runes.split(",")[:12]]))
+        runes = list(filter(lambda x: x is not None, [E_Rune.from_name(r) for r in runes.split(",")]))
         content = b''
         for j in range(len(runes)):
             row = floor(j / 3)
