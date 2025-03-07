@@ -469,8 +469,9 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         data = self.verify_hero()
         if data is None:
             return
-        self.horadric_horazon.drop_horadric(data)
-        data.add_items_to_player(int.to_bytes(len(items)) + b''.join([item.data_item for item in items]))
+        # self.horadric_horazon.drop_horadric(data)
+        data.place_items_into_storage_maps(items)
+        # data.add_items_to_player(int.to_bytes(len(items)) + b''.join([item.data_item for item in items]))
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
     @staticmethod
@@ -719,7 +720,7 @@ Beware!"""
         self.entry_runic_cube.grid(row=5, column=1, columnspan=4, sticky='ew')
         self.button_runic_cube = tk.Button(self.tab2, text='Runes to Cube', command=lambda: self.runic_cube(var_runic_cube.get()), width=10, height=1, bg='#009999')
         self.button_runic_cube.grid(row=5, column=0)
-        Hovertip(self.button_runic_cube, 'Write a comma-separated list of up to 12 rune names and/or gem codes, /^[tasredb][0-4]$/ (bone=skull), and click this. Will replace your cube contents with these socketables.')
+        Hovertip(self.button_runic_cube, 'Write a comma-separated list of up to 12 rune names and/or gem codes, /^[tasredb][0-4]$/ (bone=skull), and click this. Will add these socketables to inventory (if there is space).')
 
         var_skills = tk.IntVar()
         self.entry_boost_skills = tk.Entry(self.tab2, textvariable=var_skills)

@@ -1168,7 +1168,19 @@ class Item:
 
     @property
     def n_sockets(self) -> Optional[int]:
-        return self.get_extended_item_int_value(E_ExtProperty.EP_SOCKETS)
+        if self.is_analytical:
+            return None
+        ns = self.get_extended_item_int_value(E_ExtProperty.EP_SOCKETS)
+        return ns if ns else 0
+
+    @property
+    def n_sockets_occupied(self) -> Optional[int]:
+        if self.is_analytical:
+            return None
+        qs = self.get_extended_item_int_value(E_ExtProperty.EP_QUEST_SOCKETS)
+        if self.item_class == E_ItemClass.IC_QUEST_ITEMS:
+            qs = qs % 2
+        return qs
 
     @property
     def is_socketable(self) -> Optional[bool]:
@@ -1480,6 +1492,7 @@ class Item:
 
     def get_index1(self, index0):
         """Tool function. Given an index0, pointing at a b'JM' item starting code.
+        :param index0: Some item starting index pointing at a 'JM'. Not necessarily the 'JM' for this self.
         :return the index1 that goes with it. Meaning: The item lives in self.data[index0:index1].
           This does not include items that may be socketed into it."""
         if self.data[index0:(index0+2)] != b'JM':
@@ -1488,17 +1501,17 @@ class Item:
         index1 = index0 + 14  # << 112 bit would mean a compact item. Compare bit 37.
         if len(self.data) < index1 or self.data[(index0+4):(index0+6)] == b'JM':
             return index0 + 4  # << Section marker pseudo-item.
-        bm = bytes2bitmap(self.data[index0:index1])
-        is_compact = True if get_range_from_bitmap(bm, 37, 38) else False
+        item_proto = Item(self.data[index0:index1], 0, 14)
+        is_compact = item_proto.get_item_property(E_ItemBitProperties.IP_COMPACT)
         if is_compact:
             return index1
-        index_sufficient = len(re.split(b'JM', self.data[index0+2:],maxsplit=1)[0]) + 2
-        bm = bytes2bitmap(self.data[index0:index_sufficient])
+        index_sufficient = len(re.split(b'JM', self.data[index0+2:],maxsplit=1)[0]) + 2 + index0
+        bm_extended = bytes2bitmap(self.data[index0:index_sufficient])
         # A compact item really has only 106 bit. The rest to the 14 bytes is padding.
-        finds = re.findall('.'*106 + ".*?111111111", bm[::-1])  # type: List[str]
+        finds = re.findall('.'*106 + ".*?111111111", bm_extended[::-1])  # type: List[str]
         if not finds:
             _log.warning(f"Non-compact item without extended section terminator encountered at index0 == {index0}.")
-            return index1
+            return index1  # TODO: Hier war ich. Debug Double Item desocket.
         index1 = index0 + ceil(len(finds[0]) / 8.0)
         return index1
 
@@ -1517,11 +1530,11 @@ class Item:
         if self.is_analytical:
             return None
         res = [self]  # type: List[Item]
-        n_sockets = self.n_sockets
-        if not n_sockets:
+        n_sockets_occupied = self.n_sockets_occupied
+        if not n_sockets_occupied:
             return res
         item = self
-        for j in range(n_sockets):
+        for j in range(n_sockets_occupied):
             item = item.get_next_item()
             if item.item_parent == E_ItemParent.IP_ITEM:
                 res.append(item)
@@ -1587,7 +1600,7 @@ class Item:
             bm = bytes2bitmap(self.data_item)[::-1]
             bl = len(bm)
 
-            classification = f"{self.item_grade}, armor: {self.is_armor}, weapon: {self.is_weapon}, sockets: {self.n_sockets}, stack: {self.is_stack}, set: {self.is_set}"
+            classification = f"{self.item_grade}, armor: {self.is_armor}, weapon: {self.is_weapon}, sockets: {self.n_sockets_occupied}/{self.n_sockets}, stack: {self.is_stack}, set: {self.is_set}"
             known_mods_str = self.known_mods_to_str()
             if known_mods_str:
                 known_mods_str += "\n"
@@ -2137,7 +2150,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         index_start = Item(self.data).get_block_index()[E_ItemBlock.IB_PLAYER][0]
         self.data = self.data[0:index_start] + items + self.data[index_start:]
         self.set_item_count(E_ItemBlock.IB_PLAYER_HD, self.get_item_count_player(True) + count)
-        print(f"Attempting to add {count} new items to the player's inventory.")
+        # print(f"Attempting to add {count} new items to the player's inventory.")
 
     def find_space_for_item(self, item: Item, storage: E_ItemStorage, smap: Optional[str] = None) -> Optional[Tuple[int,int]]:
         """:returns the coordinates of the top left corner for the item where it would fit."""
@@ -2648,9 +2661,19 @@ class Horadric:
             print(f"Dropped {len(items)} items from the Horadric cube.")
 
     def empty_sockets_horadric(self, data: Data):
-        items = Item(data.data).get_cube_contents()  # type: List[Item]
-        for item in items:
-            data.separate_socketed_items_from_item(item)
+        # [Note: A bit convoluted. This function alters item locations and hence item indices are obsoleted.
+        #  To compensate, get_cube_contents() is called anew on each iteration.]
+        c = 0
+        found_a_target = True
+        while (c < 6) and found_a_target:
+            c = c + 1
+            items = Item(data.data).get_cube_contents()  # type: List[Item]
+            found_a_target = False
+            for item in items:
+                if item.n_sockets_occupied:
+                    data.separate_socketed_items_from_item(item)
+                    found_a_target = True
+                    break
         if self.is_standalone:
             data.update_all()
             data.save2disk()
