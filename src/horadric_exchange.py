@@ -330,14 +330,17 @@ his Necromancer hero colleague happy -- and maybe even receive something
 in return, that the Necromancer can make no real use of.
 
 There is more than this, in my opinion, legit function.
-But let's keep silent about what can only be described as cheating.
+But let's keep silent about what can only be described as despicable cheating.
 
 February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         TextWindow(self.root, msg, self.icon_horadric_exchange, (70,18))
 
     def load_backup(self):
-        pfname_backup = os.path.expanduser(tkinter.filedialog.askopenfilename(parent=self.root, title="Select backup file.",
-                            filetypes=[("d2s backup", "*.backup")], initialdir=self.pname_work))
+        pfname_backup = tkinter.filedialog.askopenfilename(parent=self.root, title="Select backup file.",
+                                           filetypes=[("d2s backup", "*.backup")], initialdir=self.pname_work)
+        if not pfname_backup:
+            return
+        pfname_backup = os.path.expanduser(pfname_backup)
         fname_backup = os.path.basename(pfname_backup)
 
         fname_target = re.sub('^[0-9_]+', '', fname_backup)
