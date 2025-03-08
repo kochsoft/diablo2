@@ -47,8 +47,9 @@ usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
                          [--load_horadric LOAD_HORADRIC]
                          [--empty_sockets_horadric]
                          [--set_sockets_horadric SET_SOCKETS_HORADRIC]
-                         [--toggle_ethereal] [--ensure_horadric] [--hardcore]
-                         [--softcore] [--redeem_golem]
+                         [--dispel_magic] [--toggle_ethereal]
+                         [--ensure_horadric] [--hardcore] [--softcore]
+                         [--redeem_golem]
                          [--boost_attributes BOOST_ATTRIBUTES]
                          [--boost_skills BOOST_SKILLS] [--reset_attributes]
                          [--reset_skills] [--enable_nightmare] [--enable_hell]
@@ -82,6 +83,7 @@ options:
                         Flag. Pull all socketed items from items in the horadric cube. Try to preserve these socketables.
   --set_sockets_horadric SET_SOCKETS_HORADRIC
                         Attempt to set this many sockets to the socket-able items in the horadric cube.
+  --dispel_magic        Flag. Acts on magical, rare, and crafted items within the Horadric Cube, dispelling their magic.
   --toggle_ethereal     Flag. For each item within the Horadric Cube toggle the ethereal state.
   --ensure_horadric     Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.
   --hardcore            Flag. Set target characters to hard core mode.
