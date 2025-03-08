@@ -131,6 +131,7 @@ class Horadric_GUI:
         self.button_reset_attributes = None  # type: Optional[tk.Button]
         self.button_boost_skills = None  # type: Optional[tk.Button]
         self.button_boost_attributes = None  # type: Optional[tk.Button]
+        self.button_dispel_magic = None  # type: Optional[tk.Button]
         self.button_set_sockets = None  # type: Optional[tk.Button]
         self.button_empty_sockets = None  # type: Optional[tk.Button]
         self.check_hardcore = None  # type: Optional[tk.Checkbutton]
@@ -513,6 +514,13 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         self.horadric_horazon.boost(E_Attributes.AT_UNUSED_STATS, val)
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
+    def dispel_magic(self):
+        data = self.verify_hero()
+        if not data:
+            return
+        self.horadric_horazon.dispel_magic_horadric(data)
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
     def set_sockets(self):
         count = self.entry2int(self.entry_set_sockets, 6, 0, 6)
         data = self.verify_hero()
@@ -561,7 +569,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                        self.check_hardcore, self.check_godmode, self.entry_boost_skills, self.entry_runic_cube,
                        self.entry_boost_attributes, self.entry_set_sockets, self.button_horazon, self.button_ensure_cube,
                        self.button_enable_nightmare, self.button_enable_hell, self.button_redeem_golem,
-                       self.button_set_sockets, self.button_empty_sockets]:
+                       self.button_dispel_magic, self.button_set_sockets, self.button_empty_sockets]:
             if enable:
                 widget.config(state='normal')
             else:
@@ -753,7 +761,7 @@ Beware!"""
         var_skills = tk.StringVar()
         var_skills.set('0')
         self.entry_boost_skills = tk.Entry(self.tab2, textvariable=var_skills)
-        self.entry_boost_skills.grid(row=6, column=1, columnspan=4, sticky='ew')
+        self.entry_boost_skills.grid(row=6, column=1, columnspan=3, sticky='ew')
         self.button_boost_skills = tk.Button(self.tab2, text='Boost Skills', command=self.boost_skills, width=10, height=1, bg='#009999')
         self.button_boost_skills.grid(row=6, column=0)
         Hovertip(self.button_boost_skills, 'Set free skill points to this value.')
@@ -765,6 +773,10 @@ Beware!"""
         self.button_boost_attributes = tk.Button(self.tab2, text='Boost Attrib.', command=self.boost_attributes, width=10, height=1, bg='#009999')
         self.button_boost_attributes.grid(row=7, column=0)
         Hovertip(self.button_boost_attributes, 'Set free attribute points to this value.')
+
+        self.button_dispel_magic = tk.Button(self.tab2, text='Dispel Magic', command=self.dispel_magic, bg='#009999')
+        self.button_dispel_magic.grid(row=6, column=4, sticky='ew')
+        Hovertip(self.button_dispel_magic, 'Dispels magic, rare, set and unique items, turning them into normal objects.')
 
         var_n_sockets = tk.StringVar()
         var_n_sockets.set('6')
