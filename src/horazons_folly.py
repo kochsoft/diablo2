@@ -2585,6 +2585,7 @@ class Horadric:
                 data.save2disk()
 
     def boost(self, attr: E_Attributes, val: int):
+        """Sets the target attribute to the given val."""
         for data in self.data_all:
             print(f"Attempting to boost '{attr.name}' to the value of {val}")
             attributes = data.get_attributes()
@@ -2640,7 +2641,6 @@ class Horadric:
             n_skills = sum(data.get_skills())
             print(f"Attempting to reset {data.get_name(True)}'s {n_skills} learned skills.")
             skillset = [0] * 30
-            #skillset = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,19,18,17,16,15,14,13,12,11]
             data.set_skills(skillset)
             # That boost command also does the updating and saving!
             self.boost(E_Attributes.AT_UNUSED_SKILLS, n_skills)

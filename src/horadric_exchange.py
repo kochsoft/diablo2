@@ -211,10 +211,11 @@ that fit your system.""", dim=(60,17))
     @staticmethod
     def replace_entry_text(entry: tk.Entry, text: str):
         """Redundancy saving function, encapsulating the somewhat awkward process for replacing an Entries content."""
+        old_state = entry.config()['state'][4]
         entry.config(state='normal')
         entry.delete(0, tk.END)
         entry.insert(0, text)
-        entry.config(state='readonly')
+        entry.config(state=old_state)
         entry.xview_moveto(1)
         entry.update()
 
@@ -481,35 +482,39 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
     @staticmethod
-    def entry2int(entry: tk.Entry):
-        val = 0  # type: int
+    def entry2int(entry: tk.Entry, default_placeholder: int = 0, min_val: int = 0, max_val: int = 1023):
+        """Verify if the entry has an int-parsable value. If not, replace by str(default_placeholder)."""
         try:
             val = int(entry.get())
+            if not min_val <= val <= max_val:
+                if val < min_val:
+                    default_placeholder = min_val
+                elif val > max_val:
+                    default_placeholder = max_val
+                raise ValueError(f"Value {val} out of range {min_val}..{max_val}.")
         except ValueError:
-            Horadric_GUI.replace_entry_text(entry, '0')
+            Horadric_GUI.replace_entry_text(entry, f'{default_placeholder}')
+            val = default_placeholder
         return val
 
-    def boost_skills(self, value: int):
-        val = self.entry2int(self.entry_boost_skills)
-        if val == 0:
-            return  # << Nothing to do.
+    def boost_skills(self):
+        val = self.entry2int(self.entry_boost_skills, 0, 0, 255)
         data = self.verify_hero()
         if not data:
             return
         self.horadric_horazon.boost(E_Attributes.AT_UNUSED_SKILLS, val)
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
-    def boost_attributes(self, value: int):
-        val = self.entry2int(self.entry_boost_attributes)
-        if val == 0:
-            return
+    def boost_attributes(self):
+        val = self.entry2int(self.entry_boost_attributes, 0, 0, 1023)
         data = self.verify_hero()
         if not data:
             return
         self.horadric_horazon.boost(E_Attributes.AT_UNUSED_STATS, val)
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
-    def set_sockets(self, count: int):
+    def set_sockets(self):
+        count = self.entry2int(self.entry_set_sockets, 6, 0, 6)
         data = self.verify_hero()
         if not data:
             return
@@ -745,25 +750,27 @@ Beware!"""
         self.button_runic_cube.grid(row=5, column=0)
         Hovertip(self.button_runic_cube, 'Write a comma-separated list of up to 12 rune names and/or gem codes, /^[tasredb][0-4]$/ (bone=skull), and click this. Will add these socketables to inventory (if there is space).')
 
-        var_skills = tk.IntVar()
+        var_skills = tk.StringVar()
+        var_skills.set('0')
         self.entry_boost_skills = tk.Entry(self.tab2, textvariable=var_skills)
         self.entry_boost_skills.grid(row=6, column=1, columnspan=4, sticky='ew')
-        self.button_boost_skills = tk.Button(self.tab2, text='Boost Skills', command=lambda: self.boost_skills(var_skills.get()), width=10, height=1, bg='#009999')
+        self.button_boost_skills = tk.Button(self.tab2, text='Boost Skills', command=self.boost_skills, width=10, height=1, bg='#009999')
         self.button_boost_skills.grid(row=6, column=0)
-        Hovertip(self.button_boost_skills, 'Get some extra skill points.')
+        Hovertip(self.button_boost_skills, 'Set free skill points to this value.')
 
-        var_attributes = tk.IntVar()
+        var_attributes = tk.StringVar()
+        var_attributes.set('0')
         self.entry_boost_attributes = tk.Entry(self.tab2, textvariable=var_attributes)
         self.entry_boost_attributes.grid(row=7, column=1, columnspan=1, sticky='ew')
-        self.button_boost_attributes = tk.Button(self.tab2, text='Boost Attrib.', command=lambda: self.boost_attributes(var_attributes.get()), width=10, height=1, bg='#009999')
+        self.button_boost_attributes = tk.Button(self.tab2, text='Boost Attrib.', command=self.boost_attributes, width=10, height=1, bg='#009999')
         self.button_boost_attributes.grid(row=7, column=0)
-        Hovertip(self.button_boost_attributes, 'Get some extra attribute points.')
+        Hovertip(self.button_boost_attributes, 'Set free attribute points to this value.')
 
-        var_n_sockets = tk.IntVar()
-        var_n_sockets.set(6)
+        var_n_sockets = tk.StringVar()
+        var_n_sockets.set('6')
         self.entry_set_sockets = tk.Entry(self.tab2, textvariable=var_n_sockets)
         self.entry_set_sockets.grid(row=7, column=2, sticky='ew')
-        self.button_set_sockets = tk.Button(self.tab2, text='Set Sockets', command=lambda: self.set_sockets(var_n_sockets.get()), bg='#009999')
+        self.button_set_sockets = tk.Button(self.tab2, text='Set Sockets', command=self.set_sockets, bg='#009999')
         self.button_set_sockets.grid(row=7, column=3, sticky='ew')
         Hovertip(self.button_set_sockets, 'Within the items of the Horadric Cube, attempt to set this number of sockets ({0,..,6}).')
         self.button_empty_sockets = tk.Button(self.tab2, text='Empty Sockets', command=self.empty_sockets, bg='#009999')
