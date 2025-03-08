@@ -2298,6 +2298,9 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
           This may be thanks to the Larzuk mechanic."""
         if item.is_analytical:
             return
+        if item.get_item_property(E_ItemBitProperties.IP_RUNEWORD):
+            _log.info(f"Unable to alter count of {item.type_name} to {count} due to runeword magic.")
+            return
         if count > (item.volume[0] * item.volume[1]):
             count = (item.volume[0] * item.volume[1])
         if count < 0:
@@ -2307,6 +2310,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         ext_index = item.get_extended_item_index()
         n_occupied = item.get_extended_item_int_value(E_ExtProperty.EP_QUEST_SOCKETS)
         if count < n_occupied:
+            _log.info(f"Unable to reduce socket count of {item.type_name} to {count}. there are {n_occupied} sockets that are already occupied.")
             count = n_occupied
         if item.n_sockets == count:
             return  # << Nothing to do.
