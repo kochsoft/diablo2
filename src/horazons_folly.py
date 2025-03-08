@@ -759,6 +759,14 @@ def bitmap2bytes(bitmap: str) -> bytes:
         raise ValueError(f"Invalid bitmap length {n} not being a multiple of 8.")
     return int(bitmap,2).to_bytes(round(n/8), 'little')
 
+def prefix_bitmap_to_8_product(bitmap: str, *, delete_leading_zeros: bool = True) -> str:
+    """Drop leading zeros. Then prefix zeros until len(bm) % 8 == 0."""
+    if delete_leading_zeros:
+        bitmap = re.sub("^0*", "", bitmap)
+    if len(bitmap) % 8:
+        bitmap = '0' * (8 - len(bitmap) % 8) + bitmap
+    return bitmap
+
 def get_range_from_bitmap(bitmap: str, index_start: int, index_end: int, *, do_invert: bool = False) -> Optional[int]:
     # Note: Being numerals the left-most entries in the bitmap are the most significant!
     #  However, our indexing schema asks for little endian. Hence, when accessing the bitmap,
@@ -772,6 +780,8 @@ def get_range_from_bitmap(bitmap: str, index_start: int, index_end: int, *, do_i
 
 def set_range_to_bitmap(bitmap: str, index_start: int, index_end: int, val: int, *, do_invert: bool = False) -> str:
     width = index_end - index_start
+    if width == 0:
+        return bitmap  # << Norhing to do.
     rg = '{:0{width}b}'.format(val, width=width)
     if len(rg) > width:
         raise ValueError(f"Encountered range '{rg}' of length {len(rg)}. However, width <= {width} was expected.")
@@ -1253,6 +1263,7 @@ class Item:
         sz_class_specific = 12 if get_range_from_bitmap(bm, index_bit, index_bit+1) > 0 else 1
         res[E_ExtProperty.EP_CLASS_SPECIFIC] = index_bit, (index_bit + sz_class_specific)
         index_bit = index_bit + sz_class_specific
+
         quality = self.quality
         val_len = 0
         if quality == E_Quality.EQ_NONE:
@@ -1267,8 +1278,15 @@ class Item:
             val_len = 22
         elif quality == E_Quality.EQ_SET:
             val_len = 12
-        elif quality == E_Quality.EQ_RARE:
+        elif quality in (E_Quality.EQ_RARE, E_Quality.EQ_CRAFT):
             val_len = 16
+            for j in range(6):
+                key_bit = get_range_from_bitmap(bm, index_bit + val_len, index_bit + val_len + 1)
+                sz_affix = 1 if key_bit == 0 else 12
+                if len(bm) <= val_len + sz_affix:
+                    _log.warning(f"{quality} item has an extended section that seems to be too small for its magic attributes. This hints at a bug.")
+                else:
+                    val_len += sz_affix
         elif quality == E_Quality.EQ_UNIQUE:
             val_len = 12
         elif quality == E_Quality.EQ_CRAFT:
@@ -2341,6 +2359,38 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         bts = bitmap2bytes(bmr[::-1])
         self.data = self.data[:item.index_start] + bts + self.data[item.index_end:]
 
+    def dispel_magic(self, item):
+        """Dispels magic on rare, crafted, magic, set and unique items."""
+        if item.is_analytical:
+            return
+        quality = item.quality
+        if quality not in (E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_RARE, E_Quality.EQ_CRAFT, E_Quality.EQ_SET, E_Quality.EQ_UNIQUE):
+            return  # << Item is not magical (socketed items don't count). Nothing to do.
+        is_charm = item.is_charm
+        index_ext = item.get_extended_item_index()
+        if item.n_sockets_occupied:
+            _log.warning(f"Item {item.type_name} has {item.n_sockets_occupied} occupied sockets. Cannot dispel its magic without removing stones and runes first.")
+            return
+
+        # First set quality to normal (2) formally.
+        bmr = bytes2bitmap(item.data_item)[::-1]
+        bmr = bmr[:150] + '0100' + bmr[154:]
+
+        # Handle Sockets (mechanical items).
+        id_qs = index_ext[E_ExtProperty.EP_QUEST_SOCKETS]
+        bmr = bmr[:id_qs[0]] + ('0' * (id_qs[1]-id_qs[0])) + bmr[id_qs[1]:]
+
+        bmr = bmr[:index_ext[E_ExtProperty.EP_MODS][0]] + '111111111'
+        bmr = bmr[:index_ext[E_ExtProperty.EP_SET][0]] + bmr[index_ext[E_ExtProperty.EP_SET][1]:]
+        bmr = bmr[:index_ext[E_ExtProperty.EP_QUALITY_ATTRIBUTES][0]] + ('0'*12 if is_charm else '') + bmr[index_ext[E_ExtProperty.EP_QUALITY_ATTRIBUTES][1]:]
+
+        bm = bmr[::-1]
+        bm = prefix_bitmap_to_8_product(bm)
+
+        bts = bitmap2bytes(bm)
+        self.data = self.data[:item.index_start] + bts + self.data[item.index_end:]
+        _log.info(f"Dispelled magic for {item.type_name}.")
+
     def set_ethereal(self, item: Item, enable: Optional[bool] = None):
         if item.is_analytical or item.get_item_property(E_ItemBitProperties.IP_COMPACT):
             return
@@ -2456,6 +2506,10 @@ class Horadric:
         if isinstance(parsed.set_sockets_horadric, int):
             for data in self.data_all:
                 self.set_sockets_horadric(data, parsed.set_sockets_horadric)
+
+        if parsed.dispel_magic:
+            for data in self.data_all:
+                self.dispel_magic_horadric(data)
 
         if parsed.toggle_ethereal:
             for data in self.data_all:
@@ -2733,6 +2787,14 @@ class Horadric:
             data.update_all()
             data.save2disk()
 
+    def dispel_magic_horadric(self, data: Data):
+        items = Item(data.data).get_cube_contents()  # type: List[Item]
+        for j in reversed(range(len(items))):
+            data.dispel_magic(items[j])
+        if self.is_standalone:
+            data.update_all()
+            data.save2disk()
+
     def toggle_ethereal(self, data: Data):
         items = Item(data.data).get_cube_contents()  # type: List[Item]
         for item in items:
@@ -2862,6 +2924,7 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         # --regrade_horadric
         parser.add_argument('--empty_sockets_horadric', action='store_true', help="Flag. Pull all socketed items from items in the horadric cube. Try to preserve these socketables.")
         parser.add_argument('--set_sockets_horadric', type=int, help="Attempt to set this many sockets to the socket-able items in the horadric cube.")
+        parser.add_argument('--dispel_magic', action='store_true', help='Flag. Acts on magical, rare, and crafted items within the Horadric Cube, dispelling their magic.')
         parser.add_argument('--toggle_ethereal', action='store_true', help="Flag. For each item within the Horadric Cube toggle the ethereal state.")
         parser.add_argument('--ensure_horadric', action='store_true', help="Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")
