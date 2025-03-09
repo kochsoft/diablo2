@@ -6,7 +6,10 @@
 
 <h2>Disclaimer</h2>
 <p>
-<b>Editing binary save-games is dangerous and may leave you with corrupt files. Although an effort has been made, that these scripts do backups of all files they modify, there is no guarantee. If you use this script, make sure to first do your own backups of any .d2s file you wish to edit.</b>
+<b>Editing binary save-games is dangerous and may leave you with corrupt files.
+Although an effort has been made, that these scripts do backups of all files they
+modify, there is no guarantee. If you use this script, make sure to first do your
+own backups of any .d2s file you wish to edit.</b>
 </p>
 <p>
 That being said ...
@@ -30,14 +33,14 @@ that Gheed character, and ... you get the picture.
 
 <figure>
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/gheed.png" alt="Gheed and Barbarian" class="center_img"><br />
-  <figcaption>Fig.1 - Gheed is a wonderful human being. And a true friend.</figcaption>
+  <figcaption><b>Fig.1</b> - Gheed is a wonderful human being. And a true friend.</figcaption>
 </figure>
 
 <h2>What these two scripts are not</h2>
 <p>
-They are, at this point in time, not for modern versions of Diablo II, more specifically,
+They are, at this point in time, not for modern versions of Diablo II. More specifically,
 they probably won't work very good, if at all, beyond game versions <b>1.10-1.14d</b>.
-I would not know, because I only have a legit, but antique installation running on
+I would not know, because I only have a legit, but antique v1.12 installation running on
 wine-10.1 available. However, it should be a matter of rather straight-forward
 modifications of target bit sites in <code>horazons_folly.py</code> to generalize it
 to other save-game versions.
@@ -60,18 +63,19 @@ The project mainly comprises
     "Horadric Exchange". It runs on vanilla Python 3 and comes with a detailed
     <code>--help</code> text.
     Indispensable source of information was the page
-    <a href="https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md">D2CE</a>,
-    that contains a lot of knowledge for anyone endeavoring to understand Diablo II
+    <a href="https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md">D2CE</a>.
+    It contains a lot of knowledge for anyone endeavoring to understand Diablo II
     save-game files.
   </li>
   <li><b>horadric_exchange.py</b>: A comprehensive GUI frontend for <code>horazons_folly.py</code>.
     It brings one dependency: <code>tkinter</code>, the basic, python GUI system.
-    On windows it may be selected as optional during installation of the Python 3
+    On windows, it may be selected as optional during installation of the Python 3
     interpreter. Under Linux there often is a dedicated package to be had, or
     <code>python -m pip install tkinter</code> might help.
-    The GUI allows to load and read save-game contents, and to do both, the title-
-    giving Horadric Exchanges, and some more clandestine edits, like enabling
-    nightmare or hell mode (also promoting the character for standing a chance),
+    The GUI allows to load and read save-game contents, and to do both, the title-giving
+    Horadric Exchanges, and some more clandestine edits, like enabling
+    nightmare or hell mode (also upgrading low level characters for standing a chance,
+    effectively allowing to start a game in a higher difficulty),
     god mode (reversible, but still gain-maintaining!), or attribute or skill resets, if one
     indulges into the "Horazon's Folly Tab". There is more.
   </li>
@@ -79,20 +83,20 @@ The project mainly comprises
 
 <figure>
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/prior_to_horadric_exchange.png" alt="The Horadric Exchange GUI tab" class="center_img"><br />
-  <figcaption>Fig.2 - The main tab allows to load two characters and to exchange
-    items between them via the Horadric Cube.</figcaption>
+  <figcaption><b>Fig.2</b> - The main tab allows to load two characters and to exchange
+    items between them via their Horadric Cubes.</figcaption>
 </figure>
 <br /><br />
 <figure>
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/250202_moved_items.png" alt="Charonson got an item personalized to Alissa" class="center_img"><br />
-  <figcaption>Fig.3 - Charonson got an item that was personalized to Alissa. Although he will
+  <figcaption><b>Fig.3</b> - Charonson got an item that was personalized to Alissa. Although he will
   still need more experience to make good use of it. She will probably want to have it back
   anyways.</figcaption>
 </figure>
 <br /><br />
 <figure>
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/non_magic_ring.png" alt="Alissa wears a regular ring" class="center_img"><br />
-  <figcaption>Fig.4 - Alissa wears a non-magic ring. For its aesthetic value. And because she can.</figcaption>
+  <figcaption><b>Fig.4</b> - Alissa wears a non-magic ring. For its aesthetic value. And because she can.</figcaption>
 </figure>
 
 <h2>Setup</h2>
@@ -102,28 +106,29 @@ Installation is as simple as putting both <b>.py</b> files, <b>item_codes.tsv</b
 <b>logo_horadric_exchange.png</b> and <b>potion_of_life.png</b>, into one directory
 and running the desired script using a python 3 interpreter with the script
 directory as working directory.
-</p><p>
+</p>
+<p>
 <b>There is no config file.</b> Instead, there is a small block "config.sys" close to the
-top of <code>horardric_exchange.py</code>. That section provides two global variables
+top of <code>horadric_exchange.py</code>. That section provides two global variables
 that will define
+</p>
 <ul>
   <li><b>pname_work:</b> Horadric Exchange does a generous amount of backups of your
   original save-games (with timestamps), .humanity restore files (they will allow
   returning from godmode in a sensible, progress-preserving way), and cube-content
-    saves, if this function is used.
+  saves, if this function is used.
   I label these backups necessary, as they will save your characters, if the scripts
   should ever leave you with corrupted files -- editing binary save-games is a
-    dangerous process!
+  dangerous process!
   So create some writable directory of your choosing and refer to it here.</li>
   <li><b>pname_d2:</b> The target "Save" directory within the actual game installation.</li>
 </ul>
-</p>
 
 <figure>
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/config_sys.png" alt="Use config.sys section in horadric_exchange.py to define default directories." class="center_img"><br />
-  <figcaption>Fig.5 - This global structure in <b>horadric_exchange.py</b> defines default
+  <figcaption><b>Fig.5</b> - This global structure in <b>horadric_exchange.py</b> defines default
     values for the necessary backup/working directory and the location of your
-    Diablo II v1.10-v1.14d Save game directory.</figcaption>
+    Diablo II v1.10-v1.14d save-game directory.</figcaption>
 </figure>
 
 <h2>Usage</h2>
@@ -138,13 +143,17 @@ Still some comments on the GUI. The general workflow for both tabs is:
 <ul>
   <li>Ensure a writable-to backup directory. The button "Work Dir" will show green,
     if all is in order. Else red. Red means you will not be able to continue until
-    a proper backup directory is setup. This script will not create directories on
+    a proper backup directory is set up. This script will not create directories on
     its own.</li>
   <li>Load character files. In the case of Horadric Exchange, it is required that
-  both characters have progressed far enough to own their own Horadric Cubes.</li>
+  both characters have progressed far enough to own their own Horadric Cubes.
+  The Horazon's Folly tab offers an 'ensure Horadric Cube' function as a short-cut.</li>
   <li>In the case of the Horazon's Folly tab, do whatever edits seem good to you.</li>
   <li>At the bottom of each tab there is one large button. These buttons start out
-  disabled, but will activate, once the above conditions are fulfilled.</li>
+  disabled, but will activate, once the above conditions are fulfilled.
+  <b>The GUI tabs won't do anything definitive to your .d2s files unless the
+  large, icon-bearing button at the bottom of the tab is clicked. Only then changes
+  will be written to disk.</b></li>
 </ul>
 <p>
 Clicking on such a master button will trigger the associated process. It will do
@@ -158,7 +167,7 @@ godmode, need to be sited in the selected backup directory to be found and used.
 
 <figure>
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/horazons_folly.png" alt="The Horazon's Folly tab." class="center_img"><br />
-  <figcaption>Fig.6 - Horazon's Folly, too, uses the backup directory selected
+  <figcaption><b>Fig.6</b> - Horazon's Folly, too, uses the backup directory selected
     in the Horadric Exchange tab. However, it acts on only one character file.</figcaption>
 </figure>
 
@@ -170,7 +179,7 @@ Diablo II save-game file format analysis page:
 <a href=https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md>https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md</a>
 </p><p>
 For the remainder of this text I will silently refer to this source.
-Yet, there are couple of grains of knowledge, that I found on my own, too.
+Yet, there are a couple of grains of knowledge, that I found on my own, too.
 Note however, that, as stated above, all is promised to hold true to v1.10-v1.14d only.
 </p>
 <h3>Health, Mana, and Stamina Attributes</h3>
@@ -196,7 +205,7 @@ ID: 000001000 (ID 8) (AT_CURRENT_MANA)<br />
 </p>
 
 <p>
-I can also not confirm that any of the other values are bit-inverted.
+I also cannot confirm that any of the other values are bit-inverted.
 </p><p>
 The variable length of the attributes section seems to stem from the fact
 that values that are 0 are not listed, but missing. It appears that 0 values
@@ -204,10 +213,10 @@ are even illegal.  When I tried to add explicit 0 values this led me into a
 corrupt save-game, complaining that the skill section (which is beyond attributes)
 were corrupted. Only when I made sure, that 0 values are not present all was well again.
 </p><p>
-The skill section is far simpler than described. It is preceded with the code
+The skills section is far simpler than described. It is prefixed with the code
 <b>if</b>. However, after that, there just come 30 byte values describing
 the hard-point skill-levels for the individual skills of the character in
-question. The order of skills in the skilltrees is over all trees and
+question. The order of skills in the skill-trees is over all trees and
 horizontally, beginning by the lowest-most tab. Huh?
 </p><p>
   <b>Example:</b> Consider the Necromancer. In-game press "T" to open the skills
@@ -220,18 +229,19 @@ Next comes the second row with "Dim Vision", "Weaken", "Poison Dagger", and so o
 The other character classes' skills are organized in the same way.
 </p><p>I am not entirely positive on how character progression (i.e. byte 37 of
 the .d2s file, still part of the main header) really works. However, it appears that
+</p>
 <ul>
 <li>0 is the starting value</li>
 <li>5 is reached upon completion of the normal campaign. This value grants the rank of Slayer/Destroyer and enables nightmare.</li>
 <li>10 is reached upon completion of the nightmare campaign. This value grants the rank of Champion/Conqueror and enables hell.</li>
 <li>15 is reached upon completion of the hell campaign. This value grants the rank of (M|P)atriarch/Guardian.</li>
 </ul>
-</p><p>
+<p>
 Each item has a <a href="https://www.gmstemple.com/Diablo2/itemcodes.html">three-letter code</a> defining its elementary nature.
 E.g., the unique item of the Horadric Cube is called "box". The runes are, in sequence from 'el' to 'zod', labelled 'r01', .., 'r33'.
 These three bytes range from [Bit 76:Bit 100]. This means a bit shift of 4 if you want to read the codes in the original byte format.
 </p>
 <figure>
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/crafted_runes.png" alt="Jah, Ith, Ber, and, for show, a Zod rune." class="center_img"><br />
-  <figcaption>Fig.7 - Jah, Ith, Ber, some gems, a skull, and, for show, a Zod rune. All from Horazon's workshop.</figcaption>
+  <figcaption><b>Fig.7</b> - Jah, Ith, Ber, some gems, a skull, and, for show, a Zod rune. All from Horazon's workshop.</figcaption>
 </figure>
