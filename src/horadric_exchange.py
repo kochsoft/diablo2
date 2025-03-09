@@ -186,7 +186,7 @@ Horadric Exchange does a lot of back-upping.
   will allow a character to return to humanity later on.
 * Horadric Cube contents, too can be saved to disk.
 
-All this is done in a working directory which's current default is given above.
+All this is done in a working directory. Its current default is given above.
 And it cannot be found for writing on your system. So please select an
 adequate working directory which should also not be the Diablo II Save dir.
 
@@ -514,6 +514,16 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         self.horadric_horazon.boost(E_Attributes.AT_UNUSED_STATS, val)
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
+    def needs_dispel_magic(self) -> bool:
+        """Does the Horadric Cube contain any magic items? (Or should the dispel-magic-button be disabled?)"""
+        data = self.verify_hero()
+        if not data:
+            return False
+        for item in Item(data.data).get_cube_contents():
+            if item.is_magic:
+                return True
+        return False
+
     def dispel_magic(self):
         data = self.verify_hero()
         if not data:
@@ -530,6 +540,16 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         for item in items:
             data.set_sockets(item, count)
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
+    def needs_empty_sockets(self) -> bool:
+        """Does the Horadric Cube contain any items with socketed stones or runes? (Or should the empty-sockets-button be disabled?)"""
+        data = self.verify_hero()
+        if not data:
+            return False
+        for item in Item(data.data).get_cube_contents():
+            if item.n_sockets_occupied:
+                return True
+        return False
 
     def empty_sockets(self):
         data = self.verify_hero()
@@ -578,6 +598,10 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
             data = self.horadric_horazon.data_all[0]  # type: Data
             if not data.has_iron_golem:
                 self.button_redeem_golem.config(state='disabled')
+            if not self.needs_dispel_magic():
+                self.button_dispel_magic.config(state='disabled')
+            if not self.needs_empty_sockets():
+                self.button_empty_sockets.config(state='disabled')
             if not data.has_horadric_cube:
                 self.button_load_cube.config(state='disabled')
                 self.button_save_cube.config(state='disabled')
@@ -589,8 +613,6 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                 self.button_enable_nightmare.config(state='disabled')
             if data.progression >= 10:
                 self.button_enable_hell.config(state='disabled')
-            #self.entry_runic_cube.delete(0, tk.END)
-            #self.entry_runic_cube.insert(0, 'ort,sol')
             self.entry_boost_skills.delete(0, tk.END)
             self.entry_boost_skills.insert(0, '0')
             self.entry_boost_attributes.delete(0, tk.END)
@@ -803,6 +825,7 @@ Beware!"""
         self.button_horazon.grid(row=9, column=0, columnspan=5, sticky='ew')
         Hovertip(self.button_horazon, 'All changes made above are hypothetical. Unless you click this here button that will commit them!')
         self.validate_pname_work()
+
         self.update_hero_widgets(False)
         # < ----------------------------------------------------------
 

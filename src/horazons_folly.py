@@ -83,7 +83,7 @@ class E_ItemClass(Enum):
     IC_MISC = 36
 
     def volume_default(self) -> Tuple[int, int]:
-        """:returns (rows,cols) an item of this class typically takes in inventory, prefering large sizes.
+        """:returns (rows,cols) an item of this class typically takes in inventory, preferring large sizes.
         This is not always correct. In these cases the file item_codes.tsv may hold a correction.
         See implementation of load_item_family_list(..) below for details."""
         if self in [E_ItemClass.IC_OTHER, E_ItemClass.IC_SCROLLS, E_ItemClass.IC_THROWING_POTIONS,
@@ -209,7 +209,7 @@ class ItemFamily:
         :param code: item 3 letter type_code.
         :param data: List of ItemFamilies. Will default to global l_item_families.
         :param grade_target: Target grade.
-        :return None in case of failure. Else the 3-letter type code of the item within the same family as givne code
+        :return None in case of failure. Else the 3-letter type code of the item within the same family as given code
           matching the given grade_target."""
         if not code:
             return None
@@ -380,7 +380,7 @@ class E_Rune(Enum):
 
     @staticmethod
     def from_name(name: str) -> Optional[E_Rune]:
-        """:param name: Simply by rune name for runes Else /^[tasredb][0-4]$/ for gems and skulls ('b'one, get it?),
+        """:param name: Simply by rune name for runes Else /^[tasredb][0-4]$/ for gems and skulls (bone0-4, get it?),
           the number denoting the quality from 0: chipped to 4: perfect."""
         # > Grand case 1: Gems and Bones (i.e., Skulls). -------------
         m = re.findall("^([tasredb])([0-4])$", name.lower())
@@ -781,7 +781,7 @@ def get_range_from_bitmap(bitmap: str, index_start: int, index_end: int, *, do_i
 def set_range_to_bitmap(bitmap: str, index_start: int, index_end: int, val: int, *, do_invert: bool = False) -> str:
     width = index_end - index_start
     if width == 0:
-        return bitmap  # << Norhing to do.
+        return bitmap  # << Nothing to do.
     rg = '{:0{width}b}'.format(val, width=width)
     if len(rg) > width:
         raise ValueError(f"Encountered range '{rg}' of length {len(rg)}. However, width <= {width} was expected.")
@@ -1023,6 +1023,11 @@ class Item:
         return self.type_code in ('cm1', 'cm2', 'cm3')
 
     @property
+    def is_magic(self) -> Optional[bool]:
+        """:returns True if and only if this item is magically enhanced, rare, set or unique."""
+        return self.quality in (E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_RARE, E_Quality.EQ_SET, E_Quality.EQ_UNIQUE)
+
+    @property
     def is_armor(self) -> Optional[bool]:
         if self.is_analytical:
             return None
@@ -1121,7 +1126,7 @@ class Item:
     @property
     def item_level(self) -> Optional[int]:
         """:returns the ilevel of this object if such extended information is available. Else None."""
-        # TODO: Not quite sure if this really works.
+        # TODO: Not quite sure if item_level really is correct.
         if self.is_analytical:
             return None
         bm = bytes2bitmap(self.data_item)
@@ -1152,7 +1157,7 @@ class Item:
         index0, index1 = self.get_extended_item_index()[E_ExtProperty.EP_PERSONALIZATION]
         bm = bytes2bitmap(self.data_item)[::-1]
         bm_short = bm[index0:index1]
-        # [Note: The letters are encoded in 7 bit Ascii.]
+        # [Note: The letters are encoded in 7-bit Ascii.]
         while len(bm_short) % 7 != 0:
             bm_short += '0'
         res = ""
@@ -1168,7 +1173,11 @@ class Item:
 
     @property
     def defense(self) -> Optional[int]:
-        return self.get_extended_item_int_value(E_ExtProperty.EP_DEFENSE)
+        val = self.get_extended_item_int_value(E_ExtProperty.EP_DEFENSE)
+        # [Note: For some reason val seems to be encoded +10 in bits. Are there armors with defense == -10?]
+        if val is not None:
+            val = val - 10
+        return val
 
     @property
     def durability(self) -> Optional[str]:
@@ -1218,6 +1227,8 @@ class Item:
         while found_anything:
             found_anything = False
             for km in known_mods:
+                if (is_mod_superior_weapon and not km.is_mod_superior_weapon) or (is_mod_superior_armor and not km.is_mod_superior_armor):
+                    continue
                 regexp = km.regexp_binary_code[::-1]
                 ms = [(m.start(0), m.end(0)) for m in re.finditer(regexp, bmr[index_offset:])]
                 if ms and ms[0][0] == 0:
@@ -1302,7 +1313,7 @@ class Item:
 
         sz_personalization = 0
         if self.get_item_property(E_ItemBitProperties.IP_PERSONALIZED):
-            # Personalization is encoded in 7 bit ASCII and stopped by a traditional 0-entry.
+            # Personalization is encoded in 7-bit ASCII and stopped by a traditional 0-entry.
             # [Note: Do not use self.personalization here, lest you enter an infinite recursion!]
             sz_personalization = 0
             bmp = bm[::-1][index_bit:(index_bit+105)]
@@ -1369,7 +1380,7 @@ class Item:
         return get_range_from_bitmap(bm, index0, index1)
 
     def get_extended_item_index_as_str(self) -> str:
-        """Debugging function, turning the extended item intex into something human-readable."""
+        """Debugging function, turning the extended item index into something human-readable."""
         if self.is_analytical:
             return "Analytical item has no extended section."
         indices = self.get_extended_item_index()
@@ -2254,7 +2265,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     @staticmethod
     def _normalize_rune_item(item: Item) -> bytes:
-        """Dispels magic (dropping mod section), removes runeword-powers (not the runes though,
+        """Dispels magic (dropping mod section), removes runeword-powers (not the runes though),
         use self.separate_socketed_items_from_item for that and sets the quality to normal."""
         bmr = bytes2bitmap(item.copy_with_item_property_set(E_ItemBitProperties.IP_RUNEWORD, False))[::-1]
         quality = item.quality
@@ -2308,7 +2319,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
     def set_sockets(self, item, count: int):
         """Will set or remove sockets. Won't delete so many sockets that existing items
         would hang in the air.
-        :param item: Target socketable item which's byte code will be altered in this
+        :param item: Target socketable item. Its byte code will be altered in this
           data.data. Note that this may invalidate any index_start and index_end
           in existing Item objects. Consider refreshing these.
         :param count: How many sockets? 6 is the absolute maximum. Note, that the
@@ -2361,11 +2372,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     def dispel_magic(self, item):
         """Dispels magic on rare, crafted, magic, set and unique items."""
-        if item.is_analytical:
+        if item.is_analytical or not item.is_magic:
             return
-        quality = item.quality
-        if quality not in (E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_RARE, E_Quality.EQ_CRAFT, E_Quality.EQ_SET, E_Quality.EQ_UNIQUE):
-            return  # << Item is not magical (socketed items don't count). Nothing to do.
         is_charm = item.is_charm
         index_ext = item.get_extended_item_index()
         if item.n_sockets_occupied:
