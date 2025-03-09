@@ -2413,6 +2413,27 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         self.data = self.data[:item.index_start] + bts + self.data[item.index_end:]
         print(f"Attempting to set item '{item.type_name}' to {'' if enable else 'not '}ethereal.")
 
+    def regrade(self, item, grade: Optional[E_ItemGrade] = None):
+        if item.is_analytical or (grade is not None and grade.value not in (0,1,2,3)):
+            return
+        type_code_old = item.type_code
+        fam = ItemFamily.get_family_by_code(type_code_old)
+        gval = (ItemFamily.get_grade_for_code(type_code_old) if grade is None else grade).value
+        if fam is None:
+            return
+        keys = fam.code_names.keys()
+        if not keys:
+            return
+        gval = (gval + 1) % len(keys)
+        try:
+            type_code_new = list(keys)[gval]
+        except ValueError:
+            return
+        name_old = item.type_name
+        item.type_code = type_code_new
+        _log.info(f"Attempting to create {item.item_grade} {item.type_name} from {name_old}.")
+        self.data = self.data[:item.index_start] + item.data_item + self.data[item.index_end:]
+
     @staticmethod
     def get_time(frmt: str = "%y%m%d_%H%M%S", unix_time_s: Optional[int] = None) -> str:
         """:return Time string aiming to become part of a backup pfname."""
@@ -2527,6 +2548,10 @@ class Horadric:
         if parsed.ensure_horadric:
             for data in self.data_all:
                 self.ensure_horadric(data)
+
+        if parsed.regrade_horadric:
+            for data in self.data_all:
+                self.regrade_horadric(data)
 
         if parsed.create_rune_cube is not None:
             self.create_rune_cube(parsed.create_rune_cube)
@@ -2812,6 +2837,14 @@ class Horadric:
             data.update_all()
             data.save2disk()
 
+    def regrade_horadric(self, data: Data):
+        items = Item(data.data).get_cube_contents()  # type: List[Item]
+        for item in items:
+            data.regrade(item)
+        if self.is_standalone:
+            data.update_all()
+            data.save2disk()
+
     def ensure_horadric(self, data: Data):
         if data.has_horadric_cube:
             return  # << Nothing to do.
@@ -2930,11 +2963,11 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--drop_horadric', action='store_true', help="Flag. If given, the Horadric Cube contents of the targeted character will be removed.")
         parser.add_argument('--save_horadric', type=str, help="Write the items found in the Horadric Cube to disk with the given pfname. Only one character allowed.")
         parser.add_argument('--load_horadric', type=str, help="Drop all contents from the Horadric Cube and replace them with the horadric file content, that had been written using --save_horadric earlier.")
-        # --regrade_horadric
         parser.add_argument('--empty_sockets_horadric', action='store_true', help="Flag. Pull all socketed items from items in the horadric cube. Try to preserve these socketables.")
         parser.add_argument('--set_sockets_horadric', type=int, help="Attempt to set this many sockets to the socket-able items in the horadric cube.")
         parser.add_argument('--dispel_magic', action='store_true', help='Flag. Acts on magical, rare, and crafted items within the Horadric Cube, dispelling their magic.')
         parser.add_argument('--toggle_ethereal', action='store_true', help="Flag. For each item within the Horadric Cube toggle the ethereal state.")
+        parser.add_argument('--regrade_horadric', action='store_true', help="Flag. For each item within the Horadric Cube upgrade it (usually normal, exceptional, elite). After max grade returns to normal.")
         parser.add_argument('--ensure_horadric', action='store_true', help="Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")
         parser.add_argument('--softcore', action='store_true', help="Flag. Set target characters to soft core mode.")
