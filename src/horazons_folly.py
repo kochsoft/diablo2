@@ -271,6 +271,34 @@ class ItemFamily:
 
 l_item_families = ItemFamily.load_item_family_list()
 
+"""Maps item 3 letter codes to durability, armor class min, armor class max. As encoded in armor_weapons.tsv."""
+d_armor_weapons = dict()  # type: Dict[str, Tuple[int, int, int]]
+
+def load_armor_weapons_dict():
+    """Reads the given armor-weapon file and exposes it as a dict with item code as key and a 3-tuple
+    of (durability, ac min, ac max) as value."""
+    pfname = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'armor_weapons.tsv')
+    if not os.path.isfile(pfname):
+        _log.warning(f"Failure to open armor weapons file '{pfname}' for reading.")
+    d_armor_weapons.clear()
+    with open(pfname, 'r') as IN:
+        for line in IN:
+            if re.findall("^\\s*#", line) or re.findall("^\\s*$", line):
+                continue  # << Ignore comment and empty lines.
+            line = re.split("\t", line, maxsplit=4)
+            code = line[0]
+            if len(line) < 4 or len(code) != 3:
+                continue
+            try:
+                durability = int(line[1])
+                ac_min = int(line[2])
+                ac_max = int(line[3])
+            except ValueError:
+                _log.warning(f"Invalid line encountered: {line}")
+                continue
+            d_armor_weapons[code] = durability, ac_min, ac_max
+
+load_armor_weapons_dict()
 
 class E_Rune(Enum):
     ER_NORUNE = 0
@@ -1134,6 +1162,18 @@ class Item:
             return None
         return get_range_from_bitmap(bm, 144, 150)  # << [2] states 7 bits volume [143:150]. However, [144:150] seems better.
 
+    @item_level.setter
+    def item_level(self, ilevel: int):
+        if self.is_analytical or ilevel < 0:
+            return
+        if ilevel > 99:
+            ilevel = 99
+        bm = bytes2bitmap(self.data_item)
+        if len(bm) < 150:
+            return
+        bm = set_range_to_bitmap(bm, 144, 150, ilevel)
+        self.data_item = bitmap2bytes(bm)
+
     @property
     def quality(self) -> Optional[E_Quality]:
         if self.is_analytical:
@@ -1187,6 +1227,56 @@ class Item:
             return None
         else:
             return f"{val >> 8}/{val & 255}"
+
+    @durability.setter
+    def durability(self, dur: int):
+        """Sets current/max durability of this item to ac_max/ac_max.
+        :param dur in 1..255. If anywhere else, nothing will be done."""
+        if self.is_analytical or dur <= 0 or dur > 255:
+            return
+        index_ext = self.get_extended_item_index()
+        if E_ExtProperty.EP_DURABILITY not in index_ext:
+            return
+        index = index_ext[E_ExtProperty.EP_DURABILITY]
+        if (index[1] - index[0]) != 17:
+            _log.warning(f"Durability extended section expected to be of 17 bit length. However, index does not reflect that: {index}.")
+            return
+        val_max = '{:0{width}b}'.format(dur, width = 8)
+        val_current = '{:0{width}b}'.format(dur, width = 9)  #<< yes. 9.
+        val = val_max[::-1] + val_current[::-1]
+        bmr = bytes2bitmap(self.data_item)[::-1]
+        bmr = bmr[:index[0]] + val + bmr[index[1]:]
+        self.data_item = bitmap2bytes(bmr[::-1])
+
+    def durability2default(self):
+        """Sets this items durability to the default defined by armor_weapons.tsv."""
+        code = self.type_code
+        if not code in d_armor_weapons:
+            return
+        self.durability = d_armor_weapons[code][0]
+
+    def armor2default(self, p: float = 0.5):
+        """Sets this item's armor value (if any is present) to (p * ac_max + (1-p) * ac_min)."""
+        code = self.type_code
+        if not code in d_armor_weapons:
+            return
+        index_ext = self.get_extended_item_index()
+        if not E_ExtProperty.EP_DEFENSE in index_ext:
+            return
+        index = index_ext[E_ExtProperty.EP_DEFENSE]
+        if index[1] - index[0] != 11:
+            return
+        # [Note: For some reason the armor value is saved as 10 points below the true value.]
+        val = round((1.0 - p) * d_armor_weapons[code][1] + p * d_armor_weapons[code][2]) + 10  # type: int
+        if val >= 2**11:
+            val = (2**11) - 1
+        elif val <= 10:
+            return
+        bvalr = ('{:0{width}b}'.format(val, width = 11))[::-1]
+        bmr = bytes2bitmap(self.data_item)[::-1]
+        bmr = bmr[:index[0]] + bvalr + bmr[index[1]:]
+        bm = prefix_bitmap_to_8_product(bmr[::-1])
+        self.data_item = bitmap2bytes(bm)
 
     @property
     def stack(self) -> Optional[int]:
@@ -2414,23 +2504,33 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         print(f"Attempting to set item '{item.type_name}' to {'' if enable else 'not '}ethereal.")
 
     def regrade(self, item, grade: Optional[E_ItemGrade] = None):
+        """Upgrade or downgrade the given item along the lines of normal, exceptional, elite, post-elite."""
         if item.is_analytical or (grade is not None and grade.value not in (0,1,2,3)):
             return
         type_code_old = item.type_code
         fam = ItemFamily.get_family_by_code(type_code_old)
-        gval = (ItemFamily.get_grade_for_code(type_code_old) if grade is None else grade).value
+        gval_old = (ItemFamily.get_grade_for_code(type_code_old) if grade is None else grade).value
         if fam is None:
             return
         keys = fam.code_names.keys()
         if not keys:
             return
-        gval = (gval + 1) % len(keys)
+        gval_new = (gval_old + 1) % len(keys)
         try:
-            type_code_new = list(keys)[gval]
+            type_code_new = list(keys)[gval_new]
         except ValueError:
             return
         name_old = item.type_name
         item.type_code = type_code_new
+        item.durability2default()
+        item.armor2default()
+        ilevel = 32 * (gval_new - gval_old) + item.item_level
+        if ilevel < 0:
+            ilevel = 0
+        elif ilevel > 99:
+            ilevel = 99
+        item.item_level = ilevel
+
         _log.info(f"Attempting to create {item.item_grade} {item.type_name} from {name_old}.")
         self.data = self.data[:item.index_start] + item.data_item + self.data[item.index_end:]
 

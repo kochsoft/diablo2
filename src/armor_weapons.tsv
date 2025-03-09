@@ -1,0 +1,510 @@
+#code	durability	minac	maxac	name
+cap	12	3	5	Cap
+skp	18	8	11	Skull Cap
+hlm	24	15	18	Helm
+fhl	30	23	26	Full Helm
+ghm	40	30	35	Great Helm
+crn	50	25	45	Crown
+msk	20	9	27	Mask
+qui	20	8	11	Quilted Armor
+lea	24	14	17	Leather Armor
+hla	28	21	24	Hard Leather Armor
+stu	32	32	35	Studded Leather 
+rng	26	45	48	Ring Mail
+scl	36	57	60	Scale Mail
+chn	45	72	75	Chain Mail
+brs	50	65	68	Breast Plate
+spl	30	90	95	Splint Mail
+plt	60	108	116	Plate Mail
+fld	48	101	105	Field Plate
+gth	55	128	135	Gothic Plate
+ful	70	150	161	Full Plate Mail
+aar	60	218	233	Ancient Armor
+ltp	60	90	107	Light Plate
+buc	12	4	6	Buckler
+sml	16	8	10	Small Shield
+lrg	24	12	14	Large Shield
+kit	30	16	18	Kite Shield
+tow	60	22	25	Tower Shield
+gts	40	30	35	Gothic Shield
+lgl	12	2	3	Leather Gloves
+vgl	14	5	6	Heavy Gloves
+mgl	16	8	9	Chain Gloves
+tgl	18	9	11	Light Gauntlets
+hgl	24	12	15	Gauntlets
+lbt	12	2	3	Boots
+vbt	14	5	6	Heavy Boots
+mbt	16	8	9	Chain Boots
+tbt	18	9	11	Light Plated Boots
+hbt	24	12	15	Greaves
+lbl	12	2	2	Sash
+vbl	14	3	3	Light Belt
+mbl	16	5	5	Belt
+tbl	18	6	6	Heavy Belt
+hbl	24	8	11	Plated Belt
+bhm	40	33	36	Bone Helm
+bsh	40	10	30	Bone Shield
+spk	40	15	25	Spiked Shield
+xap	12	45	53	War Hat
+xkp	18	52	62	Sallet
+xlm	24	63	72	Casque
+xhl	30	75	84	Basinet
+xhm	40	85	98	Winged Helm
+xrn	50	78	113	Grand Crown
+xsk	20	54	86	Death Mask
+xui	20	102	117	Ghost Armor
+xea	24	111	126	Serpentskin Armor
+xla	28	122	136	Demonhide Armor
+xtu	32	138	153	Trellised Armor
+xng	26	158	172	Linked Mail
+xcl	36	176	190	Tigulated Mail
+xhn	45	198	213	Mesh Armor
+xrs	50	188	202	Cuirass
+xpl	30	225	243	Russet Armor
+xlt	60	252	274	Templar Coat
+xld	48	242	258	Sharktooth Armor
+xth	55	282	303	Embossed Plate
+xul	70	315	342	Chaos Armor
+xar	60	417	450	Ornate Armor
+xtp	60	225	261	Mage Plate
+xuc	68	41	49	Defender
+xml	64	47	55	Round Shield
+xrg	62	53	61	Scutum
+xit	76	59	67	Dragon Shield
+xow	72	68	78	Pavise
+xts	80	80	93	Ancient Shield
+xlg	12	28	35	Demonhide Gloves
+xvg	14	33	39	Sharkskin Gloves
+xmg	16	37	44	Heavy Bracers
+xtg	18	39	47	Battle Gauntlets
+xhg	24	43	53	War Gauntlets
+xlb	12	28	35	Demonhide Boots
+xvb	14	33	39	Sharkskin Boots
+xmb	16	37	44	Mesh Boots
+xtb	18	39	47	Battle Boots
+xhb	24	43	53	War Boots
+zlb	12	29	34	Demonhide Sash
+zvb	14	31	36	Sharkskin Belt
+zmb	16	35	40	Mesh Belt
+ztb	18	37	42	Battle Belt
+zhb	24	41	52	War Belt
+xh9	40	60	125	Grim Helm
+xsh	70	50	150	Grim Shield
+xpk	55	58	78	Barbed Shield
+dr1	20	8	11	Wolf Head
+dr2	20	4	15	Hawk Helm
+dr3	20	18	24	Antlers
+dr4	20	12	28	Falcon Mask
+dr5	20	22	35	Spirit Mask
+ba1	25	10	15	Jawbone Cap
+ba2	35	15	20	Fanged Helm
+ba3	45	25	30	Horned Helm
+ba4	50	30	35	Assault Helmet
+ba5	55	35	50	Avenger Guard
+pa1	20	8	12	Targe
+pa2	30	10	18	Rondache
+pa3	40	16	26	Heraldic Shield
+pa4	50	26	36	Aerin Shield
+pa5	60	30	40	Crown Shield
+ne1	20	2	5	Preserved Head
+ne2	20	4	8	Zombie Head
+ne3	20	6	10	Unraveller Head
+ne4	20	10	16	Gargoyle Head
+ne5	20	15	20	Demon Head
+ci0	35	20	30	Circlet
+ci1	30	30	40	Coronet
+ci2	25	40	50	Tiara
+ci3	20	50	60	Diadem
+uap	12	98	141	Shako
+ukp	18	101	145	Hydraskull
+ulm	24	105	149	Armet
+uhl	30	110	154	Giant Conch
+uhm	40	114	159	Spired Helm
+urn	50	111	165	Corona
+usk	20	101	154	Demonhead
+uui	20	361	467	Dusk Shroud
+uea	24	364	470	Wyrmhide
+ula	28	369	474	Scarab Husk
+utu	32	375	481	Wire Fleece
+ung	26	383	489	Diamond Mail
+ucl	36	390	496	Loricated Mail
+uhn	45	399	505	Boneweave
+urs	50	395	501	Great Hauberk
+upl	30	410	517	Balrog Skin
+ult	60	421	530	Hellforge Plate
+uld	48	417	523	Kraken Shell
+uth	55	433	541	Lacquered Plate
+uul	70	446	557	Shadow Plate
+uar	60	487	600	Sacred Armor
+utp	60	410	524	Archon Plate
+uuc	88	95	110	Heater
+uml	84	108	123	Luna
+urg	82	119	135	Hyperion
+uit	86	133	148	Monarch
+uow	92	145	161	Aegis
+uts	100	153	170	Ward
+ulg	12	54	62	Bramble Mitts
+uvg	14	56	65	Vampirebone Gloves
+umg	16	59	67	Vambraces
+utg	18	59	68	Crusader Gauntlets
+uhg	24	62	71	Ogre Gauntlets
+ulb	12	54	62	Wyrmhide Boots
+uvb	14	56	65	Scarabshell Boots
+umb	16	59	67	Boneweave Boots
+utb	18	59	68	Mirrored Boots
+uhb	24	62	71	Myrmidon Greaves
+ulc	12	55	62	Spiderweb Sash
+uvc	14	56	63	Vampirefang Belt
+umc	16	58	65	Mithril Coil
+utc	18	59	66	Troll Belt
+uhc	24	61	71	Colossus Girdle
+uh9	40	100	157	Bone Visage
+ush	74	158	173	Troll Nest
+upk	83	147	163	Blade Barrier
+dr6	20	52	62	Alpha Helm
+dr7	20	46	68	Griffon Headress
+dr8	20	67	81	Hunter's Guise
+dr9	20	58	87	Sacred Feathers
+dra	20	73	98	Totemic Mask
+ba6	25	55	68	Jawbone Visor
+ba7	35	63	75	Lion Helm
+ba8	45	78	90	Rage Mask
+ba9	50	85	98	Savage Helmet
+baa	55	93	120	Slayer Guard
+pa6	20	101	125	Akaran Targe
+pa7	30	113	137	Akaran Rondache
+pa8	40	129	153	Protector Shield
+pa9	50	144	168	Gilded Shield
+paa	60	156	181	Royal Shield
+ne6	20	38	48	Mummified Trophy
+ne7	20	41	52	Fetish Trophy
+ne8	20	44	55	Sexton Trophy
+ne9	20	50	64	Cantor Trophy
+nea	20	58	70	Heirophant Trophy
+drb	20	101	145	Blood Spirit
+drc	20	98	147	Sun Spirit
+drd	20	107	152	Earth Spirit
+dre	20	103	155	Sky Spirit
+drf	20	109	159	Dream Spirit
+bab	25	102	147	Carnage Helm
+bac	35	105	150	Fury Visor
+bad	45	111	156	Destroyer Helm
+bae	50	114	159	Conqueror Crown
+baf	55	117	168	Guardian Crown
+pab	45	126	158	Sacred Targe
+pac	68	138	164	Sacred Rondache
+pad	55	154	172	Ancient Shield
+pae	65	169	193	Zakarum Shield
+paf	90	182	225	Vortex Shield
+neb	20	95	139	Minion Skull
+neg	20	96	141	Hellspawn Skull
+ned	20	98	142	Overseer Skull
+nee	20	100	146	Succubus Skull
+nef	20	103	148	Bloodlord Skull
+hax	28	0	0	Hand Axe
+axe	24	0	0	Axe
+2ax	24	0	0	Double Axe
+mpi	26	0	0	Military Pick
+wax	26	0	0	War Axe
+lax	30	0	0	Large Axe
+bax	35	0	0	Broad Axe 
+btx	40	0	0	Battle Axe
+gax	50	0	0	Great Axe
+gix	50	0	0	Giant Axe
+wnd	15	0	0	Wand
+ywn	15	0	0	Yew Wand
+bwn	15	0	0	Bone Wand
+gwn	15	0	0	Grim Wand
+clb	24	0	0	Club
+scp	50	0	0	Scepter
+gsc	60	0	0	Grand Scepter
+wsp	70	0	0	War Scepter
+spc	36	0	0	Spiked Club
+mac	60	0	0	Mace
+mst	72	0	0	Morning Star
+fla	30	0	0	Flail
+whm	55	0	0	War Hammer
+mau	60	0	0	Maul
+gma	60	0	0	Great Maul
+ssd	24	0	0	Short Sword
+scm	22	0	0	Scimitar
+sbr	32	0	0	Saber
+flc	32	0	0	Falchion
+crs	20	0	0	Crystal Sword
+bsd	32	0	0	Broad Sword
+lsd	44	0	0	Long Sword 
+wsd	44	0	0	War Sword
+2hs	44	0	0	Two+AC0-Handed Sword
+clm	50	0	0	Claymore
+gis	50	0	0	Giant Sword
+bsw	40	0	0	Bastard Sword
+flb	50	0	0	Flamberge
+gsd	50	0	0	Great Sword
+dgr	16	0	0	Dagger
+dir	20	0	0	Dirk
+kri	24	0	0	Kriss
+bld	24	0	0	Blade
+tkf	4	0	0	Throwing Knife
+tax	6	0	0	Throwing Axe
+bkf	8	0	0	Balanced Knife
+bal	10	0	0	Balanced Axe
+jav	2	0	0	Javelin
+pil	3	0	0	Pilum
+ssp	4	0	0	Short Spear
+glv	5	0	0	Glaive
+tsp	6	0	0	Throwing Spear
+spr	30	0	0	Spear
+tri	35	0	0	Trident
+brn	28	0	0	Brandistock
+spt	28	0	0	Spetum
+pik	25	0	0	Pike
+bar	50	0	0	Bardiche
+vou	50	0	0	Voulge
+scy	65	0	0	Scythe
+pax	65	0	0	Poleaxe
+hal	55	0	0	Halberd
+wsc	55	0	0	War Scythe
+sst	20	0	0	Short Staff
+lst	30	0	0	Long Staff
+cst	35	0	0	Gnarled Staff
+bst	40	0	0	Battle Staff
+wst	50	0	0	War Staff
+sbw	20	0	0	Short Bow
+hbw	32	0	0	Hunter's Bow
+lbw	28	0	0	Long Bow
+cbw	36	0	0	Composite Bow
+sbb	40	0	0	Short Battle Bow
+lbb	44	0	0	Long Battle Bow
+swb	48	0	0	Short War Bow
+lwb	55	0	0	Long War Bow
+lxb	30	0	0	Light Crossbow
+mxb	40	0	0	Crossbow
+hxb	50	0	0	Heavy Crossbow
+rxb	40	0	0	Repeating Crossbow
+gps	2	0	0	Rancid Gas Potion
+ops	2	0	0	Oil Potion
+gpm	2	0	0	Choking Gas Potion
+opm	2	0	0	Exploding Potion
+gpl	2	0	0	Strangling Gas Potion
+opl	2	0	0	Fulminating Potion
+d33	10	0	0	Decoy Gidbinn
+g33	30	0	0	The Gidbinn
+leg	66	0	0	Wirt's Leg
+hdm	55	0	0	Horadric Malus
+hfh	55	0	0	Hellforge Hammer
+hst	50	0	0	Horadric Staff
+msf	45	0	0	Staff of Kings
+9ha	28	0	0	Hatchet
+9ax	24	0	0	Cleaver
+92a	24	0	0	Twin Axe
+9mp	26	0	0	Crowbill
+9wa	26	0	0	Naga
+9la	30	0	0	Military Axe
+9ba	35	0	0	Bearded Axe 
+9bt	40	0	0	Tabar
+9ga	50	0	0	Gothic Axe
+9gi	50	0	0	Ancient Axe
+9wn	15	0	0	Burnt Wand
+9yw	15	0	0	Petrified Wand
+9bw	15	0	0	Tomb Wand
+9gw	15	0	0	Grave Wand
+9cl	24	0	0	Cudgel
+9sc	50	0	0	Rune Scepter
+9qs	60	0	0	Holy Water Sprinkler
+9ws	70	0	0	Divine Scepter
+9sp	36	0	0	Barbed Club
+9ma	60	0	0	Flanged Mace
+9mt	72	0	0	Jagged Star
+9fl	30	0	0	Knout
+9wh	55	0	0	Battle Hammer
+9m9	60	0	0	War Club
+9gm	60	0	0	Martel de Fer
+9ss	24	0	0	Gladius
+9sm	22	0	0	Cutlass
+9sb	32	0	0	Shamshir
+9fc	32	0	0	Tulwar
+9cr	20	0	0	Dimensional Blade
+9bs	32	0	0	Battle Sword
+9ls	44	0	0	Rune Sword
+9wd	44	0	0	Ancient Sword
+92h	44	0	0	Espandon
+9cm	50	0	0	Dacian Falx
+9gs	50	0	0	Tusk Sword
+9b9	40	0	0	Gothic Sword
+9fb	50	0	0	Zweihander
+9gd	50	0	0	Executioner Sword
+9dg	16	0	0	Poignard
+9di	20	0	0	Rondel
+9kr	24	0	0	Cinquedeas
+9bl	24	0	0	Stilleto
+9tk	6	0	0	Battle Dart
+9ta	15	0	0	Francisca
+9bk	20	0	0	War Dart
+9b8	16	0	0	Hurlbat
+9ja	10	0	0	War Javelin
+9pi	12	0	0	Great Pilum
+9s9	14	0	0	Simbilan
+9gl	16	0	0	Spiculum
+9ts	18	0	0	Harpoon
+9sr	30	0	0	War Spear
+9tr	35	0	0	Fuscina
+9br	28	0	0	War Fork
+9st	28	0	0	Yari
+9p9	25	0	0	Lance
+9b7	50	0	0	Lochaber Axe
+9vo	50	0	0	Bill
+9s8	65	0	0	Battle Scythe
+9pa	65	0	0	Partizan
+9h9	55	0	0	Bec+AC0-de+AC0-Corbin
+9wc	55	0	0	Grim Scythe
+8ss	20	0	0	Jo Staff
+8ls	30	0	0	Quarterstaff
+8cs	35	0	0	Cedar Staff
+8bs	40	0	0	Gothic Staff
+8ws	50	0	0	Rune Staff
+8sb	20	0	0	Edge Bow
+8hb	32	0	0	Razor Bow
+8lb	28	0	0	Cedar Bow
+8cb	36	0	0	Double Bow
+8s8	40	0	0	Short Siege Bow
+8l8	44	0	0	Long Siege Bow
+8sw	48	0	0	Rune Bow
+8lw	55	0	0	Gothic Bow
+8lx	30	0	0	Arbalest
+8mx	40	0	0	Siege Crossbow
+8hx	50	0	0	Ballista
+8rx	40	0	0	Chu+AC0-Ko+AC0-Nu
+qf1	30	0	0	Khalim's Flail
+qf2	30	0	0	Khalim's Will
+		0	0	Expansion
+ktr	48	0	0	Katar
+wrb	52	0	0	Wrist Blade
+axf	56	0	0	Hatchet Hands
+ces	72	0	0	Cestus
+clw	64	0	0	Claws
+btl	69	0	0	Blade Talons
+skr	68	0	0	Scissors Katar
+9ar	48	0	0	Quhab
+9wb	56	0	0	Wrist Spike
+9xf	64	0	0	Fascia
+9cs	72	0	0	Hand Scythe
+9lw	52	0	0	Greater Claws
+9tw	69	0	0	Greater Talons
+9qr	68	0	0	Scissors Quhab
+7ar	48	0	0	Suwayyah
+7wb	56	0	0	Wrist Sword
+7xf	64	0	0	War Fist
+7cs	72	0	0	Battle Cestus
+7lw	52	0	0	Feral Claws
+7tw	69	0	0	Runic Talons
+7qr	68	0	0	Scissors Suwayyah
+7ha	28	0	0	Tomahawk
+7ax	24	0	0	Small Crescent
+72a	24	0	0	Ettin Axe
+7mp	26	0	0	War Spike
+7wa	26	0	0	Berserker Axe
+7la	30	0	0	Feral Axe
+7ba	35	0	0	Silver+AC0-edged Axe
+7bt	40	0	0	Decapitator
+7ga	50	0	0	Champion Axe
+7gi	50	0	0	Glorious Axe
+7wn	22	0	0	Polished Wand
+7yw	14	0	0	Ghost Wand
+7bw	17	0	0	Lich Wand
+7gw	18	0	0	Unearthed Wand
+7cl	55	0	0	Truncheon
+7sc	50	0	0	Mighty Scepter
+7qs	60	0	0	Seraph Rod
+7ws	70	0	0	Caduceus
+7sp	65	0	0	Tyrant Club
+7ma	60	0	0	Reinforced Mace
+7mt	72	0	0	Devil Star
+7fl	65	0	0	Scourge
+7wh	65	0	0	Legendary Mallet
+7m7	60	0	0	Ogre Maul
+7gm	60	0	0	Thunder Maul
+7ss	24	0	0	Falcata
+7sm	22	0	0	Ataghan
+7sb	32	0	0	Elegant Blade
+7fc	32	0	0	Hydra Edge
+7cr	0	0	0	Phase Blade
+7bs	32	0	0	Conquest Sword
+7ls	44	0	0	Cryptic Sword
+7wd	44	0	0	Mythical Sword
+72h	44	0	0	Legend Sword
+7cm	50	0	0	Highland Blade
+7gs	50	0	0	Balrog Blade
+7b7	40	0	0	Champion Sword
+7fb	50	0	0	Colossal Sword
+7gd	50	0	0	Colossus Blade
+7dg	26	0	0	Bone Knife
+7di	55	0	0	Mithral Point
+7kr	36	0	0	Fanged Knife
+7bl	47	0	0	Legend Spike
+7tk	6	0	0	Flying Knife
+7ta	15	0	0	Flying Axe
+7bk	20	0	0	Winged Knife
+7b8	16	0	0	Winged Axe
+7ja	10	0	0	Hyperion Javelin
+7pi	12	0	0	Stygian Pilum
+7s7	14	0	0	Balrog Spear
+7gl	16	0	0	Ghost Glaive
+7ts	18	0	0	Winged Harpoon
+7sr	30	0	0	Hyperion Spear
+7tr	35	0	0	Stygian Pike
+7br	28	0	0	Mancatcher
+7st	28	0	0	Ghost Spear
+7p7	25	0	0	War Pike
+7o7	50	0	0	Ogre Axe
+7vo	50	0	0	Colossus Voulge
+7s8	65	0	0	Thresher
+7pa	65	0	0	Cryptic Axe
+7h7	55	0	0	Great Poleaxe
+7wc	55	0	0	Giant Thresher
+6ss	20	0	0	Walking Stick
+6ls	30	0	0	Stalagmite
+6cs	35	0	0	Elder Staff
+6bs	40	0	0	Shillelagh
+6ws	26	0	0	Archon Staff
+6sb	20	0	0	Spider Bow
+6hb	32	0	0	Blade Bow
+6lb	28	0	0	Shadow Bow
+6cb	36	0	0	Great Bow
+6s7	40	0	0	Diamond Bow
+6l7	44	0	0	Crusader Bow
+6sw	48	0	0	Ward Bow
+6lw	55	0	0	Hydra Bow
+6lx	30	0	0	Pellet Bow
+6mx	40	0	0	Gorgon Crossbow
+6hx	50	0	0	Colossus Crossbow
+6rx	40	0	0	Demon Crossbow
+ob1	20	0	0	Eagle Orb
+ob2	30	0	0	Sacred Globe
+ob3	35	0	0	Smoked Sphere
+ob4	40	0	0	Clasped Orb
+ob5	50	0	0	Jared's Stone
+am1	48	0	0	Stag Bow
+am2	55	0	0	Reflex Bow
+am3	28	0	0	Maiden Spear
+am4	25	0	0	Maiden Pike
+am5	6	0	0	Maiden Javelin
+ob6	20	0	0	Glowing Orb
+ob7	30	0	0	Crystalline Globe
+ob8	35	0	0	Cloudy Sphere
+ob9	40	0	0	Sparkling Ball
+oba	50	0	0	Swirling Crystal
+am6	48	0	0	Ashwood Bow
+am7	55	0	0	Ceremonial Bow
+am8	28	0	0	Ceremonial Spear
+am9	25	0	0	Ceremonial Pike
+ama	6	0	0	Ceremonial Javelin
+obb	20	0	0	Heavenly Stone
+obc	30	0	0	Eldritch Orb
+obd	35	0	0	Demon Heart
+obe	40	0	0	Vortex Orb
+obf	50	0	0	Dimensional Shard
+amb	48	0	0	Matriarchal Bow
+amc	55	0	0	Grand Matron Bow
+amd	28	0	0	Matriarchal Spear
+ame	25	0	0	Matriarchal Pike
+amf	6	0	0	Matriarchal Javelin
