@@ -1056,6 +1056,34 @@ class Item:
         return self.quality in (E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_RARE, E_Quality.EQ_SET, E_Quality.EQ_UNIQUE)
 
     @property
+    def is_ethereal(self) -> Optional[bool]:
+        return self.get_item_property(E_ItemBitProperties.IP_ETHEREAL)
+
+    @is_ethereal.setter
+    def is_ethereal(self, enable: bool):
+        if self.is_analytical or not (self.is_weapon or self.is_armor):
+            return
+        is_eth = self.get_item_property(E_ItemBitProperties.IP_ETHEREAL)
+        if is_eth is None or is_eth == enable:
+            return  # << Nothing to do.
+        #dur_cur, dur_max = self.durability
+        dur_max = self.durability[1]
+        ac = self.defense
+        # https://diablo.fandom.com/wiki/Ethereal_Items_(Diablo_II)
+        if ac is not None:
+            ac = round(ac * (1.5 if enable else 0.67))
+        if enable:
+            #dur_cur = round(dur_cur / 2.0 + 1)
+            dur_max = round(dur_max / 2.0 + 1)
+        else:
+            #dur_cur = round((dur_cur-1) * 2.0)
+            dur_max = round((dur_max-1) * 2.0)
+        self.data_item = self.copy_with_item_property_set(E_ItemBitProperties.IP_ETHEREAL, enable)
+        if ac is not None:
+            self.defense = ac
+        self.durability = dur_max
+
+    @property
     def is_armor(self) -> Optional[bool]:
         if self.is_analytical:
             return None
@@ -1160,7 +1188,7 @@ class Item:
         bm = bytes2bitmap(self.data_item)
         if len(bm) < 150:
             return None
-        return get_range_from_bitmap(bm, 144, 150)  # << [2] states 7 bits volume [143:150]. However, [144:150] seems better.
+        return get_range_from_bitmap(bm, 143, 150)  # << [2] states 7 bits volume [143:150]. However, [144:150] seems better.
 
     @item_level.setter
     def item_level(self, ilevel: int):
@@ -1171,7 +1199,7 @@ class Item:
         bm = bytes2bitmap(self.data_item)
         if len(bm) < 150:
             return
-        bm = set_range_to_bitmap(bm, 144, 150, ilevel)
+        bm = set_range_to_bitmap(bm, 143, 150, ilevel)
         self.data_item = bitmap2bytes(bm)
 
     @property
@@ -1219,20 +1247,40 @@ class Item:
             val = val - 10
         return val
 
+    @defense.setter
+    def defense(self, val: int):
+        index_ext = self.get_extended_item_index()
+        if index_ext is None or val is None or E_ExtProperty.EP_DEFENSE not in index_ext:
+            return
+        index = index_ext[E_ExtProperty.EP_DEFENSE]
+        if index[1] - index[0] != 11:
+            return
+        # [Note: For some reason the armor value is saved as 10 points below the true value.]
+        val += 10
+        if val >= 2**11:
+            val = (2**11) - 1
+        elif val <= 10:
+            return
+        bvalr = ('{:0{width}b}'.format(val, width = 11))[::-1]
+        bmr = bytes2bitmap(self.data_item)[::-1]
+        bmr = bmr[:index[0]] + bvalr + bmr[index[1]:]
+        bm = prefix_bitmap_to_8_product(bmr[::-1])
+        self.data_item = bitmap2bytes(bm)
+
     @property
-    def durability(self) -> Optional[str]:
-        """:returns string (current durability/maximum durability) for this Item. Or None if not applicable."""
+    def durability(self) -> Optional[Tuple[int,int]]:
+        """:returns int Tuple (current durability/maximum durability) for this Item. Or None if not applicable."""
         val = self.get_extended_item_int_value(E_ExtProperty.EP_DURABILITY)
         if val is None:
             return None
         else:
-            return f"{val >> 8}/{val & 255}"
+            return (val >> 8), (val & 255)
 
     @durability.setter
     def durability(self, dur: int):
         """Sets current/max durability of this item to ac_max/ac_max.
         :param dur in 1..255. If anywhere else, nothing will be done."""
-        if self.is_analytical or dur <= 0 or dur > 255:
+        if self.is_analytical or dur is None or dur <= 0 or dur > 255:
             return
         index_ext = self.get_extended_item_index()
         if E_ExtProperty.EP_DURABILITY not in index_ext:
@@ -1255,28 +1303,13 @@ class Item:
             return
         self.durability = d_armor_weapons[code][0]
 
-    def armor2default(self, p: float = 0.5):
+    def defense2default(self, p: float = 0.5):
         """Sets this item's armor value (if any is present) to (p * ac_max + (1-p) * ac_min)."""
         code = self.type_code
         if not code in d_armor_weapons:
             return
-        index_ext = self.get_extended_item_index()
-        if not E_ExtProperty.EP_DEFENSE in index_ext:
-            return
-        index = index_ext[E_ExtProperty.EP_DEFENSE]
-        if index[1] - index[0] != 11:
-            return
-        # [Note: For some reason the armor value is saved as 10 points below the true value.]
-        val = round((1.0 - p) * d_armor_weapons[code][1] + p * d_armor_weapons[code][2]) + 10  # type: int
-        if val >= 2**11:
-            val = (2**11) - 1
-        elif val <= 10:
-            return
-        bvalr = ('{:0{width}b}'.format(val, width = 11))[::-1]
-        bmr = bytes2bitmap(self.data_item)[::-1]
-        bmr = bmr[:index[0]] + bvalr + bmr[index[1]:]
-        bm = prefix_bitmap_to_8_product(bmr[::-1])
-        self.data_item = bitmap2bytes(bm)
+        val = round((1.0 - p) * d_armor_weapons[code][1] + p * d_armor_weapons[code][2])  # type: int
+        self.defense = val
 
     @property
     def stack(self) -> Optional[int]:
@@ -1740,9 +1773,15 @@ class Item:
             if known_mods_str:
                 known_mods_str += "\n"
 
+            dur = self.durability
+            if dur is None:
+                dur = 'n.a.'
+            else:
+                dur = f"{dur[0]}/{dur[1]}"
+
             bm_col_row_split = f"{bm[:65]} {bm[65:69]} {bm[69:72]} {bm[72:76]} {bm[76:144]} {bm[144:150]} {bm[150:154]} {bm[154:]}"
             return f"Item '{self.type_name}' ({len(self.data_item)} bytes) ({classification}) {self.item_block.name} #{self.index_item_block} personalization: '{self.personalization}', index: ({self.index_start}, {self.index_end})\n" \
-                f"Max size in inventory: {self.volume}, Defense (base): {self.defense}, Durability (base): {self.durability}, Stack: {self.stack},\n" \
+                f"Max size in inventory: {self.volume}, Defense (base): {self.defense}, Durability (base): {dur}, Stack: {self.stack},\n" \
                 f"Parent: {self.item_parent.name}, Storage: {self.stash_type.name}, (r:{self.row}, c:{self.col}), Equip: {self.item_equipped.name}\n" \
                 f"{props}\ntype code: {self.type_code}, quality: {self.quality}, ilevel: {self.item_level}, is charm: {self.is_charm}, Bit length: {bl} ({bl/8} bytes)\n" \
                 f"{known_mods_str}" \
@@ -2497,15 +2536,16 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             enable = not item.get_item_property(E_ItemBitProperties.IP_ETHEREAL)
         if item.get_item_property(E_ItemBitProperties.IP_ETHEREAL) == enable:
             return  # << Nothing to do.
-        bts = item.copy_with_item_property_set(E_ItemBitProperties.IP_ETHEREAL, enable)
-        if not bts:
-            return
-        self.data = self.data[:item.index_start] + bts + self.data[item.index_end:]
+        item.is_ethereal = enable
+        self.data = self.data[:item.index_start] + item.data_item + self.data[item.index_end:]
         print(f"Attempting to set item '{item.type_name}' to {'' if enable else 'not '}ethereal.")
 
     def regrade(self, item, grade: Optional[E_ItemGrade] = None):
         """Upgrade or downgrade the given item along the lines of normal, exceptional, elite, post-elite."""
         if item.is_analytical or (grade is not None and grade.value not in (0,1,2,3)):
+            return
+        if item.n_sockets_occupied is not None and item.n_sockets_occupied > 0:
+            _log.warning(f"Unable to regrade item '{item.type_name}' with {item.n_sockets_occupied} occupied sockets.")
             return
         type_code_old = item.type_code
         fam = ItemFamily.get_family_by_code(type_code_old)
@@ -2513,7 +2553,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         if fam is None:
             return
         keys = fam.code_names.keys()
-        if not keys:
+        if not keys or len(keys) < 2:
             return
         gval_new = (gval_old + 1) % len(keys)
         try:
@@ -2522,14 +2562,21 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             return
         name_old = item.type_name
         item.type_code = type_code_new
+        was_ethereal = False
+        if item.is_ethereal:
+            item.is_ethereal = False
+            was_ethereal = True
         item.durability2default()
-        item.armor2default()
-        ilevel = 32 * (gval_new - gval_old) + item.item_level
-        if ilevel < 0:
-            ilevel = 0
-        elif ilevel > 99:
-            ilevel = 99
-        item.item_level = ilevel
+        item.defense2default()
+        if item.item_level is not None:
+            ilevel = 32 * (gval_new - gval_old) + item.item_level
+            if ilevel < 0:
+                ilevel = 0
+            elif ilevel > 99:
+                ilevel = 99
+            item.item_level = ilevel
+        if was_ethereal:
+            item.is_ethereal = True
 
         _log.info(f"Attempting to create {item.item_grade} {item.type_name} from {name_old}.")
         self.data = self.data[:item.index_start] + item.data_item + self.data[item.index_end:]

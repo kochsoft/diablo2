@@ -131,6 +131,8 @@ class Horadric_GUI:
         self.button_reset_attributes = None  # type: Optional[tk.Button]
         self.button_boost_skills = None  # type: Optional[tk.Button]
         self.button_boost_attributes = None  # type: Optional[tk.Button]
+        self.button_toggle_ethereal = None  # type: Optional[tk.Button]
+        self.button_regrade_items = None  # type: Optional[tk.Button]
         self.button_dispel_magic = None  # type: Optional[tk.Button]
         self.button_set_sockets = None  # type: Optional[tk.Button]
         self.button_empty_sockets = None  # type: Optional[tk.Button]
@@ -514,6 +516,40 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         self.horadric_horazon.boost(E_Attributes.AT_UNUSED_STATS, val)
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
+    def needs_toggle_ethereal(self):
+        data = self.verify_hero()
+        if not data:
+            return False
+        for item in Item(data.data).get_cube_contents():
+            if item.is_armor or item.is_weapon:
+                return True
+        return False
+
+    def toggle_ethereal(self):
+        data = self.verify_hero()
+        if not data:
+            return
+        self.horadric_horazon.toggle_ethereal(data)
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
+    def needs_regrade_items(self):
+        """Should the regrade items button be active?"""
+        data = self.verify_hero()
+        if not data:
+            return False
+        for item in Item(data.data).get_cube_contents():
+            fam = ItemFamily.get_family_by_code(item.type_code)
+            if fam and len(fam.code_names) >= 2:
+                return True
+        return False
+
+    def regrade_items(self):
+        data = self.verify_hero()
+        if not data:
+            return
+        self.horadric_horazon.regrade_horadric(data)
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
     def needs_dispel_magic(self) -> bool:
         """Does the Horadric Cube contain any magic items? (Or should the dispel-magic-button be disabled?)"""
         data = self.verify_hero()
@@ -589,7 +625,8 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                        self.check_hardcore, self.check_godmode, self.entry_boost_skills, self.entry_runic_cube,
                        self.entry_boost_attributes, self.entry_set_sockets, self.button_horazon, self.button_ensure_cube,
                        self.button_enable_nightmare, self.button_enable_hell, self.button_redeem_golem,
-                       self.button_dispel_magic, self.button_set_sockets, self.button_empty_sockets]:
+                       self.button_toggle_ethereal, self.button_regrade_items, self.button_dispel_magic,
+                       self.button_set_sockets, self.button_empty_sockets]:
             if enable:
                 widget.config(state='normal')
             else:
@@ -600,6 +637,10 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                 self.button_redeem_golem.config(state='disabled')
             if not self.needs_dispel_magic():
                 self.button_dispel_magic.config(state='disabled')
+            if not self.needs_toggle_ethereal():
+                self.button_toggle_ethereal.config(state='disabled')
+            if not self.needs_regrade_items():
+                self.button_regrade_items.config(state='disabled')
             if not self.needs_empty_sockets():
                 self.button_empty_sockets.config(state='disabled')
             if not data.has_horadric_cube:
@@ -783,7 +824,7 @@ Beware!"""
         var_skills = tk.StringVar()
         var_skills.set('0')
         self.entry_boost_skills = tk.Entry(self.tab2, textvariable=var_skills)
-        self.entry_boost_skills.grid(row=6, column=1, columnspan=3, sticky='ew')
+        self.entry_boost_skills.grid(row=6, column=1, columnspan=1, sticky='ew')
         self.button_boost_skills = tk.Button(self.tab2, text='Boost Skills', command=self.boost_skills, width=10, height=1, bg='#009999')
         self.button_boost_skills.grid(row=6, column=0)
         Hovertip(self.button_boost_skills, 'Set free skill points to this value.')
@@ -795,6 +836,14 @@ Beware!"""
         self.button_boost_attributes = tk.Button(self.tab2, text='Boost Attrib.', command=self.boost_attributes, width=10, height=1, bg='#009999')
         self.button_boost_attributes.grid(row=7, column=0)
         Hovertip(self.button_boost_attributes, 'Set free attribute points to this value.')
+
+        self.button_toggle_ethereal = tk.Button(self.tab2, text='Toggle Ethereal', command=self.toggle_ethereal, bg='#009999')
+        self.button_toggle_ethereal.grid(row=6, column=2, sticky='ew')
+        Hovertip(self.button_toggle_ethereal, 'Toggles the ethereal state of items within the Horadric Cube.')
+
+        self.button_regrade_items = tk.Button(self.tab2, text='Regrade Items', command=self.regrade_items, bg='#009999')
+        self.button_regrade_items.grid(row=6, column=3, sticky='ew')
+        Hovertip(self.button_regrade_items, 'Regrades items in the Horadric Cube cyclically. Normal->Elite->..->Normal.')
 
         self.button_dispel_magic = tk.Button(self.tab2, text='Dispel Magic', command=self.dispel_magic, bg='#009999')
         self.button_dispel_magic.grid(row=6, column=4, sticky='ew')
