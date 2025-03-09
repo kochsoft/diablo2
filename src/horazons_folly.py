@@ -1181,11 +1181,12 @@ class Item:
 
     @property
     def durability(self) -> Optional[str]:
+        """:returns string (current durability/maximum durability) for this Item. Or None if not applicable."""
         val = self.get_extended_item_int_value(E_ExtProperty.EP_DURABILITY)
         if val is None:
             return None
         else:
-            return f"{val & 255}/{val >> 8}"
+            return f"{val >> 8}/{val & 255}"
 
     @property
     def stack(self) -> Optional[int]:
