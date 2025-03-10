@@ -467,8 +467,8 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
     def runic_cube(self, text_runic_cube: str):
         runes = list(filter(lambda x: x is not None, [E_Rune.from_name(w) for w in re.findall('([a-zA-Z0-9]+)', text_runic_cube)]))
         if not runes:
-            tk.messagebox.showinfo("Runic Cube", "Use a comma-separated list of up to 12 rune names to replace your "
-                                                 "Horadric Cube content with that set of runes. E.g., 'ral, ort, tal'.")
+            tk.messagebox.showinfo("Runic Cube", "Use a comma-separated list of rune names and gem codes to create "
+                                                 "that set of items in and around your Horadric Cube. E.g., 'ral, ort, tal'.")
             return
         #runes = runes[:12]
         items = list()  # type: List[Item]
@@ -819,7 +819,7 @@ Beware!"""
         self.entry_runic_cube.grid(row=5, column=1, columnspan=4, sticky='ew')
         self.button_runic_cube = tk.Button(self.tab2, text='Runes to Cube', command=lambda: self.runic_cube(var_runic_cube.get()), width=10, height=1, bg='#009999')
         self.button_runic_cube.grid(row=5, column=0)
-        Hovertip(self.button_runic_cube, 'Write a comma-separated list of up to 12 rune names and/or gem codes, /^[tasredb][0-4]$/ (bone=skull), and click this. Will add these socketables to inventory (if there is space).')
+        Hovertip(self.button_runic_cube, 'Write a comma-separated list of rune names and/or gem codes, /^[tasredb][0-4]$/ (bone=skull), and click this. Will add these socketables to the Cube and its environment.')
 
         var_skills = tk.StringVar()
         var_skills.set('0')

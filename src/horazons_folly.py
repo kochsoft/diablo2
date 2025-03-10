@@ -2582,7 +2582,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         # Ensure that a good normal item will be a good exceptional item, will be a good elite item.
         p = 0.5
         ac = item.defense
-        if ac > 0 and type_code_old in d_armor_weapons:
+        if ac and ac > 0 and type_code_old in d_armor_weapons:
             dur, ac_min, ac_max = d_armor_weapons[type_code_old]
             if ac_max > ac_min:
                 p = (ac - ac_min) / (ac_max - ac_min)
