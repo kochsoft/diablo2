@@ -2544,9 +2544,6 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         """Upgrade or downgrade the given item along the lines of normal, exceptional, elite, post-elite."""
         if item.is_analytical or (grade is not None and grade.value not in (0,1,2,3)):
             return
-        if item.n_sockets_occupied is not None and item.n_sockets_occupied > 0:
-            _log.warning(f"Unable to regrade item '{item.type_name}' with {item.n_sockets_occupied} occupied sockets.")
-            return
         type_code_old = item.type_code
         fam = ItemFamily.get_family_by_code(type_code_old)
         gval_old = (ItemFamily.get_grade_for_code(type_code_old) if grade is None else grade).value
@@ -2554,12 +2551,27 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             return
         keys = fam.code_names.keys()
         if not keys or len(keys) < 2:
-            return
+            return  # << Nothing to do.
         gval_new = (gval_old + 1) % len(keys)
         try:
             type_code_new = list(keys)[gval_new]
         except ValueError:
             return
+        if item.n_sockets_occupied is not None and item.n_sockets_occupied > 0:
+            if gval_new < gval_old:
+                _log.warning(f"Unable to downgrade item '{item.type_name}' with {item.n_sockets_occupied} occupied sockets.")
+                return
+            elif item.get_item_property(E_ItemBitProperties.IP_RUNEWORD):
+                # [Note: This is legit, but we have to ensure that the number of sockets will not increase during upgrade.]
+                index_sock = item.get_extended_item_index()[E_ExtProperty.EP_SOCKETS]
+                if index_sock[1] - index_sock[0] != 4:
+                    _log.warning(f"Failure to adjust socket count of {item.n_sockets} to {item.n_sockets_occupied}. Strange socket index block of len != 4: {index_sock}.")
+                    return
+                bmr_sock = '{:0{width}b}'.format(item.n_sockets_occupied, width=4)[::-1]
+                bmr = bytes2bitmap(item.data_item)[::-1]
+                bmr = bmr[:index_sock[0]] + bmr_sock + bmr[index_sock[1]:]
+                item.data_item = bitmap2bytes(bmr[::-1])
+
         name_old = item.type_name
         item.type_code = type_code_new
         was_ethereal = False
@@ -2567,7 +2579,14 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             item.is_ethereal = False
             was_ethereal = True
         item.durability2default()
-        item.defense2default()
+        # Ensure that a good normal item will be a good exceptional item, will be a good elite item.
+        p = 0.5
+        ac = item.defense
+        if ac > 0 and type_code_old in d_armor_weapons:
+            dur, ac_min, ac_max = d_armor_weapons[type_code_old]
+            if ac_max > ac_min:
+                p = (ac - ac_min) / (ac_max - ac_min)
+        item.defense2default(p)
         if item.item_level is not None:
             ilevel = 32 * (gval_new - gval_old) + item.item_level
             if ilevel < 0:
