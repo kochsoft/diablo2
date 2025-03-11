@@ -124,17 +124,19 @@ class E_ItemClass(Enum):
         return re.sub("^IC_", "", self.name).lower()
 
 class E_ItemGrade(Enum):
-    IG_NONE = 10
-    IG_NORMAL = 0
-    IG_EXCEPTIONAL = 1
-    IG_ELITE = 2
-    IG_POSTELITE = 3  # << Exclusively for circlets.
+    IG_NONE = 10  # type: int
+    IG_NORMAL = 0  # type: int
+    IG_EXCEPTIONAL = 1  # type: int
+    IG_ELITE = 2  # type: int
+    """Exclusively for circlets:"""
+    IG_POSTELITE = 3    # type: int
 
     def __str__(self):
         return re.sub("^IG_", "", self.name).lower()
 
 """Based on [3]. Maps item type codes to actual items. Also gives insight in some meta-information on the topic."""
-l_item_families = list()  # type: List[ItemFamily]
+# [Note: This is a forward-declaration! https://medium.com/lets-learn-python/forward-declarations-in-python-cad6c736da6a ]
+l_item_families: list  # type: List[ItemFamily]
 
 class ItemFamily:
     def __init__(self, code_names: OrderedDict[str, str], item_class: E_ItemClass, *, rows: Optional[int]=None, cols: Optional[int]=None):
@@ -1754,6 +1756,9 @@ class Item:
         elif quality in (E_Quality.EQ_SET, E_Quality.EQ_CRAFT, E_Quality.EQ_RARE, E_Quality.EQ_UNIQUE):
             parts.append(quality.__str__().replace('_', ' '))
 
+        if self.is_ethereal:
+            parts.append('ethereal')
+
         if self.item_grade != E_ItemGrade.IG_NORMAL:
             parts.append(self.item_grade.__str__().replace('_', ' '))
 
@@ -2600,6 +2605,9 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         type_code_old = item.type_code
         fam = ItemFamily.get_family_by_code(type_code_old)
         gval_old = (ItemFamily.get_grade_for_code(type_code_old) if grade is None else grade).value
+        if not isinstance(gval_old, int):
+            _log.warning("Weird Grade enum value encountered.")
+            return
         if fam is None:
             return
         keys = fam.code_names.keys()
