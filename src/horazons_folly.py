@@ -1747,20 +1747,27 @@ class Item:
         """:return Short, human-readable one-line representation of this item."""
         if self.is_analytical:
             return "Analytic Item"
-        grade = "" if self.item_grade == E_ItemGrade.IG_NORMAL else f"{self.item_grade} "
-        cls = re.sub("s$", '', self.item_class.__str__(), 1, re.IGNORECASE) if self.item_class and self.item_class not in (E_ItemClass.IC_MISC, E_ItemClass.IC_RUNES, E_ItemClass.IC_GEMS, E_ItemClass.IC_SCROLLS, E_ItemClass.IC_CHARMS) else ''
-        sock = ''
+        parts = list()  # type: List[str]
+        quality = self.quality
+        if quality == E_Quality.EQ_MAGICALLY_ENHANCED:
+            parts.append("magic")
+        elif quality in (E_Quality.EQ_SET, E_Quality.EQ_CRAFT, E_Quality.EQ_RARE, E_Quality.EQ_UNIQUE):
+            parts.append(quality.__str__().replace('_', ' '))
+
+        if self.item_grade != E_ItemGrade.IG_NORMAL:
+            parts.append(self.item_grade.__str__().replace('_', ' '))
+
+        if self.item_class and self.item_class not in (E_ItemClass.IC_MISC, E_ItemClass.IC_RUNES, E_ItemClass.IC_GEMS, E_ItemClass.IC_SCROLLS, E_ItemClass.IC_CHARMS):
+            parts.append(re.sub("s$", '', self.item_class.__str__(), 1, re.IGNORECASE))
+
         if self.n_sockets:
             sock_type = 'rw' if self.get_item_property(E_ItemBitProperties.IP_RUNEWORD) else 's'
-            sock = f', {sock_type}:{self.n_sockets_occupied}/{self.n_sockets}'
-        ilevel = '' if self.item_level is None else f"ilevel {self.item_level}{sock}"
-        grade_class = f'{grade}{cls}'
-        if len(ilevel) and len(grade_class):
-            desc = ' (' + ', '.join([grade_class, ilevel]) + ')'
-        elif len(ilevel) + len(grade_class) == 0:
-            desc = ''
-        else:
-            desc = ' (' + grade_class + ilevel + ')'
+            parts.append(f'{sock_type}:{self.n_sockets_occupied}/<={self.n_sockets}')
+
+        if self.item_level is not None:
+            parts.append(f"ilevel {self.item_level}")
+
+        desc = ' (' + ', '.join(parts) + ')' if parts else ''
         return self.type_name + desc
 
     def __str__(self) -> str:
@@ -2492,8 +2499,20 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         if item.is_analytical:
             return
         if item.get_item_property(E_ItemBitProperties.IP_RUNEWORD):
-            _log.info(f"Unable to alter count of {item.type_name} to {count} due to runeword magic.")
+            _log.info(f"Unable to alter socket count of {item.type_name} to {count} due to runeword magic.")
             return
+        if item.item_class == E_ItemClass.IC_QUEST_ITEMS:
+            _log.info(f"Unable to alter socket count of {item.type_name} to {count} due to it being a quest item.")
+            return
+        quality = item.quality
+        # Magically enhanced items may have 0-4, other magical items may have 0-1 sockets. Enforce that rule.
+        # Src: https://diablo2.diablowiki.net/Sockets
+        if quality == E_Quality.EQ_MAGICALLY_ENHANCED:
+            if count > 4:
+                count = 4
+        elif quality in (E_Quality.EQ_RARE, E_Quality.EQ_SET, E_Quality.EQ_UNIQUE, E_Quality.EQ_CRAFT):
+            if count > 1:
+                count = 1
         if count > (item.volume[0] * item.volume[1]):
             count = (item.volume[0] * item.volume[1])
         if count < 0:
