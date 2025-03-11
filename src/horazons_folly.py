@@ -1743,6 +1743,26 @@ class Item:
         item_rune.type_code = name.type_code
         return item_rune
 
+    def toStringShort(self) -> str:
+        """:return Short, human-readable one-line representation of this item."""
+        if self.is_analytical:
+            return "Analytic Item"
+        grade = "" if self.item_grade == E_ItemGrade.IG_NORMAL else f"{self.item_grade} "
+        cls = re.sub("s$", '', self.item_class.__str__(), 1, re.IGNORECASE) if self.item_class and self.item_class not in (E_ItemClass.IC_MISC, E_ItemClass.IC_RUNES, E_ItemClass.IC_GEMS, E_ItemClass.IC_SCROLLS, E_ItemClass.IC_CHARMS) else ''
+        sock = ''
+        if self.n_sockets:
+            sock_type = 'rw' if self.get_item_property(E_ItemBitProperties.IP_RUNEWORD) else 's'
+            sock = f', {sock_type}:{self.n_sockets_occupied}/{self.n_sockets}'
+        ilevel = '' if self.item_level is None else f"ilevel {self.item_level}{sock}"
+        grade_class = f'{grade}{cls}'
+        if len(ilevel) and len(grade_class):
+            desc = ' (' + ', '.join([grade_class, ilevel]) + ')'
+        elif len(ilevel) + len(grade_class) == 0:
+            desc = ''
+        else:
+            desc = ' (' + grade_class + ilevel + ')'
+        return self.type_name + desc
+
     def __str__(self) -> str:
         if self.is_analytical:
             return "Analytic Item instance."
@@ -1984,6 +2004,19 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             name += '\x00' * (15 - len(name))
         bname = name.encode() + b'\x00'
         self.data = self.data[0:20] + bname + self.data[36:]
+
+    def cube_contents_str(self) -> str:
+        """:returns human-readable representation of the Horadric Cube's content in short."""
+        if not self.has_horadric_cube:
+            return ''
+        res = 'Cube Content: '
+        item_analysis = Item(self.data)
+        items = item_analysis.get_cube_contents()
+        if len(items) == 0:
+            res += "(empty)"
+        else:
+            res += ", ".join([item.toStringShort() for item in items])
+        return res + "\n"
 
     def _enable_higher_difficulty(self, attr_new: OrderedDict[E_Attributes, int], progression: E_Progression):
         """Code redundancy saving for enable_{nightmare,hell}."""
@@ -2635,6 +2668,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             s_attr += f"{key.name}: {self.HMS2str(attr[key])},\n" if key.get_attr_sz_bits() == 21 else f"{key.name}: {attr[key]},\n"
         msg = f"{self.get_rank()}{self.get_name(True)} ({self.pfname}), a Horadric Cube (holding {self.n_cube_contents_shallow} items) {cube_posessing}, {golem}"\
               f"level {attr[E_Attributes.AT_LEVEL]} (hd: {self.level_by_header}/prog: {self.progression}) {core} {self.get_class(True)} {god_status}.\n"\
+              f"{self.cube_contents_str()}"\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}', "\
               f"file version: {self.get_file_version()}, file size: {len(self.data)}, file size in file: {self.get_file_size()}, \n" \
