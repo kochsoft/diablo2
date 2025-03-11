@@ -280,6 +280,7 @@ def load_armor_weapons_dict():
     pfname = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'armor_weapons.tsv')
     if not os.path.isfile(pfname):
         _log.warning(f"Failure to open armor weapons file '{pfname}' for reading.")
+        return
     d_armor_weapons.clear()
     with open(pfname, 'r') as IN:
         for line in IN:
