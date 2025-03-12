@@ -2597,16 +2597,14 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         self.data = self.data[:item.index_start] + item.data_item + self.data[item.index_end:]
         print(f"Attempting to set item '{item.type_name}' to {'' if enable else 'not '}ethereal.")
 
-    def jewelize(self, item: Item, *, do_drop=True) -> Optional[Item]:
+    def jewelize(self, item: Item, *, do_replace=True) -> Optional[Item]:
         """Will verify if the given item has intrinsic magic power. If so, clone that power into a jewel.
         :param item: Target item.
-        :param do_drop: Should the original item be dropped? If so, socketed sub-items will be popped out.
-          Note, that runeword specialized powers are considered intrinsic.
+        :param do_replace: Should the original item be replaced by the new jewel?
         :returns the created magic jewel."""
-        # Muggle jewel, the extension part [160:] merely comprised the 0x1ff part anyway.
-        is_runeword = item.get_extended_item_int_value(E_ExtProperty.EP_RUNEWORD)
-        if not (item.is_magic or is_runeword):
+        if item.type_code.lower() == 'jew' or item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED):
             return None
+        # Muggle jewel, the extension part [160:] merely comprised the 0x1ff part anyway.
         bts_jewel = data_tpl_jewel_muggle  # type: bytes
         bmr_jewel = bytes2bitmap(bts_jewel)[::-1]
         bmr_jewel = bmr_jewel[0:160]
@@ -2622,7 +2620,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         bmr_jewel = bmr_jewel[:159] + bmr_item[index_qa[0]:index_qa[1]] + bmr_jewel[159:]
         bm_jewel = prefix_bitmap_to_8_product(bmr_jewel[::-1])
         jewel = Item(bitmap2bytes(bm_jewel), 0, round(len(bm_jewel) / 8))
-        if do_drop:
+        if do_replace:
             #self.place_items_into_storage_maps([jewel], item.stash_type)
             if item.n_sockets_occupied:
                 self.separate_socketed_items_from_item(item)
@@ -3104,7 +3102,7 @@ class Horadric:
     def jewelize_horadric(self, data: Data):
         items = Item(data.data).get_cube_contents()  # type: List[Item]
         for item in items:
-            jewel = data.jewelize(item)
+            data.jewelize(item)
         if self.is_standalone:
             data.update_all()
             data.save2disk()

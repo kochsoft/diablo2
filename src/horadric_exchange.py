@@ -442,7 +442,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         if not data:
             return False
         for item in Item(data.data).get_cube_contents():
-            if item.is_magic or item.get_extended_item_int_value(E_ExtProperty.EP_RUNEWORD):
+            if item.type_code.lower() != 'jew' and item.quality in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED):
                 return True
         return False
 
