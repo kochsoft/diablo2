@@ -2602,7 +2602,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         :param item: Target item.
         :param do_replace: Should the original item be replaced by the new jewel?
         :returns the created magic jewel."""
-        if item.type_code.lower() == 'jew' or item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED):
+        if item.type_code.lower() == 'jew' or item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT):
             return None
         # Muggle jewel, the extension part [160:] merely comprised the 0x1ff part anyway.
         bts_jewel = data_tpl_jewel_muggle  # type: bytes
