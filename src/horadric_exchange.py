@@ -818,7 +818,7 @@ Beware!"""
 
         self.button_jewelize =  tk.Button(self.tab2, text='Jewelize Magic', command=self.jewelize, bg='#009999')
         self.button_jewelize.grid(row=3, column=2, sticky='ew')
-        Hovertip(self.button_jewelize, 'Items inside the Horadric Cube with intrinsic magic properties will be turned into jewels.')
+        Hovertip(self.button_jewelize, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, or crafted) will be turned into jewels.')
 
         self.button_redeem_golem = tk.Button(self.tab2, text='Redeem Golem', command=self.redeem_golem, width=15, height=1, bg='#009999')
         self.button_redeem_golem.grid(row=3, column=3, sticky='w')
