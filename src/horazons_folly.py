@@ -1528,8 +1528,12 @@ class Item:
         res[E_ExtProperty.EP_SOCKETS] = index_bit, (index_bit + sz_sockets)
         index_bit = index_bit + sz_sockets
 
-        mods = bm[::-1][index_bit:].split('111111111', maxsplit=1)[0]  # type: str
-        sz_mods = len(mods)
+        sz_mods = 0
+        mods = re.findall("^.*111111111", bm[::-1][index_bit:])
+        if mods:
+            sz_mods = len(mods[0]) - 9
+        #mods = bm[::-1][index_bit:].split('111111111', maxsplit=1)[0]  # type: str
+        #sz_mods = len(mods)
         res[E_ExtProperty.EP_MODS] = index_bit, (index_bit + sz_mods)
 
         return res
@@ -2472,11 +2476,14 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                     item.col = coords[1]
                     item.stash_type = storage
                     item.item_parent = E_ItemParent.IP_STORED
-                    bts += item.data_item
+                    bts = item.data_item
                     if item.n_sockets_occupied:
                         am_in_sockets = True
-                    self.add_items_to_player(bts)
-                    bts = b''
+                    else:
+                        self.add_items_to_player(bts)
+                        bts = b''
+        if bts:
+            self.add_items_to_player(bts)
         return res
 
     @staticmethod
@@ -2656,11 +2663,14 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         if item.type_code.lower() == type_code_tpl or item.n_sockets > 0 or \
                 item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT):
             return None
+
+        index_ext = item.get_extended_item_index()
+        if index_ext is None:
+            return
         # Muggle jewel, the extension part [160:] merely comprised the 0x1ff part anyway.
         bmr_tpl = bytes2bitmap(bts_tpl)[::-1]
         bmr_tpl = bmr_tpl[0:160]
         bmr_item = bytes2bitmap(item.data_item)[::-1]
-        index_ext = item.get_extended_item_index()
         bmr_tpl += bmr_item[index_ext[E_ExtProperty.EP_MODS][0]:]
         # Copy quality and insert the quality attributes behind the class specific data.
         index_quality = index_ext[E_ExtProperty.EP_QUALITY]
@@ -2673,7 +2683,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         item_forged = Item(bitmap2bytes(bm_tpl), 0, len(bm_tpl) // 8)
         if do_replace:
             self.drop_item(item)
-            self.place_items_into_storage_maps([item_forged], E_ItemStorage.IS_CUBE)
+        self.place_items_into_storage_maps([item_forged], E_ItemStorage.IS_CUBE)
         return item_forged
 
     def regrade(self, item, grade: Optional[E_ItemGrade] = None):
