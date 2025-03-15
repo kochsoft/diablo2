@@ -2619,7 +2619,10 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         item_tpl = Item(bts_tpl, 0, len(bts_tpl))
         type_code_tpl = item_tpl.type_code
 
-        if item.type_code.lower() == type_code_tpl or item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT):
+        # [Note: Querying n_sockets is relevant. The technique does not work for mechanic items.
+        #  While, e.g., a mechanic ring can be created, the game does not allow to socket into it.]
+        if item.type_code.lower() == type_code_tpl or item.n_sockets > 0 or \
+                item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT):
             return None
         # Muggle jewel, the extension part [160:] merely comprised the 0x1ff part anyway.
         bmr_tpl = bytes2bitmap(bts_tpl)[::-1]
@@ -2635,10 +2638,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         # [Note: Only the realm bit is following. Inserting the item's quality attributes.]
         bmr_tpl = bmr_tpl[:159] + bmr_item[index_qa[0]:index_qa[1]] + bmr_tpl[159:]
         bm_tpl = prefix_bitmap_to_8_product(bmr_tpl[::-1])
-        item_forged = Item(bitmap2bytes(bm_tpl), 0, round(len(bm_tpl) / 8))
+        item_forged = Item(bitmap2bytes(bm_tpl), 0, len(bm_tpl) // 8)
         if do_replace:
-            if item.n_sockets_occupied:
-                self.separate_socketed_items_from_item(item)
             self.drop_item(item)
             self.place_items_into_storage_maps([item_forged], E_ItemStorage.IS_CUBE)
         return item_forged

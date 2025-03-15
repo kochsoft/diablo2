@@ -125,6 +125,8 @@ class Horadric_GUI:
         self.button_runic_cube = None  # type: Optional[tk.Button]
         self.button_jewelize = None  # type: Optional[tk.Button]
         self.button_forge_ring = None  # type: Optional[tk.Button]
+        self.button_forge_charm = None  # type: Optional[tk.Button]
+        self.button_forge_amulet = None  # type: Optional[tk.Button]
         self.button_redeem_golem = None  # type: Optional[tk.Button]
         self.button_ensure_cube = None  # type: Optional[tk.Button]
         self.button_enable_nightmare = None  # type: Optional[tk.Button]
@@ -443,6 +445,9 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         if not data:
             return False
         for item in Item(data.data).get_cube_contents():
+            # [Note: Mechanic items are, in principle, eligible. However, we cannot sockets rings and the like.]
+            if item.n_sockets:
+                return False
             if item.type_code.lower() != tpl_type_code and item.quality in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT):
                 return True
         return False
@@ -643,7 +648,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                        self.check_hardcore, self.check_godmode, self.entry_boost_skills, self.entry_runic_cube,
                        self.entry_boost_attributes, self.entry_set_sockets, self.button_horazon, self.button_ensure_cube,
                        self.button_enable_nightmare, self.button_enable_hell, self.button_jewelize,
-                       self.button_forge_ring,
+                       self.button_forge_ring, self.button_forge_charm, self.button_forge_amulet,
                        self.button_redeem_golem, self.button_toggle_ethereal, self.button_regrade_items,
                        self.button_dispel_magic, self.button_set_sockets, self.button_empty_sockets]:
             if enable:
@@ -652,10 +657,14 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                 widget.config(state='disabled')
         if do_update and enable and len(self.horadric_horazon.data_all):
             data = self.horadric_horazon.data_all[0]  # type: Data
-            if not self.needs_jewelize():
+            if not self.needs_jewelize('jew'):
                 self.button_jewelize.config(state='disabled')
             if not self.needs_jewelize('rin'):
                 self.button_forge_ring.config(state='disabled')
+            if not self.needs_jewelize('cm1'):
+                self.button_forge_charm.config(state='disabled')
+            if not self.needs_jewelize('amu'):
+                self.button_forge_amulet.config(state='disabled')
             if not data.has_iron_golem:
                 self.button_redeem_golem.config(state='disabled')
             if not self.needs_dispel_magic():
@@ -820,13 +829,21 @@ Beware!"""
         self.button_reset_attributes.grid(row=4, column=1, sticky='w')
         Hovertip(self.button_reset_attributes, 'Return all hard attribute points for redistribution.')
 
-        self.button_jewelize =  tk.Button(self.tab2, text='Jewelize Magic', command=self.jewelize, bg='#009999')
-        self.button_jewelize.grid(row=3, column=2, sticky='ew')
+        self.button_jewelize =  tk.Button(self.tab2, text='Jewelize Magic', width=15, command=self.jewelize, bg='#009999')
+        self.button_jewelize.grid(row=3, column=1, sticky='e')
         Hovertip(self.button_jewelize, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, or crafted) will be turned into jewels.')
 
-        self.button_forge_ring =  tk.Button(self.tab2, text='Forge Magic Ring', command=lambda: self.jewelize(E_ItemTpl.IT_RING), bg='#009999')
-        self.button_forge_ring.grid(row=4, column=2, sticky='ew')
+        self.button_forge_ring =  tk.Button(self.tab2, text='Forge Magic Ring', width=15, command=lambda: self.jewelize(E_ItemTpl.IT_RING), bg='#009999')
+        self.button_forge_ring.grid(row=4, column=1, sticky='e')
         Hovertip(self.button_forge_ring, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, or crafted) will be turned into magic rings.')
+
+        self.button_forge_charm =  tk.Button(self.tab2, text='Forge Charm', command=lambda: self.jewelize(E_ItemTpl.IT_CHARM), bg='#009999')
+        self.button_forge_charm.grid(row=3, column=2, sticky='ew')
+        Hovertip(self.button_forge_charm, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, or crafted) will be turned into small charms.')
+
+        self.button_forge_amulet =  tk.Button(self.tab2, text='Forge Amulet', command=lambda: self.jewelize(E_ItemTpl.IT_AMULET), bg='#009999')
+        self.button_forge_amulet.grid(row=4, column=2, sticky='ew')
+        Hovertip(self.button_forge_amulet, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, or crafted) will be turned into magic amulets.')
 
         self.button_redeem_golem = tk.Button(self.tab2, text='Redeem Golem', command=self.redeem_golem, width=15, height=1, bg='#009999')
         self.button_redeem_golem.grid(row=3, column=3, sticky='w')
