@@ -921,6 +921,7 @@ class E_ExtProperty(Enum):
     EP_SET = 13  # 5 bits if this is a set item. 0 else.
     EP_SOCKETS = 14  # 4 bits if this is a socketed item. Counts the sockets. 0 bit else.
     EP_MODS = 15  # Modifications. 9+ bits. Terminated by 0x1ff.
+    EP_MODS_RUNEWORD = 16  # Modifications in a secondary mods block. Specialized for Runewords.
 
     def __str__(self):
         return re.sub("^ep_", "", self.name.lower())
@@ -1526,15 +1527,26 @@ class Item:
 
         sz_sockets = 4 if self.get_item_property(E_ItemBitProperties.IP_SOCKETED) else 0
         res[E_ExtProperty.EP_SOCKETS] = index_bit, (index_bit + sz_sockets)
-        index_bit = index_bit + sz_sockets
+        index_bit += sz_sockets
 
-        sz_mods = 0
-        mods = re.findall("^.*111111111", bm[::-1][index_bit:])
-        if mods:
-            sz_mods = len(mods[0]) - 9
-        #mods = bm[::-1][index_bit:].split('111111111', maxsplit=1)[0]  # type: str
-        #sz_mods = len(mods)
+        #sz_mods = 0
+        #mods = re.findall("^.*111111111", bm[::-1][index_bit:])
+        #if mods:
+        #    sz_mods = len(mods[0]) - 9
+        bmr = bm[::-1]
+        mods = bmr[index_bit:].split('111111111', maxsplit=1)  # type: List[str]
+        sz_mods = len(mods[0])
         res[E_ExtProperty.EP_MODS] = index_bit, (index_bit + sz_mods)
+        index_bit += sz_mods
+
+        res[E_ExtProperty.EP_MODS_RUNEWORD] = len(bmr), len(bmr)
+        if index_bit < len(bmr):
+            index_bit = res[E_ExtProperty.EP_MODS][1] + 9
+            if index_bit % 8:
+                index_bit += 8 - index_bit % 8
+            if index_bit < len(bmr):
+                sz_mods_rw = len(bmr[index_bit:].split('111111111', maxsplit=1)[0])
+                res[E_ExtProperty.EP_MODS_RUNEWORD] = index_bit, (index_bit + sz_mods_rw)
 
         return res
 
@@ -1560,7 +1572,7 @@ class Item:
         bmr = bytes2bitmap(self.data_item)[::-1]
         for key in indices:
             res += f"  {key}: [{indices[key][0]}:{indices[key][1]}], {bmr[indices[key][0]:indices[key][1]]}"
-            if key != E_ExtProperty.EP_MODS:
+            if key != E_ExtProperty.EP_MODS_RUNEWORD:
                 res += "\n"
         return res
 
@@ -2406,7 +2418,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     def add_items_to_player(self, items: bytes):
         """Warning: Be sure to add multiple items in a sensible order!
-        :param items: Byte string of JM...-items. Prefixed with one byte giving the count."""
+        :param items: Byte string of JM...-items."""
         # [Note: For backwards-compatibility. Delete all bytes prior to the first b'JM'.]
         items = re.sub(b'^.*?JM', b'JM', items)
         count = self.count_main_items(items)
@@ -2658,31 +2670,44 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         item_tpl = Item(bts_tpl, 0, len(bts_tpl))
         type_code_tpl = item_tpl.type_code
 
-        # [Note: Querying n_sockets is relevant. The technique does not work for mechanic items.
-        #  While, e.g., a mechanic ring can be created, the game does not allow to socket into it.]
-        if item.type_code.lower() == type_code_tpl or item.n_sockets > 0 or \
-                item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT):
-            return None
-
         index_ext = item.get_extended_item_index()
         if index_ext is None:
             return
+        index_rw = index_ext[E_ExtProperty.EP_MODS_RUNEWORD]
+
+        # TODO: Can this be fixed to create, e.g., magic rings with runeword powers?
+        # has_runeword_power = ((index_rw[1] - index_rw[0]) > 0)
+        has_runeword_power = False
+
+        # [Note: Querying n_sockets is relevant. The technique does not work for mechanic items.
+        #  While, e.g., a mechanic ring can be created, the game does not allow to socket into it.]
+        if (not has_runeword_power) and (item.type_code.lower() == type_code_tpl or item.n_sockets > 0 or
+                item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT)):
+            return None
+
         # Muggle jewel, the extension part [160:] merely comprised the 0x1ff part anyway.
         bmr_tpl = bytes2bitmap(bts_tpl)[::-1]
         bmr_tpl = bmr_tpl[0:160]
         bmr_item = bytes2bitmap(item.data_item)[::-1]
-        bmr_tpl += bmr_item[index_ext[E_ExtProperty.EP_MODS][0]:]
+        bmr_tpl += bmr_item[index_rw[0]:] if has_runeword_power else bmr_item[index_ext[E_ExtProperty.EP_MODS][0]:]
         # Copy quality and insert the quality attributes behind the class specific data.
         index_quality = index_ext[E_ExtProperty.EP_QUALITY]
         index_qa = index_ext[E_ExtProperty.EP_QUALITY_ATTRIBUTES]
-        # [Note: The muggle jewel is normal. Its original quality attributes are emtpy.]
-        bmr_tpl = bmr_tpl[:index_quality[0]] + bmr_item[index_quality[0]:index_quality[1]] + bmr_tpl[index_quality[1]:]
+        # '0010' in reverse logic is 4. Stands for magically enhanced.
+        quality_new = '0010' if has_runeword_power else bmr_item[index_quality[0]:index_quality[1]]
+        bmr_tpl = bmr_tpl[:index_quality[0]] + quality_new + bmr_tpl[index_quality[1]:]
         # [Note: Only the realm bit is following. Inserting the item's quality attributes.]
-        bmr_tpl = bmr_tpl[:159] + bmr_item[index_qa[0]:index_qa[1]] + bmr_tpl[159:]
+
+        # [Note: The muggle jewel is normal. Its original quality attributes are emtpy.]
+        # Magic Quality Attributes 'Steel of Craftmanship': '0000111100011000011000'
+        quality_attributes_new = ('0000111100011000011000') if has_runeword_power else bmr_item[index_qa[0]:index_qa[1]]
+        bmr_tpl = bmr_tpl[:159] + quality_attributes_new + bmr_tpl[159:]
         bm_tpl = prefix_bitmap_to_8_product(bmr_tpl[::-1])
         item_forged = Item(bitmap2bytes(bm_tpl), 0, len(bm_tpl) // 8)
+        item_forged.item_level = item.item_level
         if do_replace:
-            self.drop_item(item)
+            for item_part in reversed(item.get_item_dismantled()):
+                self.drop_item(item_part)
         self.place_items_into_storage_maps([item_forged], E_ItemStorage.IS_CUBE)
         return item_forged
 
@@ -3165,9 +3190,10 @@ class Horadric:
             data.save2disk()
 
     def jewelize_horadric(self, data: Data, tpl: E_ItemTpl):
+        c = 0
         items = Item(data.data).get_cube_contents()  # type: List[Item]
         for item in items:
-            data.jewelize(item, do_replace=True, tpl=tpl)
+            data.jewelize(item)
         if self.is_standalone:
             data.update_all()
             data.save2disk()
