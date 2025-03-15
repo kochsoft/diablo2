@@ -218,7 +218,7 @@ Stag Bow	am1	Ashwood Bow	am6	Matriarchal Bow	amb
 Reflex Bow	am2	Ceremonial Bow	am7	Grnd Matron Bow	amc
 Maiden Spear	am3	Ceremonial Spr	am8	Matriarchal Spr	amd
 Maiden Pike	am4	Ceremonial Pike	am9	Matriarchal Pik	ame
-Maiden Javelin	am5	Ceremonial Jav	ama	Matriarchal Jav	amf
+Maiden Javelin	am5	Ceremonial Jav	ama	Matriarchal Jav	amf; 3,1
 
 QUEST_ITEMS
 Wirt’s Leg	leg; 3,1
