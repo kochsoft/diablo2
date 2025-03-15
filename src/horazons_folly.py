@@ -774,9 +774,21 @@ sum_god_skills = sum(d_god_skills) + d_god_attr[E_Attributes.AT_UNUSED_SKILLS]
 data_tpl_horadric_cube = b'JM\x10\x00\x80\x00e\x00\x00"\xf6\x86\x07\x028\xce1\xff\x86\xe0?'
 # < ------------------------------------------------------------------
 
-# > Jewel of adornment. ----------------------------------------------
-"""A non-magic white jewel."""
-data_tpl_jewel_muggle = b'JM\x10\x00\x80\x00e\x00\x00\xa8Vv\x07\x82\x00\x9dL\xf6\x92,\xff\x01'
+# > items of adornment. ----------------------------------------------
+class E_ItemTpl(Enum):
+    IT_UNSPECIFIED = 0
+    IT_JEWEL = 1
+    IT_CHARM = 2
+    IT_AMULET = 3
+    IT_RING = 4
+
+"""Non magic simple items."""
+d_data_tpl = {
+    E_ItemTpl.IT_JEWEL : b'JM\x10\x00\x80\x00e\x00\x00\xa8Vv\x07\x82\x00\x9dL\xf6\x92,\xff\x01',
+    E_ItemTpl.IT_RING  : b'JM\x10\x00\x80\x00e\x00\x00(\x97\xe6\x06\x02?L\xd2,\x9f\x04\xff\x01',
+    E_ItemTpl.IT_AMULET: b'JM\x10\x00\x80\x00e\x00 \x18\xd6V\x07\x82\x1f\x8b\xe3-\x98\x04\xff\x01',
+    E_ItemTpl.IT_CHARM : b'JM\x10\x00\x80\x00e\x00@8\xd6\x16\x03\x02f\xd0\r\xb5\x9e\x0c\x00\xf0\x1f'
+}
 # < ------------------------------------------------------------------
 
 
@@ -2597,36 +2609,39 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         self.data = self.data[:item.index_start] + item.data_item + self.data[item.index_end:]
         print(f"Attempting to set item '{item.type_name}' to {'' if enable else 'not '}ethereal.")
 
-    def jewelize(self, item: Item, *, do_replace=True) -> Optional[Item]:
+    def jewelize(self, item: Item, *, do_replace=True, tpl: E_ItemTpl = E_ItemTpl.IT_JEWEL) -> Optional[Item]:
         """Will verify if the given item has intrinsic magic power. If so, clone that power into a jewel.
         :param item: Target item.
         :param do_replace: Should the original item be replaced by the new jewel?
+        :param tpl: Template to be used as base for the new item.
         :returns the created magic jewel."""
-        if item.type_code.lower() == 'jew' or item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT):
+        bts_tpl = d_data_tpl[tpl] if tpl in d_data_tpl else d_data_tpl[E_ItemTpl.IT_JEWEL]
+        item_tpl = Item(bts_tpl, 0, len(bts_tpl))
+        type_code_tpl = item_tpl.type_code
+
+        if item.type_code.lower() == type_code_tpl or item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT):
             return None
         # Muggle jewel, the extension part [160:] merely comprised the 0x1ff part anyway.
-        bts_jewel = data_tpl_jewel_muggle  # type: bytes
-        bmr_jewel = bytes2bitmap(bts_jewel)[::-1]
-        bmr_jewel = bmr_jewel[0:160]
+        bmr_tpl = bytes2bitmap(bts_tpl)[::-1]
+        bmr_tpl = bmr_tpl[0:160]
         bmr_item = bytes2bitmap(item.data_item)[::-1]
         index_ext = item.get_extended_item_index()
-        bmr_jewel += bmr_item[index_ext[E_ExtProperty.EP_MODS][0]:]
+        bmr_tpl += bmr_item[index_ext[E_ExtProperty.EP_MODS][0]:]
         # Copy quality and insert the quality attributes behind the class specific data.
         index_quality = index_ext[E_ExtProperty.EP_QUALITY]
         index_qa = index_ext[E_ExtProperty.EP_QUALITY_ATTRIBUTES]
         # [Note: The muggle jewel is normal. Its original quality attributes are emtpy.]
-        bmr_jewel = bmr_jewel[:index_quality[0]] + bmr_item[index_quality[0]:index_quality[1]] + bmr_jewel[index_quality[1]:]
+        bmr_tpl = bmr_tpl[:index_quality[0]] + bmr_item[index_quality[0]:index_quality[1]] + bmr_tpl[index_quality[1]:]
         # [Note: Only the realm bit is following. Inserting the item's quality attributes.]
-        bmr_jewel = bmr_jewel[:159] + bmr_item[index_qa[0]:index_qa[1]] + bmr_jewel[159:]
-        bm_jewel = prefix_bitmap_to_8_product(bmr_jewel[::-1])
-        jewel = Item(bitmap2bytes(bm_jewel), 0, round(len(bm_jewel) / 8))
+        bmr_tpl = bmr_tpl[:159] + bmr_item[index_qa[0]:index_qa[1]] + bmr_tpl[159:]
+        bm_tpl = prefix_bitmap_to_8_product(bmr_tpl[::-1])
+        item_forged = Item(bitmap2bytes(bm_tpl), 0, round(len(bm_tpl) / 8))
         if do_replace:
-            #self.place_items_into_storage_maps([jewel], item.stash_type)
             if item.n_sockets_occupied:
                 self.separate_socketed_items_from_item(item)
             self.drop_item(item)
-            self.place_items_into_storage_maps([jewel], E_ItemStorage.IS_CUBE)
-        return jewel
+            self.place_items_into_storage_maps([item_forged], E_ItemStorage.IS_CUBE)
+        return item_forged
 
     def regrade(self, item, grade: Optional[E_ItemGrade] = None):
         """Upgrade or downgrade the given item along the lines of normal, exceptional, elite, post-elite."""
@@ -2805,7 +2820,14 @@ class Horadric:
 
         if parsed.jewelize:
             for data in self.data_all:
-                self.jewelize_horadric(data)
+                tpl = E_ItemTpl.IT_JEWEL
+                if parsed.jewelize.upper == 'rin':
+                    tpl = E_ItemTpl.IT_RING
+                elif parsed.jewelize.upper == 'cm1':
+                    tpl = E_ItemTpl.IT_CHARM
+                elif parsed.jewelize.upper == 'amu':
+                    tpl = E_ItemTpl.IT_AMULET
+                self.jewelize_horadric(data, tpl)
 
         if parsed.ensure_horadric:
             for data in self.data_all:
@@ -3099,10 +3121,10 @@ class Horadric:
             data.update_all()
             data.save2disk()
 
-    def jewelize_horadric(self, data: Data):
+    def jewelize_horadric(self, data: Data, tpl: E_ItemTpl):
         items = Item(data.data).get_cube_contents()  # type: List[Item]
         for item in items:
-            data.jewelize(item)
+            data.jewelize(item, do_replace=True, tpl=tpl)
         if self.is_standalone:
             data.update_all()
             data.save2disk()
@@ -3237,7 +3259,8 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--set_sockets_horadric', type=int, help="Attempt to set this many sockets to the socket-able items in the horadric cube.")
         parser.add_argument('--dispel_magic', action='store_true', help='Flag. Acts on magical, rare, and crafted items within the Horadric Cube, dispelling their magic.')
         parser.add_argument('--toggle_ethereal', action='store_true', help="Flag. For each item within the Horadric Cube toggle the ethereal state.")
-        parser.add_argument('--jewelize', action='store_true', help='Flag. Magic items (magic, rare, or crafted) within the Horadric Cube will be turned into jewels. Socketed items will be popped.')
+        parser.add_argument('--jewelize', nargs='?', const='jew', type='str', help="Magic items (magic, rare, or crafted) within the Horadric Cube will be turned into jewels (or small charms, rings or amulets if 'cm1', 'rin', or 'amu' is passed). Socketed items will be popped.")
+        parser.add_argument('--forge_ring', action='store_true', help='Flag. Magic items (magic, rare, or crafted) within the Horadric Cube will be turned into magic rings. Socketed items will be popped.')
         parser.add_argument('--regrade_horadric', action='store_true', help="Flag. For each item within the Horadric Cube upgrade it (usually normal, exceptional, elite). After max grade returns to normal.")
         parser.add_argument('--ensure_horadric', action='store_true', help="Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")

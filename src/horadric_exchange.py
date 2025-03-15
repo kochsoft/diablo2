@@ -124,6 +124,7 @@ class Horadric_GUI:
         self.button_save_cube = None  # type: Optional[tk.Button]
         self.button_runic_cube = None  # type: Optional[tk.Button]
         self.button_jewelize = None  # type: Optional[tk.Button]
+        self.button_forge_ring = None  # type: Optional[tk.Button]
         self.button_redeem_golem = None  # type: Optional[tk.Button]
         self.button_ensure_cube = None  # type: Optional[tk.Button]
         self.button_enable_nightmare = None  # type: Optional[tk.Button]
@@ -437,20 +438,20 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         self.horadric_horazon.reset_attributes()
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
-    def needs_jewelize(self) -> bool:
+    def needs_jewelize(self, tpl_type_code: str = 'jew') -> bool:
         data = self.verify_hero()
         if not data:
             return False
         for item in Item(data.data).get_cube_contents():
-            if item.type_code.lower() != 'jew' and item.quality in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT):
+            if item.type_code.lower() != tpl_type_code and item.quality in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT):
                 return True
         return False
 
-    def jewelize(self):
+    def jewelize(self, tpl: E_ItemTpl = E_ItemTpl.IT_JEWEL):
         data = self.verify_hero()
         if not data:
             return
-        self.horadric_horazon.jewelize_horadric(data)
+        self.horadric_horazon.jewelize_horadric(data, tpl)
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
     def redeem_golem(self):
@@ -642,6 +643,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                        self.check_hardcore, self.check_godmode, self.entry_boost_skills, self.entry_runic_cube,
                        self.entry_boost_attributes, self.entry_set_sockets, self.button_horazon, self.button_ensure_cube,
                        self.button_enable_nightmare, self.button_enable_hell, self.button_jewelize,
+                       self.button_forge_ring,
                        self.button_redeem_golem, self.button_toggle_ethereal, self.button_regrade_items,
                        self.button_dispel_magic, self.button_set_sockets, self.button_empty_sockets]:
             if enable:
@@ -652,6 +654,8 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
             data = self.horadric_horazon.data_all[0]  # type: Data
             if not self.needs_jewelize():
                 self.button_jewelize.config(state='disabled')
+            if not self.needs_jewelize('rin'):
+                self.button_forge_ring.config(state='disabled')
             if not data.has_iron_golem:
                 self.button_redeem_golem.config(state='disabled')
             if not self.needs_dispel_magic():
@@ -819,6 +823,10 @@ Beware!"""
         self.button_jewelize =  tk.Button(self.tab2, text='Jewelize Magic', command=self.jewelize, bg='#009999')
         self.button_jewelize.grid(row=3, column=2, sticky='ew')
         Hovertip(self.button_jewelize, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, or crafted) will be turned into jewels.')
+
+        self.button_forge_ring =  tk.Button(self.tab2, text='Forge Magic Ring', command=lambda: self.jewelize(E_ItemTpl.IT_RING), bg='#009999')
+        self.button_forge_ring.grid(row=4, column=2, sticky='ew')
+        Hovertip(self.button_forge_ring, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, or crafted) will be turned into magic rings.')
 
         self.button_redeem_golem = tk.Button(self.tab2, text='Redeem Golem', command=self.redeem_golem, width=15, height=1, bg='#009999')
         self.button_redeem_golem.grid(row=3, column=3, sticky='w')
