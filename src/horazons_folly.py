@@ -3260,7 +3260,7 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--set_sockets_horadric', type=int, help="Attempt to set this many sockets to the socket-able items in the horadric cube.")
         parser.add_argument('--dispel_magic', action='store_true', help='Flag. Acts on magical, rare, and crafted items within the Horadric Cube, dispelling their magic.')
         parser.add_argument('--toggle_ethereal', action='store_true', help="Flag. For each item within the Horadric Cube toggle the ethereal state.")
-        parser.add_argument('--jewelize', nargs='?', const='jew', type='str', help="Magic items (magic, rare, or crafted) within the Horadric Cube will be turned into jewels (or small charms, rings or amulets if 'cm1', 'rin', or 'amu' is passed). Socketed items will be popped.")
+        parser.add_argument('--jewelize', nargs='?', const='jew', type=str, help="Magic items (magic, rare, or crafted) within the Horadric Cube will be turned into jewels (or small charms, rings or amulets if 'cm1', 'rin', or 'amu' is passed). Socketed items will be popped.")
         parser.add_argument('--forge_ring', action='store_true', help='Flag. Magic items (magic, rare, or crafted) within the Horadric Cube will be turned into magic rings. Socketed items will be popped.')
         parser.add_argument('--regrade_horadric', action='store_true', help="Flag. For each item within the Horadric Cube upgrade it (usually normal, exceptional, elite). After max grade returns to normal.")
         parser.add_argument('--ensure_horadric', action='store_true', help="Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.")

@@ -37,7 +37,7 @@ There is a GUI to the entire tool: **horadric_exchange.py** consider
 it the main script. It is documented in detail within the wiki
 that is attached to this repository.
 
-# Help Text (February 15th 2025)
+# Help Text (March 15th 2025)
 
 ```
 usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
@@ -47,7 +47,8 @@ usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
                          [--load_horadric LOAD_HORADRIC]
                          [--empty_sockets_horadric]
                          [--set_sockets_horadric SET_SOCKETS_HORADRIC]
-                         [--dispel_magic] [--toggle_ethereal] [--jewelize]
+                         [--dispel_magic] [--toggle_ethereal]
+                         [--jewelize [JEWELIZE]] [--forge_ring]
                          [--regrade_horadric] [--ensure_horadric] [--hardcore]
                          [--softcore] [--redeem_golem]
                          [--boost_attributes BOOST_ATTRIBUTES]
@@ -85,7 +86,9 @@ options:
                         Attempt to set this many sockets to the socket-able items in the horadric cube.
   --dispel_magic        Flag. Acts on magical, rare, and crafted items within the Horadric Cube, dispelling their magic.
   --toggle_ethereal     Flag. For each item within the Horadric Cube toggle the ethereal state.
-  --jewelize            Flag. Magic items (magic, rare, or crafted) within the Horadric Cube will be turned into jewels. Socketed items will be popped.
+  --jewelize [JEWELIZE]
+                        Magic items (magic, rare, or crafted) within the Horadric Cube will be turned into jewels (or small charms, rings or amulets if 'cm1', 'rin', or 'amu' is passed). Socketed items will be popped.
+  --forge_ring          Flag. Magic items (magic, rare, or crafted) within the Horadric Cube will be turned into magic rings. Socketed items will be popped.
   --regrade_horadric    Flag. For each item within the Horadric Cube upgrade it (usually normal, exceptional, elite). After max grade returns to normal.
   --ensure_horadric     Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.
   --hardcore            Flag. Set target characters to hard core mode.
