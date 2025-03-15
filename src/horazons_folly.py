@@ -1528,7 +1528,7 @@ class Item:
         res[E_ExtProperty.EP_SOCKETS] = index_bit, (index_bit + sz_sockets)
         index_bit = index_bit + sz_sockets
 
-        mods = bm[index_bit:].split('111111111', maxsplit=1)[0]  # type: str
+        mods = bm[::-1][index_bit:].split('111111111', maxsplit=1)[0]  # type: str
         sz_mods = len(mods)
         res[E_ExtProperty.EP_MODS] = index_bit, (index_bit + sz_mods)
 
@@ -2457,6 +2457,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 item = Item(item, 0, len(item))
             if item.item_parent == E_ItemParent.IP_ITEM:
                 if am_in_sockets:
+                    # Add those bts to the currently active parent item.
                     bts += item.data_item
                 else:
                     res.append(item)
@@ -2472,7 +2473,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                     item.stash_type = storage
                     item.item_parent = E_ItemParent.IP_STORED
                     bts += item.data_item
-                    if item.n_sockets:
+                    if item.n_sockets_occupied:
                         am_in_sockets = True
                     self.add_items_to_player(bts)
                     bts = b''
@@ -2486,19 +2487,19 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         quality = item.quality
         if quality not in (E_Quality.EQ_NORMAL, E_Quality.EQ_SUPERIOR) or 8 * len(bmr) < 154 or item.n_sockets == 0:
             return item.data_item  # << Nothing to do.
-        bm_mods_superior = ''
+        bmr_mods_superior = ''
         if quality == E_Quality.EQ_SUPERIOR:
             d_mods_superior = item.get_known_mods(is_mod_superior_weapon=item.is_weapon, is_mod_superior_armor=item.is_armor)
             for j in range(len(d_mods_superior)):
-                bm_mods_superior += d_mods_superior[j]['bmr']
+                bmr_mods_superior += d_mods_superior[j]['bmr']
         ext_index = item.get_extended_item_index()
+        # [Drops all mods. The '1111111110*' suffix, too.]
         bmr = bmr[:ext_index[E_ExtProperty.EP_MODS][0]]
         bmr = bmr[:ext_index[E_ExtProperty.EP_RUNEWORD][0]] + bmr[ext_index[E_ExtProperty.EP_RUNEWORD][1]:]
-        bmr = bmr[:ext_index[E_ExtProperty.EP_QUEST_SOCKETS][0]] + '000' + bmr[ext_index[E_ExtProperty.EP_QUEST_SOCKETS][1]:]
-        bmr += bm_mods_superior
-        bm =  '111111111' + bmr[::-1]
-        if len(bm) % 8 > 0:
-            bm = ((8 - (len(bm) % 8)) * '0') + bm
+        #bmr = bmr[:ext_index[E_ExtProperty.EP_QUEST_SOCKETS][0]] + '000' + bmr[ext_index[E_ExtProperty.EP_QUEST_SOCKETS][1]:]
+        bmr += bmr_mods_superior
+        bmr += '111111111'
+        bm = prefix_bitmap_to_8_product(bmr[::-1])
         return bitmap2bytes(bm)
 
     def separate_socketed_items_from_item(self, item: Item):
@@ -2527,10 +2528,10 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             self.drop_item(new_items[j])
             new_items[j].item_parent = E_ItemParent.IP_STORED
         self.drop_item(item)
+        item.n_sockets_occupied = 0
         if item.get_item_property(E_ItemBitProperties.IP_RUNEWORD):
             new_items.insert(0, self._normalize_rune_item(item))
         else:
-            item.n_sockets_occupied = 0
             new_items.insert(0, item.data_item)
         self.place_items_into_storage_maps(new_items, target_inventories)
 
