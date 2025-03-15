@@ -1337,13 +1337,41 @@ class Item:
         return ns if ns else 0
 
     @property
-    def n_sockets_occupied(self) -> Optional[int]:
+    def n_sockets_occupied(self):
         if self.is_analytical:
             return None
         qs = self.get_extended_item_int_value(E_ExtProperty.EP_QUEST_SOCKETS)
         if self.item_class == E_ItemClass.IC_QUEST_ITEMS:
-            qs = qs % 2
+            # Only the highest bits encodes number of occupied sockets (yes, there may be only 1 if at all).
+            qs = qs & 4
         return qs
+
+    @n_sockets_occupied.setter
+    def n_sockets_occupied(self, val: int) -> Optional[int]:
+        """:param val: New int value. in {0,..,self.n_sockets}
+        Will set this item's number of occupied sockets to the requested value. Respects the quest item special rule,
+        preserving the lower 2 of the 3 bits if this is a quest item.
+        Warning! This is a dangerous function, acting only on itself. Ensure consistency of following
+        socketed items by setting their stash types to STORE and their parentage to whatever stash type is
+        appropriate."""
+        if self.is_analytical:
+            return
+        if val < 0:
+            val = 0
+        elif val > self.n_sockets:
+            val = self.n_sockets
+        qs = self.get_extended_item_int_value(E_ExtProperty.EP_QUEST_SOCKETS)
+        if self.item_class == E_ItemClass.IC_QUEST_ITEMS:
+            # Preserve the lower 2 bits, they are quest-related.
+            qs &= 3
+            qs += 4 if val else 0
+        else:
+            qs = val
+        bmr_qs = '{:0{width}b}'.format(qs, width=3)[::-1]
+        index = self.get_extended_item_index()[E_ExtProperty.EP_QUEST_SOCKETS]
+        bmr = bytes2bitmap(self.data_item)[::-1]
+        bmr = bmr[:index[0]] + bmr_qs + bmr[index[1]:]
+        self.data_item = bitmap2bytes(bmr[::-1])
 
     @property
     def is_socketable(self) -> Optional[bool]:
@@ -2501,6 +2529,9 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         self.drop_item(item)
         if item.get_item_property(E_ItemBitProperties.IP_RUNEWORD):
             new_items.insert(0, self._normalize_rune_item(item))
+        else:
+            item.n_sockets_occupied = 0
+            new_items.insert(0, item.data_item)
         self.place_items_into_storage_maps(new_items, target_inventories)
 
     def set_sockets(self, item, count: int):
