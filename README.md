@@ -48,9 +48,9 @@ usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
                          [--empty_sockets_horadric]
                          [--set_sockets_horadric SET_SOCKETS_HORADRIC]
                          [--dispel_magic] [--toggle_ethereal]
-                         [--jewelize [JEWELIZE]] [--forge_ring]
-                         [--regrade_horadric] [--ensure_horadric] [--hardcore]
-                         [--softcore] [--redeem_golem]
+                         [--jewelize [JEWELIZE]] [--regrade_horadric]
+                         [--ensure_horadric] [--hardcore] [--softcore]
+                         [--redeem_golem]
                          [--boost_attributes BOOST_ATTRIBUTES]
                          [--boost_skills BOOST_SKILLS] [--reset_attributes]
                          [--reset_skills] [--enable_nightmare] [--enable_hell]
@@ -87,8 +87,7 @@ options:
   --dispel_magic        Flag. Acts on magical, rare, and crafted items within the Horadric Cube, dispelling their magic.
   --toggle_ethereal     Flag. For each item within the Horadric Cube toggle the ethereal state.
   --jewelize [JEWELIZE]
-                        Magic items (magic, rare, or crafted) within the Horadric Cube will be turned into jewels (or small charms, rings or amulets if 'cm1', 'rin', or 'amu' is passed). Socketed items will be popped.
-  --forge_ring          Flag. Magic items (magic, rare, or crafted) within the Horadric Cube will be turned into magic rings. Socketed items will be popped.
+                        Will attempt to turn magic items (magic, rare, or crafted) within the Horadric Cube will into jewels (or small charms, rings or amulets if 'cm1', 'rin', or 'amu' is passed).
   --regrade_horadric    Flag. For each item within the Horadric Cube upgrade it (usually normal, exceptional, elite). After max grade returns to normal.
   --ensure_horadric     Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.
   --hardcore            Flag. Set target characters to hard core mode.
