@@ -789,6 +789,9 @@ d_data_tpl = {
     E_ItemTpl.IT_AMULET: b'JM\x10\x00\x80\x00e\x00 \x18\xd6V\x07\x82\x1f\x8b\xe3-\x98\x04\xff\x01',
     E_ItemTpl.IT_CHARM : b'JM\x10\x00\x80\x00e\x00@8\xd6\x16\x03\x02f\xd0\r\xb5\x9e\x0c\x00\xf0\x1f'
 }
+
+"""Rare Ring 'Storm Loop'"""
+ring_rare_tpl = b'JM\x10\x00\x80\x00e\x00\x00(\x97\xe6\x06\x82/e\xccE\x8f\x85\xd4\xbd\xef\xe8\x8a\xd48\x8c\x88Y\x11\x0bN&|`!\x80!\x90\x82\xe9\x89\x9f4\x1eP\x81\xff'
 # < ------------------------------------------------------------------
 
 
@@ -1197,7 +1200,6 @@ class Item:
     @property
     def item_level(self) -> Optional[int]:
         """:returns the ilevel of this object if such extended information is available. Else None."""
-        # TODO: Not quite sure if item_level really is correct.
         if self.is_analytical:
             return None
         bm = bytes2bitmap(self.data_item)
@@ -1534,20 +1536,31 @@ class Item:
         #if mods:
         #    sz_mods = len(mods[0]) - 9
         bmr = bm[::-1]
-        mods = bmr[index_bit:].split('111111111', maxsplit=1)  # type: List[str]
-        sz_mods = len(mods[0])
+        index_end = index_bit
+        if index_end % 8 > 0:
+            index_end = index_end + 8 - index_end % 8
+        sz_mods = 0
+        sz_intermezzo = 0
+        while index_end <= len(bmr):
+            try:
+                gps = re.search("^(.*?)(111111111[01]?0*)$", bmr[index_bit:index_end]).groups()
+                sz_mods = len(gps[0])
+                sz_intermezzo = len(gps[1])
+                break
+            except AttributeError:
+                index_end += 8
         res[E_ExtProperty.EP_MODS] = index_bit, (index_bit + sz_mods)
-        index_bit += sz_mods
+        index_bit += sz_mods + sz_intermezzo
 
         res[E_ExtProperty.EP_MODS_RUNEWORD] = len(bmr), len(bmr)
+        index_end = len(bmr)
         if index_bit < len(bmr):
-            index_bit = res[E_ExtProperty.EP_MODS][1] + 9
-            if index_bit % 8:
-                index_bit += 8 - index_bit % 8
-            if index_bit < len(bmr):
-                sz_mods_rw = len(bmr[index_bit:].split('111111111', maxsplit=1)[0])
-                res[E_ExtProperty.EP_MODS_RUNEWORD] = index_bit, (index_bit + sz_mods_rw)
-
+            try:
+                gps = re.search("^(.*)1111111110*$", bmr[index_bit:index_end]).groups()
+                sz_mods_rw = len(gps[0])
+                res[E_ExtProperty.EP_MODS_RUNEWORD] = index_bit, index_bit + sz_mods_rw
+            except AttributeError:
+                _log.warning(f"Strange runeword mods section '{bmr[index_bit:]} encountered.'")
         return res
 
     def get_extended_item_int_value(self, prop_ext: E_ExtProperty) -> Optional[int]:
@@ -2666,43 +2679,38 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         :param do_replace: Should the original item be replaced by the new jewel?
         :param tpl: Template to be used as base for the new item.
         :returns the created magic jewel."""
+        index_ext = item.get_extended_item_index()
+        if index_ext is None:
+            return
+
         bts_tpl = d_data_tpl[tpl] if tpl in d_data_tpl else d_data_tpl[E_ItemTpl.IT_JEWEL]
         item_tpl = Item(bts_tpl, 0, len(bts_tpl))
         type_code_tpl = item_tpl.type_code
 
-        index_ext = item.get_extended_item_index()
-        if index_ext is None:
-            return
-        index_rw = index_ext[E_ExtProperty.EP_MODS_RUNEWORD]
-
-        # TODO: Can this be fixed to create, e.g., magic rings with runeword powers?
-        # has_runeword_power = ((index_rw[1] - index_rw[0]) > 0)
-        has_runeword_power = False
-
         # [Note: Querying n_sockets is relevant. The technique does not work for mechanic items.
         #  While, e.g., a mechanic ring can be created, the game does not allow to socket into it.]
-        if (not has_runeword_power) and (item.type_code.lower() == type_code_tpl or item.n_sockets > 0 or
-                item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT)):
+        if item.type_code.lower() == type_code_tpl or item.n_sockets > 0 or \
+                item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT):
             return None
+
+        bmr_item = bytes2bitmap(item.data_item)[::-1]
 
         # Muggle jewel, the extension part [160:] merely comprised the 0x1ff part anyway.
         bmr_tpl = bytes2bitmap(bts_tpl)[::-1]
         bmr_tpl = bmr_tpl[0:160]
-        bmr_item = bytes2bitmap(item.data_item)[::-1]
-        bmr_tpl += bmr_item[index_rw[0]:] if has_runeword_power else bmr_item[index_ext[E_ExtProperty.EP_MODS][0]:]
+        bmr_tpl += bmr_item[index_ext[E_ExtProperty.EP_MODS][0]:]
         # Copy quality and insert the quality attributes behind the class specific data.
         index_quality = index_ext[E_ExtProperty.EP_QUALITY]
         index_qa = index_ext[E_ExtProperty.EP_QUALITY_ATTRIBUTES]
         # '0010' in reverse logic is 4. Stands for magically enhanced.
-        quality_new = '0010' if has_runeword_power else bmr_item[index_quality[0]:index_quality[1]]
+        quality_new = bmr_item[index_quality[0]:index_quality[1]]
         bmr_tpl = bmr_tpl[:index_quality[0]] + quality_new + bmr_tpl[index_quality[1]:]
-        # [Note: Only the realm bit is following. Inserting the item's quality attributes.]
-
         # [Note: The muggle jewel is normal. Its original quality attributes are emtpy.]
-        # Magic Quality Attributes 'Steel of Craftmanship': '0000111100011000011000'
-        quality_attributes_new = ('0000111100011000011000') if has_runeword_power else bmr_item[index_qa[0]:index_qa[1]]
+        quality_attributes_new = bmr_item[index_qa[0]:index_qa[1]]
+        # [Note: Only the realm bit is following. Inserting the item's quality attributes.]
         bmr_tpl = bmr_tpl[:159] + quality_attributes_new + bmr_tpl[159:]
         bm_tpl = prefix_bitmap_to_8_product(bmr_tpl[::-1])
+
         item_forged = Item(bitmap2bytes(bm_tpl), 0, len(bm_tpl) // 8)
         item_forged.item_level = item.item_level
         if do_replace:
@@ -3190,10 +3198,9 @@ class Horadric:
             data.save2disk()
 
     def jewelize_horadric(self, data: Data, tpl: E_ItemTpl):
-        c = 0
         items = Item(data.data).get_cube_contents()  # type: List[Item]
         for item in items:
-            data.jewelize(item)
+            data.jewelize(item, do_replace=True, tpl=tpl)
         if self.is_standalone:
             data.update_all()
             data.save2disk()
