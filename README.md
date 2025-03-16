@@ -87,7 +87,7 @@ options:
   --dispel_magic        Flag. Acts on magical, rare, and crafted items within the Horadric Cube, dispelling their magic.
   --toggle_ethereal     Flag. For each item within the Horadric Cube toggle the ethereal state.
   --jewelize [JEWELIZE]
-                        Will attempt to turn magic items (magic, rare, or crafted) within the Horadric Cube will into jewels (or small charms, rings or amulets if 'cm1', 'rin', or 'amu' is passed).
+                        Will attempt to turn magic items (magic, rare, runewords(!), or crafted) within the Horadric Cube will into jewels (or small charms, rings or amulets if 'cm1', 'rin', or 'amu' is passed).
   --regrade_horadric    Flag. For each item within the Horadric Cube upgrade it (usually normal, exceptional, elite). After max grade returns to normal.
   --ensure_horadric     Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.
   --hardcore            Flag. Set target characters to hard core mode.

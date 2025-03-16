@@ -2694,29 +2694,41 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         bts_tpl = d_data_tpl[tpl] if tpl in d_data_tpl else d_data_tpl[E_ItemTpl.IT_JEWEL]
         item_tpl = Item(bts_tpl, 0, len(bts_tpl))
         type_code_tpl = item_tpl.type_code
+        # [Note: So far runeword extended indexing only works reliably for normal and superior items.]
+        has_runeword = item.get_item_property(E_ItemBitProperties.IP_RUNEWORD) and item.quality in (E_Quality.EQ_NORMAL, E_Quality.EQ_SUPERIOR)
 
         # [Note: Querying n_sockets is relevant. The technique does not work for mechanic items.
         #  While, e.g., a mechanic ring can be created, the game does not allow to socket into it.]
-        if item.type_code.lower() == type_code_tpl or item.n_sockets > 0 or \
-                item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT):
+        if (not has_runeword) and (item.type_code.lower() == type_code_tpl or item.n_sockets > 0 or
+                item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT)):
             return None
 
         bmr_item = bytes2bitmap(item.data_item)[::-1]
+        index_item_magic = index_ext[E_ExtProperty.EP_MODS_RUNEWORD if has_runeword else E_ExtProperty.EP_MODS]
+        bmr_magic = bmr_item[index_item_magic[0]:index_item_magic[1]]
+        if len(bmr_magic) == 0:
+            return
+        bmr_magic += '111111111'
 
         # Muggle jewel, the extension part [160:] merely comprised the 0x1ff part anyway.
         bmr_tpl = bytes2bitmap(bts_tpl)[::-1]
         bmr_tpl = bmr_tpl[0:160]
-        bmr_tpl += bmr_item[index_ext[E_ExtProperty.EP_MODS][0]:]
+        bmr_tpl += bmr_magic
+
         # Copy quality and insert the quality attributes behind the class specific data.
         index_quality = index_ext[E_ExtProperty.EP_QUALITY]
-        index_qa = index_ext[E_ExtProperty.EP_QUALITY_ATTRIBUTES]
-        # '0010' in reverse logic is 4. Stands for magically enhanced.
-        quality_new = bmr_item[index_quality[0]:index_quality[1]]
-        bmr_tpl = bmr_tpl[:index_quality[0]] + quality_new + bmr_tpl[index_quality[1]:]
+        if has_runeword:
+            bmr_quality = '0010'  #<< Magically Enhanced.
+            bmr_quality_attributes = '0' * 22  #<< Prefix and Suffix code 0,0 just means 'empty'.
+        else:
+            index_qa = index_ext[E_ExtProperty.EP_QUALITY_ATTRIBUTES]
+            bmr_quality = bmr_item[index_quality[0]:index_quality[1]]
+            bmr_quality_attributes = bmr_item[index_qa[0]:index_qa[1]]
+        # [Note: Quality is always at the same site, and always of length 4. So the next line is fine.]
+        bmr_tpl = bmr_tpl[:index_quality[0]] + bmr_quality + bmr_tpl[index_quality[1]:]
         # [Note: The muggle jewel is normal. Its original quality attributes are emtpy.]
-        quality_attributes_new = bmr_item[index_qa[0]:index_qa[1]]
         # [Note: Only the realm bit is following. Inserting the item's quality attributes.]
-        bmr_tpl = bmr_tpl[:159] + quality_attributes_new + bmr_tpl[159:]
+        bmr_tpl = bmr_tpl[:159] + bmr_quality_attributes + bmr_tpl[159:]
         bm_tpl = prefix_bitmap_to_8_product(bmr_tpl[::-1])
 
         item_forged = Item(bitmap2bytes(bm_tpl), 0, len(bm_tpl) // 8)
@@ -3343,7 +3355,7 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--set_sockets_horadric', type=int, help="Attempt to set this many sockets to the socket-able items in the horadric cube.")
         parser.add_argument('--dispel_magic', action='store_true', help='Flag. Acts on magical, rare, and crafted items within the Horadric Cube, dispelling their magic.')
         parser.add_argument('--toggle_ethereal', action='store_true', help="Flag. For each item within the Horadric Cube toggle the ethereal state.")
-        parser.add_argument('--jewelize', nargs='?', const='jew', type=str, help="Will attempt to turn magic items (magic, rare, or crafted) within the Horadric Cube will into jewels (or small charms, rings or amulets if 'cm1', 'rin', or 'amu' is passed).")
+        parser.add_argument('--jewelize', nargs='?', const='jew', type=str, help="Will attempt to turn magic items (magic, rare, runewords(!), or crafted) within the Horadric Cube will into jewels (or small charms, rings or amulets if 'cm1', 'rin', or 'amu' is passed).")
         parser.add_argument('--regrade_horadric', action='store_true', help="Flag. For each item within the Horadric Cube upgrade it (usually normal, exceptional, elite). After max grade returns to normal.")
         parser.add_argument('--ensure_horadric', action='store_true', help="Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")

@@ -445,6 +445,9 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         if not data:
             return False
         for item in Item(data.data).get_cube_contents():
+            has_runeword = item.get_item_property(E_ItemBitProperties.IP_RUNEWORD) and item.quality in (E_Quality.EQ_NORMAL, E_Quality.EQ_SUPERIOR)
+            if has_runeword:
+                return True
             # [Note: Mechanic items are, in principle, eligible. However, we cannot sockets rings and the like.]
             if item.n_sockets:
                 continue
@@ -831,19 +834,19 @@ Beware!"""
 
         self.button_jewelize =  tk.Button(self.tab2, text='Jewelize Magic', width=15, command=self.jewelize, bg='#009999')
         self.button_jewelize.grid(row=3, column=1, sticky='e')
-        Hovertip(self.button_jewelize, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, or crafted) will be turned into jewels.')
+        Hovertip(self.button_jewelize, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, runewords(!) or crafted) will be turned into jewels.')
 
         self.button_forge_ring =  tk.Button(self.tab2, text='Forge Magic Ring', width=15, command=lambda: self.jewelize(E_ItemTpl.IT_RING), bg='#009999')
         self.button_forge_ring.grid(row=4, column=1, sticky='e')
-        Hovertip(self.button_forge_ring, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, or crafted) will be turned into magic rings.')
+        Hovertip(self.button_forge_ring, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, runewords(!) or crafted) will be turned into magic rings.')
 
         self.button_forge_charm =  tk.Button(self.tab2, text='Forge Charm', command=lambda: self.jewelize(E_ItemTpl.IT_CHARM), bg='#009999')
         self.button_forge_charm.grid(row=3, column=2, sticky='ew')
-        Hovertip(self.button_forge_charm, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, or crafted) will be turned into small charms.')
+        Hovertip(self.button_forge_charm, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, runewords(!) or crafted) will be turned into small charms.')
 
         self.button_forge_amulet =  tk.Button(self.tab2, text='Forge Amulet', command=lambda: self.jewelize(E_ItemTpl.IT_AMULET), bg='#009999')
         self.button_forge_amulet.grid(row=4, column=2, sticky='ew')
-        Hovertip(self.button_forge_amulet, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, or crafted) will be turned into magic amulets.')
+        Hovertip(self.button_forge_amulet, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, runewords(!) or crafted) will be turned into magic amulets.')
 
         self.button_redeem_golem = tk.Button(self.tab2, text='Redeem Golem', command=self.redeem_golem, width=15, height=1, bg='#009999')
         self.button_redeem_golem.grid(row=3, column=3, sticky='w')

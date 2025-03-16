@@ -103,6 +103,11 @@ The project mainly comprises
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/sword2jewel.png" alt="Charonson turns a magic sword into a socketable jewel" class="center_img"><br />
   <figcaption><b>Fig.5</b> - Charonson turned a magic sword into a socketable jewel. It will add to the perfection of another weapon.</figcaption>
 </figure>
+<figure>
+  <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/charm_breath.png" alt="Charonson turns a runeword item into a small charm" class="center_img"><br />
+  <figcaption><b>Fig.6</b> - Charonson turned a runeword weapon (Breath of the Dying) into a small charm. While the direct rune powers are lost, the runeword magic is captured.
+  And this is quite powerful in this case. What is more: Level requirements are removed. Since there is no Zod rune any longer, characters of level less than 69 can use the charm.</figcaption>
+</figure>
 
 <h2>Setup</h2>
 
@@ -131,7 +136,7 @@ that will define
 
 <figure>
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/config_sys.png" alt="Use config.sys section in horadric_exchange.py to define default directories." class="center_img"><br />
-  <figcaption><b>Fig.6</b> - This global structure in <b>horadric_exchange.py</b> defines default
+  <figcaption><b>Fig.7</b> - This global structure in <b>horadric_exchange.py</b> defines default
     values for the necessary backup/working directory and the location of your
     Diablo II v1.10-v1.14d save-game directory.</figcaption>
 </figure>
@@ -172,7 +177,7 @@ godmode, need to be sited in the selected backup directory to be found and used.
 
 <figure>
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/horazons_folly.png" alt="The Horazon's Folly tab." class="center_img"><br />
-  <figcaption><b>Fig.7</b> - Horazon's Folly, too, uses the backup directory selected
+  <figcaption><b>Fig.8</b> - Horazon's Folly, too, uses the backup directory selected
     in the Horadric Exchange tab. However, it acts on only one character file.</figcaption>
 </figure>
 
@@ -185,7 +190,7 @@ godmode, need to be sited in the selected backup directory to be found and used.
 
 <figure>
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/breath_of_the_dying_ethereal.png" alt="War Pike 'Breath of the Dying'." class="center_img"><br />
-  <figcaption><b>Fig.8</b> - Starting out as a regular pike with a weak magical property, Horazon's Workshop turned it into a mighty weapon.</figcaption>
+  <figcaption><b>Fig.9</b> - Starting out as a regular pike with a weak magical property, Horazon's Workshop turned it into a mighty weapon.</figcaption>
 </figure>
 <br /><br />
 
@@ -239,7 +244,9 @@ ID: 000001000 (ID 8) (AT_CURRENT_MANA)<br />
 
 <p>
 I also cannot confirm that any of the other values are bit-inverted.
-</p><p>
+</p>
+<h3>Attributes and Skills</h3>
+<p>
 The variable length of the attributes section seems to stem from the fact
 that values that are 0 are not listed, but missing. It appears that 0 values
 are even illegal.  When I tried to add explicit 0 values this led me into a
@@ -260,7 +267,19 @@ And now read the skills left to right, line by line. First skill is "Amplified
 Damage", followed by "Teeth", "Bone Armor", "Skeleton Mastery" and "Raise Skeleton".
 Next comes the second row with "Dim Vision", "Weaken", "Poison Dagger", and so on.
 The other character classes' skills are organized in the same way.
-</p><p>I am not entirely positive on how character progression (i.e. byte 37 of
+</p>
+<h3>Runeword Magic</h3>
+<p>
+The extended mods section describes magical and pseudo-magical (like bonuses received for being a superior item) properties.
+It is terminated by a sequence 'ff1' (or 111111111 in bit-code) and padded with 0s to reach an item length that can be
+measured in bytes (i.e., the number of bits is a multipe of 8). If such an item turns into a runeword item, that padding
+is dropped and right after the 111111111-terminator a second mod-section is added that will receive its own 111111111 terminator.
+In between is the code that describes the magic received by the runeword bonus, which is an addition to the raw power
+provided by the socketed runes. The <b>jewelize</b> functions of Horazons Folly may harness that power by turning them into
+regular magical enhancement. Thus it becomes possible to, e.g., create a charm from a runeword.
+</p>
+<h3>Progression. Normal, Nightmare and Hell</h3>
+<p>I am not entirely positive on how character progression (i.e. byte 37 of
 the .d2s file, still part of the main header) really works. However, it appears that
 </p>
 <ul>
@@ -269,6 +288,7 @@ the .d2s file, still part of the main header) really works. However, it appears 
 <li>10 is reached upon completion of the nightmare campaign. This value grants the rank of Champion/Conqueror and enables hell.</li>
 <li>15 is reached upon completion of the hell campaign. This value grants the rank of (M|P)atriarch/Guardian.</li>
 </ul>
+<h3>Item type codes</h3>
 <p>
 Each item has a <a href="https://www.gmstemple.com/Diablo2/itemcodes.html">three-letter code</a> defining its elementary nature.
 E.g., the unique item of the Horadric Cube is called "box". The runes are, in sequence from 'el' to 'zod', labelled 'r01', .., 'r33'.
@@ -276,5 +296,5 @@ These three bytes range from [Bit 76:Bit 100]. This means a bit shift of 4 if yo
 </p>
 <figure>
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/crafted_runes.png" alt="Jah, Ith, Ber, and, for show, a Zod rune." class="center_img"><br />
-  <figcaption><b>Fig.9</b> - Jah, Ith, Ber, some gems, a skull, and, for show, a Zod rune. All from Horazon's workshop.</figcaption>
+  <figcaption><b>Fig.10</b> - Jah, Ith, Ber, some gems, a skull, and, for show, a Zod rune. All from Horazon's workshop.</figcaption>
 </figure>
