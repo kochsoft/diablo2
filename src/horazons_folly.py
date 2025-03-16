@@ -33,7 +33,7 @@ from collections import OrderedDict as odict
 from argparse import RawTextHelpFormatter
 from pathlib import Path
 from math import ceil, floor
-from typing import List, Dict, Optional, Union, Tuple, OrderedDict
+from typing import List, Dict, Optional, Union, Tuple, OrderedDict, Any
 from enum import Enum
 
 
@@ -1380,7 +1380,7 @@ class Item:
     def is_socketable(self) -> Optional[bool]:
         return self.item_class.is_socketable
 
-    def get_known_mods(self, *, is_mod_superior_weapon: bool = False, is_mod_superior_armor: bool = False) -> Optional[List[Dict[str, Mod_BitShape]]]:
+    def get_known_mods(self, *, is_mod_superior_weapon: bool = False, is_mod_superior_armor: bool = False) -> Optional[List[Dict[str, Any]]]:
         """:returns List of Dicts of Mod_BitShapes from known_mods that have been found in the item.
         Keys: index0, index1: data_item forward bit index of the mod. mod: ModBitShape."""
         if self.is_analytical:
@@ -1531,26 +1531,34 @@ class Item:
         res[E_ExtProperty.EP_SOCKETS] = index_bit, (index_bit + sz_sockets)
         index_bit += sz_sockets
 
-        #sz_mods = 0
-        #mods = re.findall("^.*111111111", bm[::-1][index_bit:])
-        #if mods:
-        #    sz_mods = len(mods[0]) - 9
-        bmr = bm[::-1]
-        index_end = index_bit
-        if index_end % 8 > 0:
-            index_end = index_end + 8 - index_end % 8
+        is_runeword = self.get_item_property(E_ItemBitProperties.IP_RUNEWORD)
         sz_mods = 0
-        sz_intermezzo = 0
-        while index_end <= len(bmr):
-            try:
-                gps = re.search("^(.*?)(111111111[01]?0*)$", bmr[index_bit:index_end]).groups()
-                sz_mods = len(gps[0])
-                sz_intermezzo = len(gps[1])
-                break
-            except AttributeError:
-                index_end += 8
-        res[E_ExtProperty.EP_MODS] = index_bit, (index_bit + sz_mods)
-        index_bit += sz_mods + sz_intermezzo
+        bmr = bm[::-1]
+        if is_runeword:
+            # It may be that the item is superior. Use known mods codes to determine site of '111111111' terminator.
+            # A superior item may have one or two modifiers of total length 18 or 16 each. So possible lengths are:
+            # {16, 18, 32, 34, 36}. After that the '111111111' terminator follows.
+            for l in (16,18,32,34,36):
+                if re.search('^' + '.'*l + '111111111', bmr[index_bit:(index_bit+45)]) is not None:
+                    sz_mods = l
+                    break
+            res[E_ExtProperty.EP_MODS] = index_bit, (index_bit + sz_mods)
+            index_bit += sz_mods + 9
+        else:
+            index_end = index_bit
+            if index_end % 8 > 0:
+                index_end = index_end + 8 - index_end % 8
+            sz_intermezzo = 0
+            while index_end <= len(bmr):
+                try:
+                    gps = re.search("^(.*?)(1111111110*)$", bmr[index_bit:index_end]).groups()
+                    sz_mods = len(gps[0])
+                    sz_intermezzo = len(gps[1])
+                    break
+                except AttributeError:
+                    index_end += 8
+            res[E_ExtProperty.EP_MODS] = index_bit, (index_bit + sz_mods)
+            index_bit += sz_mods + sz_intermezzo
 
         res[E_ExtProperty.EP_MODS_RUNEWORD] = len(bmr), len(bmr)
         index_end = len(bmr)

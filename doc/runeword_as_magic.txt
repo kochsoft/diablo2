@@ -33,8 +33,7 @@ The rune word mod starts right after the 9 bit of the regular mod end sequence, 
 
 Theorie: Dieser Code macht das LORE Wort aus.
 
-1?+
-00000000010101010011010001101111111001000101000100100000
+100000000010101010011010001101111111001000101000100100000
 
 Empty Shako
 -----------
