@@ -448,7 +448,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
             has_runeword = item.get_item_property(E_ItemBitProperties.IP_RUNEWORD) and item.quality in (E_Quality.EQ_NORMAL, E_Quality.EQ_SUPERIOR)
             if has_runeword:
                 return True
-            # [Note: Mechanic items are, in principle, eligible. However, we cannot sockets rings and the like.]
+            # [Note: Mechanic items are, in principle, eligible. However, we cannot socket rings and the like.]
             if item.n_sockets:
                 continue
             if item.type_code.lower() != tpl_type_code and item.quality in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT):

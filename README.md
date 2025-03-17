@@ -8,14 +8,14 @@ https://github.com/kochsoft/diablo2/wiki
 
 # About horadric_exchange.py
 
-This is a home-brew Python 3-script for modifying Diablo v1.10-v1.14d legacy savegame files.
+This is a home-brew Python 3-script for modifying Diablo v1.10-v1.14d legacy save-game files.
 It is based on the information provided by Walter Couto on his excellent .d2s save-game
 format analysis:
 
 https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md
 
 Its leading purpose is to create the ability for single player characters
-to exchange items by echanging the contents of their Horadric Cubes.
+to exchange items by exchanging the contents of their Horadric Cubes.
 
 As it went along the script added some cheating capabilities as well.
 
@@ -29,7 +29,7 @@ The default settings of the script will create backups of the modified save-game
 
 Still:
 
-**BE SURE TO BACKUP YOUR .d2s CHARACTER FILES PRIOR TO TAMPERING.**
+**BE SURE TO BACK UP YOUR .d2s CHARACTER FILES PRIOR TO TAMPERING.**
 
 # GUI
 
@@ -87,7 +87,7 @@ options:
   --dispel_magic        Flag. Acts on magical, rare, and crafted items within the Horadric Cube, dispelling their magic.
   --toggle_ethereal     Flag. For each item within the Horadric Cube toggle the ethereal state.
   --jewelize [JEWELIZE]
-                        Will attempt to turn magic items (magic, rare, runewords(!), or crafted) within the Horadric Cube will into jewels (or small charms, rings or amulets if 'cm1', 'rin', or 'amu' is passed).
+                        Will attempt to turn magic items (magic, rare, runewords, or crafted) within the Horadric Cube into jewels (if 'jew' is passed, or small charms, rings or amulets if 'cm1', 'rin', or 'amu' is passed).
   --regrade_horadric    Flag. For each item within the Horadric Cube upgrade it (usually normal, exceptional, elite). After max grade returns to normal.
   --ensure_horadric     Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.
   --hardcore            Flag. Set target characters to hard core mode.

@@ -237,9 +237,10 @@ set the absolute Maxima of Mana, Life and Stamina to <b>8192.75</b> each.
 <b>horazons_folly.py</b>.
 <p>
   <i>
-  Example bit-sequence: ID, Quarters, and proper value.<br />
-ID: 000001000 (ID 8) (AT_CURRENT_MANA)<br />
-  Val: 01000000 (64 AKA 1/4) 0000000011100 (28)</i>
+  Example bit-sequence: ID, Quarters, and proper value (mind little endian!).<br />
+  Attr-ID: 000001000 (AT_CURRENT_MANA, 8), Storage size: 21, bit range: [152:182]<br />
+  Val: 00000011 (192, AKA 3/4) 0100000010000 (258)
+  </i>
 </p>
 
 <p>
@@ -271,7 +272,7 @@ The other character classes' skills are organized in the same way.
 <h3>Runeword Magic</h3>
 <p>
 The extended mods section describes magical and pseudo-magical (like bonuses received for being a superior item) properties.
-It is terminated by a sequence 'ff1' (or 111111111 in bit-code) and padded with 0s to reach an item length that can be
+It is terminated by a sequence '1ff' (or 111111111 in bit-code) and padded with 0s to reach an item length that can be
 measured in bytes (i.e., the number of bits is a multipe of 8). If such an item turns into a runeword item, that padding
 is dropped and right after the 111111111-terminator a second mod-section is added that will receive its own 111111111 terminator.
 In between is the code that describes the magic received by the runeword bonus, which is an addition to the raw power

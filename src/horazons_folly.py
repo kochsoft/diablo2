@@ -1538,7 +1538,7 @@ class Item:
             # It may be that the item is superior. Use known mods codes to determine site of '111111111' terminator.
             # A superior item may have one or two modifiers of total length 18 or 16 each. So possible lengths are:
             # {16, 18, 32, 34, 36}. After that the '111111111' terminator follows.
-            for l in (16,18,32,34,36):
+            for l in (0,16,18,32,34,36):
                 if re.search('^' + '.'*l + '111111111', bmr[index_bit:(index_bit+45)]) is not None:
                     sz_mods = l
                     break
@@ -1839,7 +1839,7 @@ class Item:
             parts.append(self.item_grade.__str__().replace('_', ' '))
 
         if self.item_class and self.item_class not in (E_ItemClass.IC_MISC, E_ItemClass.IC_RUNES, E_ItemClass.IC_GEMS, E_ItemClass.IC_SCROLLS, E_ItemClass.IC_CHARMS):
-            parts.append(re.sub("s$", '', self.item_class.__str__(), 1, re.IGNORECASE))
+            parts.append(re.sub("s$", '', self.item_class.__str__(), count=1, flags=re.IGNORECASE))
 
         if self.n_sockets:
             sock_type = 'rw' if self.get_item_property(E_ItemBitProperties.IP_RUNEWORD) else 's'
@@ -2997,34 +2997,37 @@ class Horadric:
 
     def info_stats(self):
         for data in self.data_all:
-            index_start = data.data.find(b'gf', 765) + 2
+            # [Note: Attributes live in the 'gf'-section. Beyond, 'if' will start the skills section.]
+            index_start = data.data.find(b'gf', 765)
             index_end = data.data.find(b'if', index_start)
-            bm = bytes2bitmap(data.data[index_start:index_end])
+            bts = data.data[index_start:index_end]
+            bmr = bytes2bitmap(bts)[::-1]
             print(f"{data.get_name(True)} from '{data.pfname}'.")
-            print("Bitmap:")
-            print(bm)
-            print("Byte Stream:")
-            print(data.data[(index_start-2):index_end].hex(' '))
-            print("Decoded:")
-            bm_reversed = bm[::-1]
-            index = 0
+            print("Bitmap (little endian):")
+            print(bmr)
+            print(f"Byte Stream [{index_start}:{index_end}]:")
+            print(bts.hex(' '))
+            print("Decoded (little endian):")
+            # Ignore the first 2 bytes. They are the 'gf' prefix.
+            index = 16
             for j in range(16):
-                key = bm_reversed[index:(index+9)]
+                key = bmr[index:(index+9)]
                 if not key:
                     break
                 val_key = get_range_from_bitmap(key[::-1], 0, len(key))
+                # Attribute keys range in 0,..,15. A 'key' > 15 is bound to be the 0x1ff section terminator.
                 if val_key > 15:
-                    print(f"Remainder: {bm_reversed[index:][::-1]}")
+                    print(f"Remainder: {bmr[index:]}")
                     break
                 attr = E_Attributes(val_key)
                 index_end = index + 9 + attr.get_attr_sz_bits()
-                print(f"ID: {key[::-1]} ({attr.name}), value: {val_key}")
+                print(f"Attr-ID: {key[::-1]} ({attr.name}, {val_key}), Storage size: {attr.get_attr_sz_bits()}, bit range: [{index}:{index_end}]")
                 twenty_one_bit_ignore_bits = 8 if attr.get_attr_sz_bits() == 21 else 0
-                part0 = bm_reversed[(index+9):(index+9+twenty_one_bit_ignore_bits)]
-                part1 = bm_reversed[(index+9+twenty_one_bit_ignore_bits):index_end]
+                part0 = bmr[(index+9):(index+9+twenty_one_bit_ignore_bits)]
+                part1 = bmr[(index+9+twenty_one_bit_ignore_bits):index_end]
                 index = index_end
-                s_prefix = f"{part0[::-1]} ({get_range_from_bitmap(part0[::-1], 0, len(part0))})" if part0 else ""
-                s_suffix = f"{part1[::-1]} ({get_range_from_bitmap(part1[::-1], 0, len(part1))})"
+                s_prefix = f"{part0} ({get_range_from_bitmap(part0[::-1], 0, len(part0))})" if part0 else ""
+                s_suffix = f"{part1} ({get_range_from_bitmap(part1[::-1], 0, len(part1))})"
                 print(f"Val: {s_prefix} {s_suffix}")
             print("------------------------------------------------------------------------------")
 
@@ -3355,7 +3358,7 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--set_sockets_horadric', type=int, help="Attempt to set this many sockets to the socket-able items in the horadric cube.")
         parser.add_argument('--dispel_magic', action='store_true', help='Flag. Acts on magical, rare, and crafted items within the Horadric Cube, dispelling their magic.')
         parser.add_argument('--toggle_ethereal', action='store_true', help="Flag. For each item within the Horadric Cube toggle the ethereal state.")
-        parser.add_argument('--jewelize', nargs='?', const='jew', type=str, help="Will attempt to turn magic items (magic, rare, runewords(!), or crafted) within the Horadric Cube will into jewels (or small charms, rings or amulets if 'cm1', 'rin', or 'amu' is passed).")
+        parser.add_argument('--jewelize', nargs='?', const='jew', type=str, help="Will attempt to turn magic items (magic, rare, runewords, or crafted) within the Horadric Cube into jewels (if 'jew' is passed, or small charms, rings or amulets if 'cm1', 'rin', or 'amu' is passed).")
         parser.add_argument('--regrade_horadric', action='store_true', help="Flag. For each item within the Horadric Cube upgrade it (usually normal, exceptional, elite). After max grade returns to normal.")
         parser.add_argument('--ensure_horadric', action='store_true', help="Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")
