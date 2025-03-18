@@ -2701,7 +2701,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         # [Note: Querying n_sockets is relevant. The technique does not work for mechanic items.
         #  While, e.g., a mechanic ring can be created, the game does not allow to socket into it.]
         if (not has_runeword) and (item.type_code.lower() == type_code_tpl or item.n_sockets > 0 or
-                item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT)):
+                item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT, E_Quality.EQ_UNIQUE, E_Quality.EQ_SET)):
             return None
 
         bmr_item = bytes2bitmap(item.data_item)[::-1]
@@ -2718,7 +2718,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
         # Copy quality and insert the quality attributes behind the class specific data.
         index_quality = index_ext[E_ExtProperty.EP_QUALITY]
-        if has_runeword:
+        if has_runeword or item.quality in (E_Quality.EQ_UNIQUE, E_Quality.EQ_SET):
             bmr_quality = '0010'  #<< Magically Enhanced.
             bmr_quality_attributes = '0' * 22  #<< Prefix and Suffix code 0,0 just means 'empty'.
         else:
@@ -3359,7 +3359,7 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--set_sockets_horadric', type=int, help="Attempt to set this many sockets to the socket-able items in the horadric cube.")
         parser.add_argument('--dispel_magic', action='store_true', help='Flag. Acts on magical, rare, and crafted items within the Horadric Cube, dispelling their magic.')
         parser.add_argument('--toggle_ethereal', action='store_true', help="Flag. For each item within the Horadric Cube toggle the ethereal state.")
-        parser.add_argument('--jewelize', nargs='?', const='jew', type=str, help="Will attempt to turn magic items (magic, rare, runewords, or crafted) within the Horadric Cube into jewels (if 'jew' is passed, or small charms, rings or amulets if 'cm1', 'rin', or 'amu' is passed).")
+        parser.add_argument('--jewelize', nargs='?', const='jew', type=str, help="Will attempt to turn magic items within the Horadric Cube into jewels (if 'jew' is passed, or small charms, rings or amulets, if 'cm1', 'rin' or 'amu' is passed).")
         parser.add_argument('--regrade_horadric', action='store_true', help="Flag. For each item within the Horadric Cube upgrade it (usually normal, exceptional, elite). After max grade returns to normal.")
         parser.add_argument('--ensure_horadric', action='store_true', help="Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")

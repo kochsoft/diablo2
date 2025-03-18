@@ -452,7 +452,8 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
             # [Note: Mechanic items are, in principle, eligible. However, we cannot socket rings and the like.]
             if item.n_sockets:
                 continue
-            if item.type_code.lower() != tpl_type_code and item.quality in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT):
+            if item.type_code.lower() != tpl_type_code and item.quality in \
+                    (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT, E_Quality.EQ_UNIQUE, E_Quality.EQ_SET):
                 return True
         return False
 
