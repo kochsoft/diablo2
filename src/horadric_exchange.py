@@ -445,7 +445,8 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         if not data:
             return False
         for item in Item(data.data).get_cube_contents():
-            has_runeword = item.get_item_property(E_ItemBitProperties.IP_RUNEWORD) and item.quality in (E_Quality.EQ_NORMAL, E_Quality.EQ_SUPERIOR)
+            has_runeword = item.get_item_property(E_ItemBitProperties.IP_RUNEWORD) and \
+                           item.quality in (E_Quality.EQ_NORMAL, E_Quality.EQ_SUPERIOR, E_Quality.EQ_INFERIOR)
             if has_runeword:
                 return True
             # [Note: Mechanic items are, in principle, eligible. However, we cannot socket rings and the like.]

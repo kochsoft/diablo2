@@ -2695,7 +2695,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         item_tpl = Item(bts_tpl, 0, len(bts_tpl))
         type_code_tpl = item_tpl.type_code
         # [Note: So far runeword extended indexing only works reliably for normal and superior items.]
-        has_runeword = item.get_item_property(E_ItemBitProperties.IP_RUNEWORD) and item.quality in (E_Quality.EQ_NORMAL, E_Quality.EQ_SUPERIOR)
+        has_runeword = item.get_item_property(E_ItemBitProperties.IP_RUNEWORD) and \
+                       item.quality in (E_Quality.EQ_NORMAL, E_Quality.EQ_SUPERIOR, E_Quality.EQ_INFERIOR)
 
         # [Note: Querying n_sockets is relevant. The technique does not work for mechanic items.
         #  While, e.g., a mechanic ring can be created, the game does not allow to socket into it.]
