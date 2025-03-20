@@ -3022,14 +3022,23 @@ class Horadric:
                     break
                 attr = E_Attributes(val_key)
                 index_end = index + 9 + attr.get_attr_sz_bits()
-                print(f"Attr-ID: {key[::-1]} ({attr.name}, {val_key}), Storage size: {attr.get_attr_sz_bits()}, bit range: [{index}:{index_end}]")
+                raw = bmr[index:index_end]
+                print(f"Attr-ID: {key} ({attr.name}, {val_key}), Storage size: {attr.get_attr_sz_bits()}, bit range: [{index}:{index_end}]")
                 twenty_one_bit_ignore_bits = 8 if attr.get_attr_sz_bits() == 21 else 0
                 part0 = bmr[(index+9):(index+9+twenty_one_bit_ignore_bits)]
                 part1 = bmr[(index+9+twenty_one_bit_ignore_bits):index_end]
+                code_quarters = get_range_from_bitmap(part0[::-1], 0, len(part0)) if len(part0) else 0
+                quarters = 0
+                if code_quarters == 64:
+                    quarters = 1
+                elif code_quarters == 128:
+                    quarters = 2
+                elif code_quarters == 192:
+                    quarters = 3
                 index = index_end
-                s_prefix = f"{part0} ({get_range_from_bitmap(part0[::-1], 0, len(part0))})" if part0 else ""
+                s_prefix = f"{part0} ({get_range_from_bitmap(part0[::-1], 0, len(part0))} -> {quarters}/4)" if part0 else ""
                 s_suffix = f"{part1} ({get_range_from_bitmap(part1[::-1], 0, len(part1))})"
-                print(f"Val: {s_prefix} {s_suffix}")
+                print(f"Val: {s_prefix} {s_suffix}\nraw: {raw}\n")
             print("------------------------------------------------------------------------------")
 
     def backup(self, pfname_backup: Optional[str] = None):

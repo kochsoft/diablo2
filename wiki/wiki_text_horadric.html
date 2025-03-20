@@ -224,23 +224,24 @@ Note however, that, as stated above, all is promised to hold true to v1.10-v1.14
 <p>
 It is true, that these attributes are encoded in 21 bits. However, they are regular in being
 encoded forward. Their being hard to decipher stems from the fact, that they encode
-a rudimentary floating point schema: The most significant (little endian!) 8 bits
+a rudimentary floating point schema: The least significant (little endian!) 8 bits
 encode "64" for "1/4", "128" for "2/4", and "192" for "3/4". The powers that be
 at Blizzard North, in their infinite wisdom, decided, that balancing of some
 characters like the Amazon, or, most notably, the Assassin requires quarter points.
 See, e.g., <a href="https://diablo.fandom.com/wiki/Assassin#Attributes">here, at diablo.fandom</a>.
 </p><p>
-Only the least 13 bit encode the actual integer values. I guess, this will probably
+Only the most significant 13 bits encode the actual integer values. I guess, this will probably
 set the absolute Maxima of Mana, Life and Stamina to <b>8192.75</b> each.
 </p><p>
-</p>Here is an example taken using the debugging function <code>--info_stats</code> from
+Here is an example taken using the debugging function <code>--info_stats</code> from
 <b>horazons_folly.py</b>.
-<p>
-  <i>
-  Example bit-sequence: ID, Quarters, and proper value (mind little endian!).<br />
-  Attr-ID: 000001000 (AT_CURRENT_MANA, 8), Storage size: 21, bit range: [152:182]<br />
-  Val: 00000011 (192, AKA 3/4) 0100000010000 (258)
-  </i>
+</p><p>
+<i>
+Example bit-sequence: ID, Quarters, and proper value (mind little endian!).<br />
+Attr-ID: 000100000 (AT_CURRENT_MANA, 8), Storage size: 21, bit range: [188:218]<br />
+Val: 00000010 (64 -> 1/4) 0011100000000 (28)<br />
+raw: 000100000000000100011100000000
+</i>
 </p>
 
 <p>
