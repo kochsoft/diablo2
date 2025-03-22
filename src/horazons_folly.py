@@ -869,7 +869,7 @@ class Mod_BitShape:
 
     def __str__(self):
         prefix_signed = '' if self.is_signed else 'un'
-        return f'{self.name} ({prefix_signed}signed, 9+{self.len_data_bit} bit): {self.regexp_binary_code}'
+        return f'{self.name} ({prefix_signed}signed, 9+{self.len_data_bit} bit): {self.regexp_binary_code[::-1]}'
 
 """On superior weapons and armor: https://diablo.fandom.com/wiki/Superior_Items"""
 known_mods = [
@@ -878,7 +878,8 @@ known_mods = [
     Mod_BitShape(17, 9, True, 'item_maxdamage_percent', is_mod_superior_weapon=True),
     Mod_BitShape(18, 9, True, 'item_mindamage_percent'),
     Mod_BitShape(22, 7, True, 'maxdamage', is_mod_superior_weapon=True),
-    Mod_BitShape(68, 7, True, 'attackrate', is_mod_superior_weapon=True)
+    Mod_BitShape(68, 7, True, 'attackrate', is_mod_superior_weapon=True),
+    Mod_BitShape(78, 7, False, 'item_attackertakesdamage')
 ]  # type: List[Mod_BitShape]
 
 
