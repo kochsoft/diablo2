@@ -1345,6 +1345,8 @@ class Item:
         if self.is_analytical:
             return None
         qs = self.get_extended_item_int_value(E_ExtProperty.EP_QUEST_SOCKETS)
+        if qs is None:
+            return 0
         if self.item_class == E_ItemClass.IC_QUEST_ITEMS:
             # Only the highest bits encodes number of occupied sockets (yes, there may be only 1 if at all).
             qs = qs & 4
