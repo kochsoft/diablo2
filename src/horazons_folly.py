@@ -1046,7 +1046,8 @@ class Item:
 
     @property
     def type_name(self) -> Optional[str]:
-        return ItemFamily.get_name_by_code(self.type_code)
+        tn = ItemFamily.get_name_by_code(self.type_code)
+        return f"unknown type code '{self.type_code}'" if tn is None else tn
 
     @type_code.setter
     def type_code(self, code: str):
