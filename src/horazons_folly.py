@@ -162,6 +162,8 @@ class ItemFamily:
 
     @property
     def is_weapon(self) -> bool:
+        if len(self.code_names) > 0 and any([key in self.code_names for key in ('leg', 'hdm', 'msf', 'hst', 'g33', 'qf1', 'qf2', 'hfh')]):
+            return True
         return 12 <= self.item_class.value <= 28
 
     @property
