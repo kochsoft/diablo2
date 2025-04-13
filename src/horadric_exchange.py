@@ -17,7 +17,6 @@ import sys
 import shutil
 import logging
 from pathlib import Path
-from tkinter.filedialog import askopenfile
 from copy import deepcopy
 
 # > Config.Sys. ------------------------------------------------------
@@ -43,6 +42,7 @@ try:
     import tkinter.filedialog
     import tkinter.messagebox
     from tkinter import ttk
+    from tkinter.filedialog import askopenfile
     from idlelib.tooltip import Hovertip
 except ModuleNotFoundError:
     _log.warning(f"""{pfname_script.name}: Failure to import tkinter, which is necessary for opening this GUI.
