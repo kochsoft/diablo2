@@ -1442,7 +1442,11 @@ class Item:
         bm = bytes2bitmap(self.data_item)
         item_class = self.item_class  # type: E_ItemClass
 
-        sz_custom_graphics = 4 if get_range_from_bitmap(bm, index_bit, index_bit+1) > 0 else 1
+        try:
+            sz_custom_graphics = 4 if get_range_from_bitmap(bm, index_bit, index_bit+1) > 0 else 1
+        except Exception as err:
+            print (f"Error encountered while trying to get range for custom graphics: {str(err)}")
+            return res
         res[E_ExtProperty.EP_CUSTOM_GRAPHICS] = index_bit, (index_bit + sz_custom_graphics)
         index_bit = index_bit + sz_custom_graphics
 
@@ -1634,8 +1638,9 @@ class Item:
                 return Item.drop_empty_block_indices(res)
             index_end = self.data.find(b'JM', index_start + 1)
             if (index_end == -1) or ((index_end - index_start) == 16) or (self.data[(index_end-2):index_end] in [b'jf', b'kf']):
-                # We have found the corpse header.
-                delta_corpse_hd = 16 if ((index_end - index_start) == 16) else 4
+                # We have found the corpse header. 20 bytes. I.e., 2 bytes 'JM' + 2 bytes 'is_alive' + 16 bytes corpse header.
+                # Hence, additionally to the 16 bytes we want to include 'JM..' into the header.
+                delta_corpse_hd = 20 if ((index_end - index_start) == 16) else 4
                 res[E_ItemBlock.IB_CORPSE_HD] = index_start, (index_start + delta_corpse_hd)
                 break
             else:
@@ -2852,7 +2857,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
               f"attributes: {s_attr}" \
               f"learned skill-set : {self.skills2str()}"
         item_analysis = Item(self.data)
-        for item in item_analysis.get_block_items():
+        items = item_analysis.get_block_items()
+        for item in items:
             msg += f"\n{item}"
             if not item.item_block.is_header:
                 msg += "\n"
