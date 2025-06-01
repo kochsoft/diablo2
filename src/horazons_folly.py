@@ -6,6 +6,8 @@ Literature:
 ===========
 [1] https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md
   Description of the Diablo 2 save game format. Quite good. Principal source of information.
+[1b] https://user.xmission.com/~trevin/DiabloIIv1.09_Mercenaries.html
+  Mercenary info decoded.
 [2] https://d2mods.info/forum/viewtopic.php?t=9011
   Another comprehensive file format analysis is hidden within this thread. It differs from [1]
   For instance: Item bit index [150:154] is quality and [143:150] ist der item level.
@@ -456,6 +458,16 @@ class E_Rune(Enum):
     def sample_byte_code_rune_el() -> bytes:
         """:returns byte code of a rune El, located in row 0, column 0 of the Horadric Cube."""
         return b'JM\x10\x00\xa0\x00e\x00\x00(\x07\x13\x03\x02'
+
+
+class E_Mercenary(Enum):
+    """Mercenary data type."""
+    EM_NONE = 0
+    IS_DEAD = 1 # << [177:179]  0: alive, 1: dead
+    SEED = 2 # << [179:183]
+    ID_NAME = 3 # << [183:185]
+    TYPE = 4 # << [185:187]
+    EXPERIENCE = 5  # << [187:191]  Encodes experience in plain 4 byte little endian.
 
 
 class E_Progression(Enum):
@@ -2079,6 +2091,24 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         else:
             return ('Guardian' if hc else ('Matriarch' if self.get_class_enum().is_female() else 'Patriarch')) + ts
 
+    def get_data_mercenary(self) -> Dict[E_Mercenary, int]:
+        """Exploratory function. Returns a dict of mercenary personal data."""
+        res = dict()  # type: Dict[E_Mercenary, int]
+        res[E_Mercenary.IS_DEAD] = int.from_bytes(self.data[177:179], byteorder='little')
+        res[E_Mercenary.SEED] = int.from_bytes(self.data[179:183], byteorder='little')
+        res[E_Mercenary.ID_NAME] = int.from_bytes(self.data[183:185], byteorder='little')
+        res[E_Mercenary.TYPE] = int.from_bytes(self.data[185:187], byteorder='little')
+        res[E_Mercenary.EXPERIENCE] = int.from_bytes(self.data[187:191], byteorder='little')
+        return res
+
+    def get_info_mercenary(self) -> str:
+        """:returns Human-readable mercenary info string."""
+        # TODO: So far this format is not fully understood. Improve this function.
+        data = self.get_data_mercenary()
+        res = f"Raw mercenary info: dead({data[E_Mercenary.IS_DEAD]}), seed({data[E_Mercenary.SEED]}), "\
+              f"name({data[E_Mercenary.ID_NAME]}), type({data[E_Mercenary.TYPE]}), exp({data[E_Mercenary.EXPERIENCE]})."
+        return res
+
     def get_name(self, as_str: bool = False) -> Union[bytes, str]:
         """:returns the character name. Either as str or as the 16 byte bytes array."""
         b_name = self.data[20:36]
@@ -2841,6 +2871,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         core = 'hardcore' if self.is_hardcore() else 'softcore'
         cube_posessing = 'owning' if self.has_horadric_cube else 'lacking'
         golem = 'golem commanding, ' if self.has_iron_golem else ''
+        merc = self.get_info_mercenary()
         god_status = ('demi-goddess' if self.is_demi_god else 'heroine') if self.get_class_enum().is_female() else ('demi-god' if self.is_demi_god else 'hero')
         attr = self.get_attributes()
         s_attr = ''
@@ -2848,6 +2879,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             s_attr += f"{key.name}: {self.HMS2str(attr[key])},\n" if key.get_attr_sz_bits() == 21 else f"{key.name}: {attr[key]},\n"
         msg = f"{self.get_rank()}{self.get_name(True)} ({self.pfname}), a Horadric Cube (holding {self.n_cube_contents_shallow} items) {cube_posessing}, {golem}"\
               f"level {attr[E_Attributes.AT_LEVEL]} (hd: {self.level_by_header}/prog: {self.progression}) {core} {self.get_class(True)} {god_status}.\n"\
+              f"merc: {merc}\n"\
               f"{self.cube_contents_str()}"\
               f"Checksum (current): '{int.from_bytes(self.get_checksum(), 'little')}', "\
               f"Checksum (computed): '{int.from_bytes(self.compute_checksum(), 'little')}', "\
