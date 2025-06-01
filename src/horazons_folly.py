@@ -2101,6 +2101,21 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         res[E_Mercenary.EXPERIENCE] = int.from_bytes(self.data[187:191], byteorder='little')
         return res
 
+    @property
+    def has_mercenary(self) -> bool:
+        """:returns True if and only if the mercenary seed is != 0, which is interpreted as there is a mercenary."""
+        return int.from_bytes(self.data[179:183], byteorder='little') != 0
+
+    @property
+    def is_dead_mercenary(self) -> bool:
+        """:returns True if and only if a mercenary exists at all and is dead. Else False."""
+        return int.from_bytes(self.data[177:179], byteorder='little') > 0
+
+    @is_dead_mercenary.setter
+    def is_dead_mercenary(self, val: bool):
+        val = bool(val)
+        self.data = self.data[:177] + int.to_bytes(1 if val else 0, length=2, byteorder='little', signed=False) + self.data[179:]
+
     def get_info_mercenary(self) -> str:
         """:returns Human-readable mercenary info string."""
         # TODO: So far this format is not fully understood. Improve this function.
@@ -2196,6 +2211,16 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
     def is_dead(self) -> bool:
         """The bit of index 3 in status byte 36 decides if a character is dead."""
         return self.data[36] & 8 > 0
+
+    def set_dead(self, val: bool):
+        """Turns the character status to 'dead' or 'alive'. This has nothing to do with the corpse inventory header.
+        :param val: If True the character status dead bit will be set. Else it will be cleared."""
+        b = self.data[36]
+        if val:
+            b = b | 8
+        else:
+            b = b & 247
+        self.data = self.data[:36] + int.to_bytes(b, 1) + self.data[37:]
 
     @staticmethod
     def parse_HMS(val: int) -> Tuple[int, int]:
@@ -2929,6 +2954,12 @@ class Horadric:
         elif parsed.softcore or parsed.hardcore:
             self.set_hardcore(parsed.hardcore)
 
+        if parsed.revive_self:
+            self.set_dead_self(False)
+
+        if parsed.revive_merc:
+            self.set_dead_mercenary(False)
+
         if parsed.redeem_golem:
             for data in self.data_all:
                 self.redeem_golem(data)
@@ -3109,6 +3140,28 @@ class Horadric:
     def set_hardcore(self, hardcore: bool):
         for data in self.data_all:
             data.set_hardcore(hardcore)
+            if self.is_standalone:
+                data.update_all()
+                data.save2disk()
+
+    def set_dead_self(self, val: bool):
+        for data in self.data_all:
+            print(f"Attempting to ensure {'death' if val else 'life'} for {data.get_name(True)}.")
+            data.set_dead(val)
+            if not val:
+                attrs = data.get_attributes()
+                if E_Attributes.AT_MAX_HP in attrs:
+                    print(f"Attempting to heal {data.get_name(True)}'s wounds, too.")
+                    attrs[E_Attributes.AT_CURRENT_HP] = attrs[E_Attributes.AT_MAX_HP]
+                    data.set_attributes(attrs)
+            if self.is_standalone:
+                data.update_all()
+                data.save2disk()
+
+    def set_dead_mercenary(self, val: bool):
+        for data in self.data_all:
+            print(f"Attempting to ensure {'death' if val else 'life'} for {data.get_name(True)}'s mercenary.")
+            data.is_dead_mercenary = val
             if self.is_standalone:
                 data.update_all()
                 data.save2disk()
@@ -3417,6 +3470,8 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--ensure_horadric', action='store_true', help="Flag. If the player has no Horadric Cube, one will be created in the inventory. Any item in that location will be put into the cube instead.")
         parser.add_argument('--hardcore', action='store_true', help="Flag. Set target characters to hard core mode.")
         parser.add_argument('--softcore', action='store_true', help="Flag. Set target characters to soft core mode.")
+        parser.add_argument('--revive_self', action='store_true', help="Flag. If your character is dead, this will revive him. Even if he is a hardcore character. He still may have to pick up his corpse though.")
+        parser.add_argument('--revive_merc', action='store_true', help="Flag. If your mercenary is dead, this will revive him.")
         parser.add_argument('--redeem_golem', action='store_true', help="Flag. If there is an iron golem, dispel it and return its items into the player's inventory.")
         parser.add_argument('--boost_attributes', type=int, help='Set this number to the given value.')
         parser.add_argument('--boost_skills', type=int, help='Set this number to the given value.')

@@ -123,6 +123,8 @@ class Horadric_GUI:
         self.button_load_cube = None  # type: Optional[tk.Button]
         self.button_save_cube = None  # type: Optional[tk.Button]
         self.button_runic_cube = None  # type: Optional[tk.Button]
+        self.button_revive_hero = None  # type: Optional[tk.Button]
+        self.button_revive_mercenary = None  # type: Optional[tk.Button]
         self.button_jewelize = None  # type: Optional[tk.Button]
         self.button_forge_ring = None  # type: Optional[tk.Button]
         self.button_forge_charm = None  # type: Optional[tk.Button]
@@ -464,6 +466,28 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         self.horadric_horazon.jewelize_horadric(data, tpl)
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
+    def revive_hero(self):
+        data = self.verify_hero()
+        if not data:
+            return
+        if data.is_hardcore() and data.is_dead():
+            fem = data.get_class_enum().is_female()
+            res = tk.messagebox.askquestion(f"Revive {data.get_name(True)}",
+                    f"{data.get_name(True)} is a hardcore character. {'She' if fem else 'He'} wants to be dead. "
+                    f"Do you really want to take that away from {'her' if fem else 'him'}?",
+                    icon='warning')
+            if res != 'yes':
+                return
+        self.horadric_horazon.set_dead_self(False)
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
+    def revive_mercenary(self):
+        data = self.verify_hero()
+        if not data:
+            return
+        self.horadric_horazon.set_dead_mercenary(False)
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
     def redeem_golem(self):
         data = self.verify_hero()
         if not data:
@@ -652,7 +676,8 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                        self.button_reset_attributes, self.button_boost_skills, self.button_boost_attributes,
                        self.check_hardcore, self.check_godmode, self.entry_boost_skills, self.entry_runic_cube,
                        self.entry_boost_attributes, self.entry_set_sockets, self.button_horazon, self.button_ensure_cube,
-                       self.button_enable_nightmare, self.button_enable_hell, self.button_jewelize,
+                       self.button_enable_nightmare, self.button_enable_hell,
+                       self.button_revive_hero, self.button_revive_mercenary, self.button_jewelize,
                        self.button_forge_ring, self.button_forge_charm, self.button_forge_amulet,
                        self.button_redeem_golem, self.button_toggle_ethereal, self.button_regrade_items,
                        self.button_dispel_magic, self.button_set_sockets, self.button_empty_sockets]:
@@ -664,6 +689,10 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
             data = self.horadric_horazon.data_all[0]  # type: Data
             if not self.needs_jewelize('jew'):
                 self.button_jewelize.config(state='disabled')
+            if not data.is_dead():
+                self.button_revive_hero.config(state='disabled')
+            if not data.is_dead_mercenary:
+                self.button_revive_mercenary.config(state='disabled')
             if not self.needs_jewelize('rin'):
                 self.button_forge_ring.config(state='disabled')
             if not self.needs_jewelize('cm1'):
@@ -793,12 +822,12 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         label_d2.grid(row=3, column=3, columnspan=3, sticky='ew')
 
         self.button_horadric = tk.Button(self.tab1, state='disabled', image=self.icon_horadric_exchange, command=self.do_horadric_exchange, bg='#009999')
-        self.button_horadric.grid(row=4, column=0, columnspan=10, sticky='ew')
+        self.button_horadric.grid(row=4, column=0, columnspan=11, sticky='ew')
         self.tooltip_commit = Hovertip(self.button_horadric, 'Load two character files and click this button to swap their Horadric Cube contents.')
         # < ----------------------------------------------------------
         # > Tab 2: Horazon's Folly. ----------------------------------
         ta_introduction = tk.Text(self.tab2, width=80, height=6, state='normal', wrap=tk.WORD)
-        ta_introduction.grid(row=0, column=0, columnspan=5, sticky='ew')
+        ta_introduction.grid(row=0, column=0, columnspan=6, sticky='ew')
         msg_horazon = """\"Demonic magic is a quick path, but its powers are seductive and deadly.\" (Deckard Cain)
 
 This tab grants great, quick power over the abilities of any hero.
@@ -812,11 +841,11 @@ Beware!"""
         button_load_hero.grid(row=1, column=0)
         Hovertip(button_load_hero, 'Select .d2s hero file. Or, for review only, a .cube file.')
         self.entry_pname_hero = tk.Entry(self.tab2, width=self.width_column - 7, state='readonly')
-        self.entry_pname_hero.grid(row=1, column=1, columnspan=4, sticky='ew')
+        self.entry_pname_hero.grid(row=1, column=1, columnspan=5, sticky='ew')
 
         # There is really no reason, why the user should not write into this text area.
         self.ta_hero = tk.Text(self.tab2, state='normal', wrap=tk.WORD)
-        self.ta_hero.grid(row=2, column=0, columnspan=5, sticky='ew')
+        self.ta_hero.grid(row=2, column=0, columnspan=6, sticky='ew')
 
         self.button_load_cube = tk.Button(self.tab2, text='Load Cube', command=self.load_cube, width=10, height=1, bg='#009999')
         self.button_load_cube.grid(row=3, column=0)
@@ -834,42 +863,50 @@ Beware!"""
         self.button_reset_attributes.grid(row=4, column=1, sticky='w')
         Hovertip(self.button_reset_attributes, 'Return all hard attribute points for redistribution.')
 
+        self.button_revive_hero =  tk.Button(self.tab2, text='Revive Hero', width=15, command=self.revive_hero, bg='#009999')
+        self.button_revive_hero.grid(row=3, column=1, sticky='e')
+        Hovertip(self.button_revive_hero, 'Will return a dead hero to life.')
+
+        self.button_revive_mercenary =  tk.Button(self.tab2, text='Revive Mercenary', width=15, command=self.revive_mercenary, bg='#009999')
+        self.button_revive_mercenary.grid(row=4, column=1, sticky='e')
+        Hovertip(self.button_revive_mercenary, 'Will return a dead mercenary to life.')
+
         self.button_jewelize =  tk.Button(self.tab2, text='Jewelize Magic', width=15, command=self.jewelize, bg='#009999')
-        self.button_jewelize.grid(row=3, column=1, sticky='e')
+        self.button_jewelize.grid(row=3, column=2, sticky='we')
         Hovertip(self.button_jewelize, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, runewords(!) or crafted) will be turned into jewels.')
 
         self.button_forge_ring =  tk.Button(self.tab2, text='Forge Magic Ring', width=15, command=lambda: self.jewelize(E_ItemTpl.IT_RING), bg='#009999')
-        self.button_forge_ring.grid(row=4, column=1, sticky='e')
+        self.button_forge_ring.grid(row=4, column=2, sticky='we')
         Hovertip(self.button_forge_ring, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, runewords(!) or crafted) will be turned into magic rings.')
 
         self.button_forge_charm =  tk.Button(self.tab2, text='Forge Charm', command=lambda: self.jewelize(E_ItemTpl.IT_CHARM), bg='#009999')
-        self.button_forge_charm.grid(row=3, column=2, sticky='ew')
+        self.button_forge_charm.grid(row=3, column=3, sticky='ew')
         Hovertip(self.button_forge_charm, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, runewords(!) or crafted) will be turned into small charms.')
 
         self.button_forge_amulet =  tk.Button(self.tab2, text='Forge Amulet', command=lambda: self.jewelize(E_ItemTpl.IT_AMULET), bg='#009999')
-        self.button_forge_amulet.grid(row=4, column=2, sticky='ew')
+        self.button_forge_amulet.grid(row=4, column=3, sticky='ew')
         Hovertip(self.button_forge_amulet, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, runewords(!) or crafted) will be turned into magic amulets.')
 
         self.button_redeem_golem = tk.Button(self.tab2, text='Redeem Golem', command=self.redeem_golem, width=15, height=1, bg='#009999')
-        self.button_redeem_golem.grid(row=3, column=3, sticky='w')
+        self.button_redeem_golem.grid(row=3, column=4, sticky='w')
         Hovertip(self.button_redeem_golem, 'If your character commands an iron golem, dispel that golem and, if there is space, return the item to inventory.')
 
         self.button_ensure_cube = tk.Button(self.tab2, text='Ensure Cube', command=self.ensure_cube, width=10, height=1, bg='#009999')
-        self.button_ensure_cube.grid(row=3, column=4, sticky='ew')
+        self.button_ensure_cube.grid(row=3, column=5, sticky='ew')
         Hovertip(self.button_ensure_cube, 'If your character has no Horadric Cube. Get one into your inventory. Supplanted items will be moved into the cube.')
 
         self.button_enable_nightmare = tk.Button(self.tab2, text='Enable Nightmare', command=self.enable_nightmare, width=15, height=1, bg='#009999')
-        self.button_enable_nightmare.grid(row=4, column=3, sticky='w')
+        self.button_enable_nightmare.grid(row=4, column=4, sticky='w')
         Hovertip(self.button_enable_nightmare, 'If still in normal mode. Raise your character level to 38 (if necessary) and fill his stash with gold.')
 
         self.button_enable_hell = tk.Button(self.tab2, text='Enable Hell', command=self.enable_hell, width=10, height=1, bg='#009999')
-        self.button_enable_hell.grid(row=4, column=4, sticky='ew')
+        self.button_enable_hell.grid(row=4, column=5, sticky='ew')
         Hovertip(self.button_enable_hell, 'If still in normal or nightmare mode. Raise your character level to 68 (if necessary) and fill his stash with gold.')
 
         var_runic_cube = tk.StringVar()
         var_runic_cube.set("ort, sol, t4, t4, b4, t0, a0")
         self.entry_runic_cube = tk.Entry(self.tab2, textvariable=var_runic_cube)
-        self.entry_runic_cube.grid(row=5, column=1, columnspan=4, sticky='ew')
+        self.entry_runic_cube.grid(row=5, column=1, columnspan=5, sticky='ew')
         self.button_runic_cube = tk.Button(self.tab2, text='Runes to Cube', command=lambda: self.runic_cube(var_runic_cube.get()), width=10, height=1, bg='#009999')
         self.button_runic_cube.grid(row=5, column=0)
         Hovertip(self.button_runic_cube, 'Write a comma-separated list of rune names and/or gem codes, /^[tasredb][0-4]$/ (bone=skull), and click this. Will add these socketables to the Cube and its environment.')
@@ -877,7 +914,7 @@ Beware!"""
         var_skills = tk.StringVar()
         var_skills.set('0')
         self.entry_boost_skills = tk.Entry(self.tab2, textvariable=var_skills)
-        self.entry_boost_skills.grid(row=6, column=1, columnspan=1, sticky='ew')
+        self.entry_boost_skills.grid(row=6, column=1, columnspan=2, sticky='ew')
         self.button_boost_skills = tk.Button(self.tab2, text='Boost Skills', command=self.boost_skills, width=10, height=1, bg='#009999')
         self.button_boost_skills.grid(row=6, column=0)
         Hovertip(self.button_boost_skills, 'Set free skill points to this value.')
@@ -885,32 +922,32 @@ Beware!"""
         var_attributes = tk.StringVar()
         var_attributes.set('0')
         self.entry_boost_attributes = tk.Entry(self.tab2, textvariable=var_attributes)
-        self.entry_boost_attributes.grid(row=7, column=1, columnspan=1, sticky='ew')
+        self.entry_boost_attributes.grid(row=7, column=1, columnspan=2, sticky='ew')
         self.button_boost_attributes = tk.Button(self.tab2, text='Boost Attrib.', command=self.boost_attributes, width=10, height=1, bg='#009999')
         self.button_boost_attributes.grid(row=7, column=0)
         Hovertip(self.button_boost_attributes, 'Set free attribute points to this value.')
 
         self.button_toggle_ethereal = tk.Button(self.tab2, text='Toggle Ethereal', command=self.toggle_ethereal, bg='#009999')
-        self.button_toggle_ethereal.grid(row=6, column=2, sticky='ew')
+        self.button_toggle_ethereal.grid(row=6, column=3, sticky='ew')
         Hovertip(self.button_toggle_ethereal, 'Toggles the ethereal state of items within the Horadric Cube.')
 
         self.button_regrade_items = tk.Button(self.tab2, text='Regrade Items', command=self.regrade_items, bg='#009999')
-        self.button_regrade_items.grid(row=6, column=3, sticky='ew')
+        self.button_regrade_items.grid(row=6, column=4, sticky='ew')
         Hovertip(self.button_regrade_items, 'Regrades items in the Horadric Cube cyclically. Normal->Elite->..->Normal.')
 
         self.button_dispel_magic = tk.Button(self.tab2, text='Dispel Magic', command=self.dispel_magic, bg='#009999')
-        self.button_dispel_magic.grid(row=6, column=4, sticky='ew')
+        self.button_dispel_magic.grid(row=6, column=5, sticky='ew')
         Hovertip(self.button_dispel_magic, 'Dispels magic, rare, set and unique items, turning them into normal objects.')
 
         var_n_sockets = tk.StringVar()
         var_n_sockets.set('6')
         self.entry_set_sockets = tk.Entry(self.tab2, textvariable=var_n_sockets)
-        self.entry_set_sockets.grid(row=7, column=2, sticky='ew')
+        self.entry_set_sockets.grid(row=7, column=3, sticky='ew')
         self.button_set_sockets = tk.Button(self.tab2, text='Set Sockets', command=self.set_sockets, bg='#009999')
-        self.button_set_sockets.grid(row=7, column=3, sticky='ew')
+        self.button_set_sockets.grid(row=7, column=4, sticky='ew')
         Hovertip(self.button_set_sockets, 'Within the items of the Horadric Cube, attempt to set this number of sockets ({0,..,6}).')
         self.button_empty_sockets = tk.Button(self.tab2, text='Empty Sockets', command=self.empty_sockets, bg='#009999')
-        self.button_empty_sockets.grid(row=7, column=4, sticky='ew')
+        self.button_empty_sockets.grid(row=7, column=5, sticky='ew')
         Hovertip(self.button_empty_sockets, 'Remove all socketed items from the items in the Horadric Cube and return them to inventory.')
 
         var_hardcore = tk.IntVar()
@@ -924,7 +961,7 @@ Beware!"""
         Hovertip(self.check_godmode, 'Enable or disable god mode. Will give you powerful skills all around and high attributes. Gains made under god mode will be preserved when disabling it.')
 
         self.button_horazon = tk.Button(self.tab2, image=self.icon_potion_of_life, command=self.do_commit_horazon, bg='#009999')
-        self.button_horazon.grid(row=9, column=0, columnspan=5, sticky='ew')
+        self.button_horazon.grid(row=9, column=0, columnspan=6, sticky='ew')
         Hovertip(self.button_horazon, 'All changes made above are hypothetical. Unless you click this here button that will commit them!')
         self.validate_pname_work()
 
