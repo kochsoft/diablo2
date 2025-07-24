@@ -633,8 +633,8 @@ class E_Waypoint(Enum):
     EW_GREAT_MARSH = 20
     EW_FLAYER_JUNGLE = 21
     EW_LOWER_KURAST = 22
-    EW_KURAST_BAZAR = 23
-    EW_UPPER_CURAST = 24
+    EW_KURAST_BAZAAR = 23
+    EW_UPPER_KURAST = 24
     EW_TRAVINCAL = 25
     EW_DURANCE_OF_HATE_L2 = 26
     EW_PANDEMONIUM_FORTRESS = 27
@@ -673,6 +673,24 @@ class E_Waypoint(Enum):
                 res.append(E_Waypoint(j))
         return res
 
+    @property
+    def index_act(self) -> int:
+        if 0 <= self.value < 9:
+            return 0
+        elif 9 <= self.value < 18:
+            return 1
+        elif 18 <= self.value < 27:
+            return 2
+        elif 27 <= self.value < 30:
+            return 3
+        elif 30 <= self.value < 39:
+            return 4
+        return -1
+
+    @property
+    def is_in_town(self) -> bool:
+        return self.value in (0, 9, 18, 27, 30)
+
     def __str__(self) -> str:
         if self == E_Waypoint.EW_THE_ANCIENTS_WAY:
             return "The Ancients' Way"
@@ -680,7 +698,7 @@ class E_Waypoint(Enum):
         for j in range(len(elts)):
             elts[j] = elts[j].lower()
             if len(elts[j]) > 3:
-                elts[j][0] = elts[j][0].upper()
+                elts[j] = elts[j][0].upper() + elts[j][1:]
         return ' '.join(elts)
 
 class E_ItemBlock(Enum):
