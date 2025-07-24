@@ -477,6 +477,8 @@ class E_Progression(Enum):
     EP_HELL = 10      # << 128 + 2
     EP_MASTER = 15    # << 192 + 3
 
+    def __str__(self) -> str:
+        return re.sub('^EP_', '', self.name).lower()
 
 class E_Attributes(Enum):
     AT_STRENGTH = 0
@@ -603,23 +605,83 @@ class E_Characters(Enum):
         return res
 
     def __str__(self) -> str:
-        if self == E_Characters.EC_AMAZON:
-            return "Amazon"
-        elif self == E_Characters.EC_SORCERESS:
-            return "Sorceress"
-        elif self == E_Characters.EC_NECROMANCER:
-            return "Necromancer"
-        elif self == E_Characters.EC_PALADIN:
-            return "Paladin"
-        elif self == E_Characters.EC_BARBARIAN:
-            return "Barbarian"
-        elif self == E_Characters.EC_DRUID:
-            return "Druid"
-        elif self == E_Characters.EC_ASSASSIN:
-            return "Assassin"
-        else:
-            return "Unspecified"
+        s = re.sub('^EC_', '', self.name).lower()
+        return s[0].upper() + s[1:]
 
+
+class E_Waypoint(Enum):
+    EW_ROGUE_ENCAMPMENT = 0
+    EW_COLD_PLAINS = 1
+    EW_STONY_FIELD = 2
+    EW_DARK_WOOD = 3
+    EW_BLACK_MARSH = 4
+    EW_OUTER_CLOISTER = 5
+    EW_JAIL_L1 = 6
+    EW_INNER_CLOISTER = 7
+    EW_CATACOMBS_L2 = 8
+    EW_LUT_GHOLEIN = 9
+    EW_SEWERS_L2 = 10
+    EW_DRY_HILLS = 11
+    EW_HALLS_OF_THE_DEAD_L2 = 12
+    EW_FAR_OASIS = 13
+    EW_LOST_CITY = 14
+    EW_PALACE_CELLAR = 15
+    EW_ARCANE_SANCTUARY = 16
+    EW_CANYON_OF_THE_MAGI = 17
+    EW_KURAST_DOCKS = 18
+    EW_SPIDER_FOREST = 19
+    EW_GREAT_MARSH = 20
+    EW_FLAYER_JUNGLE = 21
+    EW_LOWER_KURAST = 22
+    EW_KURAST_BAZAR = 23
+    EW_UPPER_CURAST = 24
+    EW_TRAVINCAL = 25
+    EW_DURANCE_OF_HATE_L2 = 26
+    EW_PANDEMONIUM_FORTRESS = 27
+    EW_CITY_OF_THE_DAMNED = 28
+    EW_RIVER_OF_FLAMES = 29
+    EW_HARROGATH = 30
+    EW_FRIGID_HIGHLANDS = 31
+    EW_ARREAT_PLATEAU = 32
+    EW_CRYSTALLINE_PASSAGE = 33
+    EW_HALLS_OF_PAIN = 34
+    EW_GLACIAL_TRAL = 35
+    EW_FROZEN_TUNDRA = 36
+    EW_THE_ANCIENTS_WAY = 37
+    EW_WORLDSTONE_KEEP_L2 = 38
+    EW_NONE = 39
+
+    @staticmethod
+    def get_index_data(progression: E_Progression) -> Tuple[int, int]:
+        """:returns the byte index limits within the binary total data that holds
+        the 5 bytes with the waypoint information for the given level of progression."""
+        if progression == E_Progression.EP_NORMAL:
+            return 643, 648
+        elif progression == E_Progression.EP_NIGHTMARE:
+            return 667, 672
+        elif progression == E_Progression.EP_HELL:
+            return 691, 696
+        raise ValueError(f"Unsupported progression level: '{progression}'")
+
+    @staticmethod
+    def get_waypoints_from_bm(bm: str, *, enabled: bool = True) -> List[E_Waypoint]:
+        res = list()  # List[E_Waypoint]
+        n = len(bm)
+        for j in range(39):
+            val = bm[j] if j < n else '0'
+            if (val == '0' and not enabled) or (val == '1' and enabled):
+                res.append(E_Waypoint(j))
+        return res
+
+    def __str__(self) -> str:
+        if self == E_Waypoint.EW_THE_ANCIENTS_WAY:
+            return "The Ancients' Way"
+        elts = self.name.split('_')[1:]
+        for j in range(len(elts)):
+            elts[j] = elts[j].lower()
+            if len(elts[j]) > 3:
+                elts[j][0] = elts[j][0].upper()
+        return ' '.join(elts)
 
 class E_ItemBlock(Enum):
     """Convenience enum for handling the major item organisation sites.
@@ -1989,6 +2051,25 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             E_Progression.EP_NIGHTMARE: bytes2bitmap(self.data[667:672])[::-1],
             E_Progression.EP_HELL: bytes2bitmap(self.data[691:696])[::-1]
         }
+
+    @waypoint_map.setter
+    def waypoint_map(self, mp: Dict[E_Progression, str]):
+        current = self.waypoint_map
+        for key in E_Progression.EP_NORMAL, E_Progression.EP_NIGHTMARE, E_Progression.EP_HELL:
+            if key == E_Progression.EP_NORMAL:
+                index = [643, 648]
+            elif key == E_Progression.EP_NIGHTMARE:
+                index = [667, 672]
+            elif key == E_Progression.EP_HELL:
+                index = [691, 696]
+            else:
+                continue
+            val = mp[key]
+            update = current[key]
+            for j in range(min(39, len(val))):
+                if val[j] in ('0', '1'):
+                    update = update[:j] + val[j] + update[(j+1):]
+            self.data = self.data[:index[0]] + bitmap2bytes(update) + self.data[index[1]:]
 
     @property
     def progression(self) -> int:
