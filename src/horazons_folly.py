@@ -2075,6 +2075,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         """:param mp: The map needs not to be complete, nor need the strings given be
           complete. Missing values, or values not '0' or '1' will be ignored."""
         current = self.waypoint_map
+        haa = self.highest_accessible_act  # type: Dict[E_Progression, int]
         for key in E_Progression.EP_NORMAL, E_Progression.EP_NIGHTMARE, E_Progression.EP_HELL:
             if key not in mp:
                 continue
@@ -2093,6 +2094,9 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                     update = update[:j] + val[j] + update[(j+1):]
             if update != current[key]:
                 self.data = self.data[:index[0]] + bitmap2bytes(update[::-1]) + self.data[index[1]:]
+                haa_required = self.get_highest_accessible_act_by_waypoint_bm(update)
+                if haa_required > haa[key]:
+                    self.highest_accessible_act = {key: haa_required}
 
     @property
     def progression(self) -> int:
@@ -2116,6 +2120,68 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             return E_Progression.EP_HELL
         else:
             return E_Progression.EP_MASTER
+
+    @staticmethod
+    def get_highest_accessible_act_by_waypoint_bm(bm: str) -> int:
+        """:param bm: Waypoint bitmap. From left to right 1 signifies open, and 0 closed waypoints.
+        :returns, based on bm, what would be the minimum highest accessible act index for reaching all active waypoints?"""
+        if len(bm) > 39:
+            bm = bm[:39]
+        elif len(bm) < 39:
+            bm = bm + ((39 - len(bm)) * '0')
+        if bm[30:39] != '000000000':
+            return 4
+        elif bm[27:30] != '000':
+            return 3
+        elif bm[18:27] != '000000000':
+            return 2
+        elif bm[9:18] != '000000000':
+            return 1
+        else:
+            return 0
+
+    @property
+    def highest_accessible_act(self) -> Dict[E_Progression, int]:
+        """Evaluating quest structures for 'has travelled to Act II, III, IV, V'"""
+        res = dict()  # type: Dict[E_Progression, int]
+        index_hd = self.data.find(b'Woo!', 335)
+        for j in range(3):
+            val = 0
+            # [Note: It appears that the 'Travelled to Act 5 flag' comes right after the three act IV quests.
+            #  Also, I interpret 'quest 6 in Act V completed' as 'has won the game'.
+            #  So the indices are: Has travelled to Act (II, III, IV, V) and (has won).]
+            for base in (index_hd + 14, index_hd + 30, index_hd + 46, index_hd + 56, index_hd + 64):
+                index = base + j * 96
+                bm = bytes2bitmap(self.data[index:(index+2)])[::-1]
+                if bm[0] == '1':
+                    val = val + 1
+                else:
+                    break
+            res[E_Progression(j * 5)] = val
+        return res
+
+    @highest_accessible_act.setter
+    def highest_accessible_act(self, mp: Dict[E_Progression, int]):
+        index_hd = self.data.find(b'Woo!', 335)
+        for key in mp:
+            val = min(mp[key], 5)
+            if val < 1:
+                continue
+            base = index_hd
+            if key == E_Progression.EP_NORMAL:
+                pass
+            elif key == E_Progression.EP_NIGHTMARE:
+                base = base + 96
+            elif key == E_Progression.EP_HELL:
+                base = base + 2 * 96
+            else:
+                continue
+            offsets = (base + 14, base + 30, base + 46, base + 56, base + 64)
+            for j in range(min(val, len(offsets))):
+                index = offsets[j]
+                bm = bytes2bitmap(self.data[index:(index + 2)])[::-1]
+                bm = '1' + bm[1:]
+                self.data = self.data[:index] + bitmap2bytes(bm[::-1]) + self.data[(index + 2):]
 
     @property
     def n_cube_contents_shallow(self) -> int:
@@ -2325,6 +2391,13 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                           (E_Attributes.AT_STASHED_GOLD, 1750000)])
         self._enable_higher_difficulty(attr_new, E_Progression.EP_HELL)
         print(f"{self.get_name(True)} is prepared to go to hell!")
+
+    def enable_nirvana(self):
+        attr_new = odict([(E_Attributes.AT_LEVEL, 86),
+                          (E_Attributes.AT_EXPERIENCE, 1196977515),
+                          (E_Attributes.AT_STASHED_GOLD, 2200000)])
+        self._enable_higher_difficulty(attr_new, E_Progression.EP_MASTER)
+        print(f"{self.get_name(True)} has done {'her' if self.get_class_enum().is_female() else 'his'} bit for king and country.")
 
     def get_class(self, as_str: bool = False) -> Union[bytes, str]:
         """:returns this character's class as a byte or string."""
@@ -3043,7 +3116,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
               f"Progress: {self.progression}.\n" \
               f"attributes: {s_attr}" \
               f"learned skill-set : {self.skills2str()}\n" \
-              f"waypoint map:  {self.waypoint_map}"
+              f"waypoint map:  {self.waypoint_map}\n" \
+              f"acts completed: {self.highest_accessible_act}"
         item_analysis = Item(self.data)
         items = item_analysis.get_block_items()
         for item in items:
@@ -3175,6 +3249,9 @@ class Horadric:
 
         if parsed.enable_hell:
             self.enable_hell()
+
+        if parsed.enable_nirvana:
+            self.enable_nirvana()
 
         if parsed.enable_godmode:
             self.enable_godmode()
@@ -3375,6 +3452,13 @@ class Horadric:
                 data.update_all()
                 data.save2disk()
 
+    def enable_nirvana(self):
+        for data in self.data_all:
+            data.enable_nirvana()
+            if self.is_standalone:
+                data.update_all()
+                data.save2disk()
+
     def enable_godmode(self):
         for data in self.data_all:
             print(f"Enabling GOD MODE for {data.get_name(True)}.")
@@ -3478,7 +3562,7 @@ class Horadric:
             else:
                 try:
                     difficulty = E_Progression(int(codes[0]))
-                except ValueError as err:
+                except ValueError:
                     _log.warning(f"Unable to parse waypoint code '{code}'. Doing nothing for '{data.get_name(True)}'.")
                     return
             data.waypoint_map = { difficulty: wp }
@@ -3630,6 +3714,7 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--reset_skills', action='store_true', help="Flag. Unlearns all skills, returning them as free skill points.")
         parser.add_argument('--enable_nightmare', action='store_true', help="Flag. Enables entering nightmare. Fully upgrades character to level 38 and gives gold to match.")
         parser.add_argument('--enable_hell', action='store_true', help="Flag. Enables entering hell and nightmare. Fully upgrades character to level 68 and gives gold to match.")
+        parser.add_argument('--enable_nirvana', action='store_true', help="Flag. Empowers the character to level 86 and sets him up as victor of hell. Also gives gold to match.")
         parser.add_argument('--enable_godmode', action='store_true', help="Enables Demigod-mode (so far without high Mana/HP/Stamina). Creates a .humanity stat file alongside the .d2s for later return to normal mode.")
         parser.add_argument('--disable_godmode', action='store_true', help="Returns to human form (retaining skill points earned in god mode). After all, who wants the stress of being super all the time?")
         parser.add_argument('--info', action='store_true', help="Flag. Show some statistics to each input file.")

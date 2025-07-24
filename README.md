@@ -40,6 +40,8 @@ that is attached to this repository.
 # Help Text (March 15th 2025)
 
 ```
+$ ./horazons_folly.py --help
+ 
 usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
                          [--exchange_horadric]
                          [--create_rune_cube [CREATE_RUNE_CUBE]]
@@ -54,8 +56,9 @@ usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
                          [--boost_attributes BOOST_ATTRIBUTES]
                          [--boost_skills BOOST_SKILLS] [--reset_attributes]
                          [--reset_skills] [--enable_nightmare] [--enable_hell]
-                         [--enable_godmode] [--disable_godmode] [--info]
-                         [--info_stats]
+                         [--enable_nirvana] [--enable_godmode]
+                         [--disable_godmode] [--info] [--info_stats]
+                         [--set_waypoints SET_WAYPOINTS]
                          [pfnames ...]
 
 Tool script for doing small scale changes to Diablo II .d2s save game files.
@@ -103,10 +106,13 @@ options:
   --reset_skills        Flag. Unlearns all skills, returning them as free skill points.
   --enable_nightmare    Flag. Enables entering nightmare. Fully upgrades character to level 38 and gives gold to match.
   --enable_hell         Flag. Enables entering hell and nightmare. Fully upgrades character to level 68 and gives gold to match.
+  --enable_nirvana      Flag. Empowers the character to level 86 and sets him up as victor of hell. Also gives gold to match.
   --enable_godmode      Enables Demigod-mode (so far without high Mana/HP/Stamina). Creates a .humanity stat file alongside the .d2s for later return to normal mode.
   --disable_godmode     Returns to human form (retaining skill points earned in god mode). After all, who wants the stress of being super all the time?
   --info                Flag. Show some statistics to each input file.
   --info_stats          Flag. Nerd-minded. Detailed info tool on the parsing of attributes and skills.
+  --set_waypoints SET_WAYPOINTS
+                        Set waypoints as optional prefix /INDEX_DIFFICULTY-/ and bitmap /.{39}/ where 0/1 means off/on and everything else is ignored.
 
 Example call:
 $ python3 horazons_folly.py --info conan.d2s ormaline.d2s
