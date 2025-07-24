@@ -1978,6 +1978,19 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         self.data = self.data[:43] + int.to_bytes(value, 1, 'little') + self.data[44:]
 
     @property
+    def waypoint_map(self) -> Dict[E_Progression, str]:
+        """:returns bitmaps for the activated waypoints (little endian) for each level of difficulty.
+        Strings are in order of the game and acts. Acts 1,2,3,5 have 9 bits each, act 4 has only 3.
+        Since there are 40 bit in 5 bytes, but only 39 way points in total, the final bit with top
+        significance is only padding. '1111111111111111111111111111111111111110' is a character, who has
+        unlocked all waypoints. '111111111 111110000 000 000000000 000000000 0' is a character midway throw act 2."""
+        return {
+            E_Progression.EP_NORMAL: bytes2bitmap(self.data[643:648])[::-1],
+            E_Progression.EP_NIGHTMARE: bytes2bitmap(self.data[667:672])[::-1],
+            E_Progression.EP_HELL: bytes2bitmap(self.data[691:696])[::-1]
+        }
+
+    @property
     def progression(self) -> int:
         return self.data[37]
 
@@ -2912,7 +2925,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
               f"direct player item count: {self.get_item_count_player(True)}, is dead: {self.is_dead()}, direct mercenary item count: {self.get_item_count_mercenary(True)}, \n" \
               f"Progress: {self.progression}.\n" \
               f"attributes: {s_attr}" \
-              f"learned skill-set : {self.skills2str()}"
+              f"learned skill-set : {self.skills2str()}\n" \
+              f"waypoint map:  {self.waypoint_map}"
         item_analysis = Item(self.data)
         items = item_analysis.get_block_items()
         for item in items:
