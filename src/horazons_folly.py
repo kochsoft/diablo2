@@ -2072,8 +2072,12 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     @waypoint_map.setter
     def waypoint_map(self, mp: Dict[E_Progression, str]):
+        """:param mp: The map needs not to be complete, nor need the strings given be
+          complete. Missing values, or values not '0' or '1' will be ignored."""
         current = self.waypoint_map
         for key in E_Progression.EP_NORMAL, E_Progression.EP_NIGHTMARE, E_Progression.EP_HELL:
+            if key not in mp:
+                continue
             if key == E_Progression.EP_NORMAL:
                 index = [643, 648]
             elif key == E_Progression.EP_NIGHTMARE:
@@ -2087,7 +2091,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             for j in range(min(39, len(val))):
                 if val[j] in ('0', '1'):
                     update = update[:j] + val[j] + update[(j+1):]
-            self.data = self.data[:index[0]] + bitmap2bytes(update) + self.data[index[1]:]
+            if update != current[key]:
+                self.data = self.data[:index[0]] + bitmap2bytes(update[::-1]) + self.data[index[1]:]
 
     @property
     def progression(self) -> int:
@@ -2098,6 +2103,19 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         """Setter for progression. Set to 5 to enable nightmare. Set to 10 to enable hell."""
         if len(self.data) >= 37:
             self.data = self.data[:37] + int.to_bytes(progression.value if isinstance(progression, E_Progression) else int(progression)) + self.data[38:]
+
+    @property
+    def highest_difficulty(self) -> E_Progression:
+        """:returns the highest difficulty (normal, nightmare, hell, master) that is currently open for playing."""
+        prog = self.progression
+        if prog < 5:
+            return E_Progression.EP_NORMAL
+        elif prog < 10:
+            return E_Progression.EP_NIGHTMARE
+        elif prog < 15:
+            return E_Progression.EP_HELL
+        else:
+            return E_Progression.EP_MASTER
 
     @property
     def n_cube_contents_shallow(self) -> int:
@@ -3114,6 +3132,9 @@ class Horadric:
                     tpl = E_ItemTpl.IT_AMULET
                 self.jewelize_horadric(data, tpl)
 
+        if parsed.set_waypoints:
+            self.set_waypoints(parsed.set_waypoints)
+
         if parsed.ensure_horadric:
             for data in self.data_all:
                 self.ensure_horadric(data)
@@ -3448,6 +3469,23 @@ class Horadric:
             data.update_all()
             data.save2disk()
 
+    def set_waypoints(self, code: str):
+        for data in self.data_all:
+            codes = code.split('-', 1)
+            wp = codes[-1]
+            if len(codes) < 2:
+                difficulty = data.highest_difficulty
+            else:
+                try:
+                    difficulty = E_Progression(int(codes[0]))
+                except ValueError as err:
+                    _log.warning(f"Unable to parse waypoint code '{code}'. Doing nothing for '{data.get_name(True)}'.")
+                    return
+            data.waypoint_map = { difficulty: wp }
+            if self.is_standalone:
+                data.update_all()
+                data.save2disk()
+
     def regrade_horadric(self, data: Data):
         items = Item(data.data).get_cube_contents()  # type: List[Item]
         for item in items:
@@ -3596,6 +3634,7 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--disable_godmode', action='store_true', help="Returns to human form (retaining skill points earned in god mode). After all, who wants the stress of being super all the time?")
         parser.add_argument('--info', action='store_true', help="Flag. Show some statistics to each input file.")
         parser.add_argument('--info_stats', action='store_true', help='Flag. Nerd-minded. Detailed info tool on the parsing of attributes and skills.')
+        parser.add_argument('--set_waypoints', type=str, help="Set waypoints as optional prefix /INDEX_DIFFICULTY-/ and bitmap /.{39}/ where 0/1 means off/on and everything else is ignored.")
         parser.add_argument('pfnames', nargs='*', type=str, help='List of path and filenames to target .d2s character files.')
         parsed = parser.parse_args(args)  # type: argparse.Namespace
         return parsed
