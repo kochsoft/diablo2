@@ -40,7 +40,7 @@ that is attached to this repository.
 # Help Text (March 15th 2025)
 
 ```
-$ ./horazons_folly.py --help
+python3 horazons_folly.py --help
  
 usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
                          [--exchange_horadric]
@@ -59,6 +59,7 @@ usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
                          [--enable_nirvana] [--enable_godmode]
                          [--disable_godmode] [--info] [--info_stats]
                          [--set_waypoints SET_WAYPOINTS]
+                         [--set_quests SET_QUESTS]
                          [pfnames ...]
 
 Tool script for doing small scale changes to Diablo II .d2s save game files.
@@ -113,6 +114,8 @@ options:
   --info_stats          Flag. Nerd-minded. Detailed info tool on the parsing of attributes and skills.
   --set_waypoints SET_WAYPOINTS
                         Set waypoints as optional prefix /INDEX_DIFFICULTY-/ and bitmap /.{39}/ where 0/1 means off/on and everything else is ignored.
+  --set_quests SET_QUESTS
+                        Set quests as optional prefix /INDEX_DIFFICULTY-/ and bitmap /.{27}/ where 0/1 means reset/completed and everything else is ignored.
 
 Example call:
 $ python3 horazons_folly.py --info conan.d2s ormaline.d2s

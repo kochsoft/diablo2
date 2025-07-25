@@ -701,6 +701,79 @@ class E_Waypoint(Enum):
                 elts[j] = elts[j][0].upper() + elts[j][1:]
         return ' '.join(elts)
 
+class E_Quest(Enum):
+    """Code is the position in bytes, beginning after the quest 10-byte header (Woo!) at byte 345.
+    Convention: A double __ in an enum name shall signify an apostrophe."""
+    EQ_NONE = 0
+
+    EQ_DEN_OF_EVIL = 2
+    EQ_SISTERS___BURIAL_GROUNDS = 4
+    EQ_SEARCH_FOR_CAIN = 6
+    EQ_THE_FORGOTTEN_TOWER = 8
+    EQ_TOOLS_OF_THE_TRADE = 10
+    EQ_SISTERS_TO_THE_SLAUGHTER = 12
+
+    EQ_RADAMENT__S_LAIR = 18
+    EQ_THE_HORADRIC_STAFF = 20
+    EQ_TAINTED_SUN = 22
+    EQ_ARCANE_SANCTUARY = 24
+    EQ_THE_SUMMONER = 26
+    EQ_THE_SEVEN_TOMBS = 28
+
+    EQ_THE_GOLDEN_BIRD = 34
+    EQ_BLADE_OF_THE_OLD_RELIGION = 36
+    EQ_KHALIM__S_WILL = 38
+    EQ_LAM_ESEN__S_TOME = 40
+    EQ_THE_BLACKENED_TEMPLE = 42
+    EQ_THE_GUARDIAN = 44
+
+    EQ_FALLEN_ANGEL = 50
+    EQ_HELL__S_FORGE = 52
+    EQ_TERROR__S_END = 54
+
+    EQ_SIEGE_ON_HARROGATH = 70
+    EQ_RESCUE_ON_MOUNT_ARREAT = 72
+    EQ_PRISON_OF_ICE = 74
+    EQ_BETRAYAL_IN_HARROGATH = 76
+    EQ_RITE_OF_PASSAGE = 78
+    EQ_EVE_OF_DESTRUCTION = 80
+
+    @staticmethod
+    def get_enum_entry_by_index(index: int):
+        """:returns the indexth quest in the list. Ignores EQ_NONE.
+        :raises ValueError(..) if index is either too large or <0."""
+        entries = [e for e in E_Quest][1:]  # << First entry is EQ_NONE.
+        if index < 0 or index >= len(entries):
+            raise ValueError(f"Impossible index '{index}'. There are {len(entries)} quests in total.")
+        return entries[index]
+
+    def pos_byte(self, difficulty: E_Progression) -> int:
+        """:returns the first byte of this quest given difficulty level."""
+        if difficulty == E_Progression.EP_NORMAL:
+            addendum = 0
+        elif difficulty == E_Progression.EP_NIGHTMARE:
+            addendum = 96
+        else:  # Hell and Master.
+            addendum = 2 * 96
+        return self.value + addendum + 345
+
+    def set_quest(self, data: bytes, difficulty: E_Progression, complete_rather_than_reset: bool):
+        """Set quest to either done or untouched.
+        :param data: Whole-save-game as a large bytes data block.
+        :param difficulty: Difficulty level intended for quest data altering.
+        :param complete_rather_than_reset: If True, will set the quest to 1000000000001000, else 0000000000000000.
+        :returns a copy of the given whole-save-game-data with altered quest-data."""
+        val = int.to_bytes(2**12 + 1, 2, 'little', signed = False) if complete_rather_than_reset else b'\x00\x00'
+        pos = self.pos_byte(difficulty)
+        return data[:pos] + val + data[(pos+2):]
+
+    def __str__(self) -> str:
+        s = self.name[3:]
+        s = s.replace('__', "'")
+        wordlets = ['OF', 'FOR', 'THE', 'TO', 'ON', 'IN']
+        res = ' '.join([x.lower() if x in wordlets else (x[0].upper() + x[1:].lower()) for x in s.split('_')])
+        return res[0].upper() + res[1:]
+
 class E_ItemBlock(Enum):
     """Convenience enum for handling the major item organisation sites.
     https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md#items
@@ -2057,6 +2130,37 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
     def level_by_header(self, value: int):
         self.data = self.data[:43] + int.to_bytes(value, 1, 'little') + self.data[44:]
 
+    def get_quests(self, difficulty: E_Progression) -> Dict[E_Quest, bytes]:
+        res = dict()
+        quests = [q for q in E_Quest][1:]  # << Ignore leading EQ_NONE.
+        for quest in quests:
+            pos = quest.pos_byte(difficulty)
+            res[quest] = self.data[pos:(pos+2)]
+        return res
+
+    def get_quests_simplified(self) -> Dict[E_Progression, str]:
+        """:returns a bitmap with a bit for each quest. 0 means quest is 0 completely. Else 1. Aims at displays."""
+        res = dict()  # type: Dict[E_Progression, str]
+        quests = [q for q in E_Quest][1:]  # << Ignore leading EQ_NONE.
+        for difficulty in [E_Progression.EP_NORMAL, E_Progression.EP_NIGHTMARE, E_Progression.EP_HELL]:
+            s = ''
+            for quest in quests:
+                pos = quest.pos_byte(difficulty)
+                s = s + ('0' if (self.data[pos:(pos+2)] == b'\x00\x00') else '1')
+            res[difficulty] = s
+        return res
+
+    def set_quests_simplified(self, codes: Dict[E_Progression, str]):
+        quests = [q for q in E_Quest][1:]  # << Ignore leading EQ_NONE.
+        for difficulty in codes:
+            if difficulty == E_Progression.EP_MASTER:
+                continue
+            code = re.sub("[^0-1]", '.', codes[difficulty])
+            for j in range(min(len(code), len(quests))):
+                if code[j] not in '01':
+                    continue
+                self.data = quests[j].set_quest(self.data, difficulty, code[j] == '1')
+
     @property
     def waypoint_map(self) -> Dict[E_Progression, str]:
         """:returns bitmaps for the activated waypoints (little endian) for each level of difficulty.
@@ -3116,7 +3220,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
               f"Progress: {self.progression}.\n" \
               f"attributes: {s_attr}" \
               f"learned skill-set : {self.skills2str()}\n" \
-              f"waypoint map:  {self.waypoint_map}\n" \
+              f"quest map: {self.get_quests_simplified()}\n" \
+              f"waypoint map: {self.waypoint_map}\n" \
               f"acts completed: {self.highest_accessible_act}"
         item_analysis = Item(self.data)
         items = item_analysis.get_block_items()
@@ -3208,6 +3313,9 @@ class Horadric:
 
         if parsed.set_waypoints:
             self.set_waypoints(parsed.set_waypoints)
+
+        if parsed.set_quests:
+            self.set_quests(parsed.set_quests)
 
         if parsed.ensure_horadric:
             for data in self.data_all:
@@ -3553,19 +3661,30 @@ class Horadric:
             data.update_all()
             data.save2disk()
 
+    @staticmethod
+    def _parse_difficulty_bitmap(data: Data, code: str) -> Dict[E_Progression, str]:
+        codes = code.split('-', 1)
+        bm = codes[-1]
+        if len(codes) < 2:
+            difficulty = data.highest_difficulty
+        else:
+            try:
+                difficulty = E_Progression(int(codes[0]))
+            except ValueError:
+                _log.warning(f"Unable to parse waypoint or quest code '{code}'. Doing nothing for '{data.get_name(True)}'.")
+                return dict()
+        return {difficulty: re.sub("[^0-1]", '.', bm)}
+
     def set_waypoints(self, code: str):
         for data in self.data_all:
-            codes = code.split('-', 1)
-            wp = codes[-1]
-            if len(codes) < 2:
-                difficulty = data.highest_difficulty
-            else:
-                try:
-                    difficulty = E_Progression(int(codes[0]))
-                except ValueError:
-                    _log.warning(f"Unable to parse waypoint code '{code}'. Doing nothing for '{data.get_name(True)}'.")
-                    return
-            data.waypoint_map = { difficulty: wp }
+            data.waypoint_map = self._parse_difficulty_bitmap(data, code)
+            if self.is_standalone:
+                data.update_all()
+                data.save2disk()
+
+    def set_quests(self, code: str):
+        for data in self.data_all:
+            data.set_quests_simplified(self._parse_difficulty_bitmap(data, code))
             if self.is_standalone:
                 data.update_all()
                 data.save2disk()
@@ -3720,6 +3839,7 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--info', action='store_true', help="Flag. Show some statistics to each input file.")
         parser.add_argument('--info_stats', action='store_true', help='Flag. Nerd-minded. Detailed info tool on the parsing of attributes and skills.')
         parser.add_argument('--set_waypoints', type=str, help="Set waypoints as optional prefix /INDEX_DIFFICULTY-/ and bitmap /.{39}/ where 0/1 means off/on and everything else is ignored.")
+        parser.add_argument('--set_quests', type=str, help="Set quests as optional prefix /INDEX_DIFFICULTY-/ and bitmap /.{27}/ where 0/1 means reset/completed and everything else is ignored.")
         parser.add_argument('pfnames', nargs='*', type=str, help='List of path and filenames to target .d2s character files.')
         parsed = parser.parse_args(args)  # type: argparse.Namespace
         return parsed
