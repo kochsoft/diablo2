@@ -144,6 +144,7 @@ class Horadric_GUI:
         self.button_empty_sockets = None  # type: Optional[tk.Button]
         self.check_hardcore = None  # type: Optional[tk.Checkbutton]
         self.check_godmode = None  # type: Optional[tk.Checkbutton]
+        self.check_wp_hop = None  # type: Optional[tk.Checkbutton]
         self.entry_runic_cube = None  # type: Optional[tk.Entry]
         self.entry_boost_skills = None  # type: Optional[tk.Entry]
         self.entry_boost_attributes = None  # type: Optional[tk.Entry]
@@ -668,13 +669,31 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                 return
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
+    def needs_wp_hop(self) -> bool:
+        """:returns True if quest of index 24 (Betrayal in Harrogath) in the currently highest active difficulty
+        is anything other than b'\x00'.'"""
+        data = self.verify_hero()
+        if not data:
+            return False
+        quests = data.get_quests_simplified()[data.highest_difficulty]
+        if len(quests) < 24:
+            return False
+        return quests[24] == '1'
+
+    def set_wp_hop(self, enable: bool):
+        data = self.verify_hero()
+        if not data:
+            return
+        bm = ((E_Waypoint.EW_HALLS_OF_PAIN.value) * '.') + ('1' if enable else '0')
+        data.waypoint_map = {data.highest_difficulty: bm}
+
     def update_hero_widgets(self, enable: bool, *, do_update: bool = True):
         """Common Horazon widget update function."""
         if not self.validate_pname_work(False):
             enable = False
         for widget in [self.button_load_cube, self.button_save_cube, self.button_reset_skills, self.button_runic_cube,
                        self.button_reset_attributes, self.button_boost_skills, self.button_boost_attributes,
-                       self.check_hardcore, self.check_godmode, self.entry_boost_skills, self.entry_runic_cube,
+                       self.check_hardcore, self.check_godmode, self.check_wp_hop, self.entry_boost_skills, self.entry_runic_cube,
                        self.entry_boost_attributes, self.entry_set_sockets, self.button_horazon, self.button_ensure_cube,
                        self.button_enable_nightmare, self.button_enable_hell,
                        self.button_revive_hero, self.button_revive_mercenary, self.button_jewelize,
@@ -709,6 +728,8 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                 self.button_regrade_items.config(state='disabled')
             if not self.needs_empty_sockets():
                 self.button_empty_sockets.config(state='disabled')
+            if not self.needs_wp_hop():
+                self.check_wp_hop.config(state='disabled')
             if not data.has_horadric_cube:
                 self.button_load_cube.config(state='disabled')
                 self.button_save_cube.config(state='disabled')
@@ -732,6 +753,11 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                 self.check_godmode.select()
             else:
                 self.check_godmode.deselect()
+            wps = data.waypoint_map[data.highest_difficulty]
+            if wps[E_Waypoint.EW_HALLS_OF_PAIN.value] == '1':
+                self.check_wp_hop.select()
+            else:
+                self.check_wp_hop.deselect()
 
     def do_commit_horazon(self):
         """Save the current hero to disk. A backup has been made earlier, during self.update_hero_widgets(..)."""
@@ -959,6 +985,11 @@ Beware!"""
         self.check_godmode = tk.Checkbutton(self.tab2, text='Godmode', variable=var_godmode, command=lambda: self.set_godmode(bool(var_godmode.get())))
         self.check_godmode.grid(row=8, column=1, sticky='w')
         Hovertip(self.check_godmode, 'Enable or disable god mode. Will give you powerful skills all around and high attributes. Gains made under god mode will be preserved when disabling it.')
+
+        var_wp_hop = tk.IntVar()
+        self.check_wp_hop = tk.Checkbutton(self.tab2, text="Waypoint 'Halls of Pain'", variable=var_wp_hop, command=lambda: self.set_wp_hop(bool(var_wp_hop.get())))
+        self.check_wp_hop.grid(row=8, column=2, sticky='w')
+        Hovertip(self.check_wp_hop, "Active if Anya is in town. Will (for highest accessible difficulty) enable or disable the 'Halls of Pain' waypoint -- and in reciprocal effect, Anya's portal to Nihlathak's Temple.")
 
         self.button_horazon = tk.Button(self.tab2, image=self.icon_potion_of_life, command=self.do_commit_horazon, bg='#009999')
         self.button_horazon.grid(row=9, column=0, columnspan=6, sticky='ew')
