@@ -2214,16 +2214,14 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     @property
     def highest_difficulty(self) -> E_Progression:
-        """:returns the highest difficulty (normal, nightmare, hell, master) that is currently open for playing."""
+        """:returns the highest difficulty (normal, nightmare, hell) that is currently open for playing."""
         prog = self.progression
         if prog < 5:
             return E_Progression.EP_NORMAL
         elif prog < 10:
             return E_Progression.EP_NIGHTMARE
-        elif prog < 15:
-            return E_Progression.EP_HELL
         else:
-            return E_Progression.EP_MASTER
+            return E_Progression.EP_HELL
 
     @staticmethod
     def get_highest_accessible_act_by_waypoint_bm(bm: str) -> int:
@@ -2271,7 +2269,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             val = min(mp[key], 5)
             if val < 1:
                 continue
-            base = index_hd
+            base = index_hd + 10
             if key == E_Progression.EP_NORMAL:
                 pass
             elif key == E_Progression.EP_NIGHTMARE:

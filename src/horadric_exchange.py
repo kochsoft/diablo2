@@ -133,6 +133,7 @@ class Horadric_GUI:
         self.button_ensure_cube = None  # type: Optional[tk.Button]
         self.button_enable_nightmare = None  # type: Optional[tk.Button]
         self.button_enable_hell = None  # type: Optional[tk.Button]
+        self.button_enable_nirvana = None  # type: Optional[tk.Button]
         self.button_reset_skills = None  # type: Optional[tk.Button]
         self.button_reset_attributes = None  # type: Optional[tk.Button]
         self.button_boost_skills = None  # type: Optional[tk.Button]
@@ -517,6 +518,19 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         data.enable_hell()
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
+    def enable_nirvana(self):
+        """Progress beyond Hell. As a gimmick, this also enables all waypoints."""
+        data = self.verify_hero()
+        if not data:
+            return
+        data.enable_nirvana()
+        # [Note: Enabling all waypoints for a level 86 character is a nice touch, that I do want. Use-case for
+        #  This option is battling Baal in Hell. However, there are issues around quests.
+        #  Should this ever be fixed: Do similar calls for lower difficulties with enable Nightmare and enable Hell.]
+        # bm = '111111111111111111111111111111111111111'
+        # data.waypoint_map = {E_Progression.EP_NORMAL: bm, E_Progression.EP_NIGHTMARE: bm, E_Progression.EP_HELL: bm}
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
     def runic_cube(self, text_runic_cube: str):
         runes = list(filter(lambda x: x is not None, [E_Rune.from_name(w) for w in re.findall('([a-zA-Z0-9]+)', text_runic_cube)]))
         if not runes:
@@ -695,7 +709,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                        self.button_reset_attributes, self.button_boost_skills, self.button_boost_attributes,
                        self.check_hardcore, self.check_godmode, self.check_wp_hop, self.entry_boost_skills, self.entry_runic_cube,
                        self.entry_boost_attributes, self.entry_set_sockets, self.button_horazon, self.button_ensure_cube,
-                       self.button_enable_nightmare, self.button_enable_hell,
+                       self.button_enable_nightmare, self.button_enable_hell, self.button_enable_nirvana,
                        self.button_revive_hero, self.button_revive_mercenary, self.button_jewelize,
                        self.button_forge_ring, self.button_forge_charm, self.button_forge_amulet,
                        self.button_redeem_golem, self.button_toggle_ethereal, self.button_regrade_items,
@@ -741,6 +755,8 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                 self.button_enable_nightmare.config(state='disabled')
             if data.progression >= 10:
                 self.button_enable_hell.config(state='disabled')
+            if data.progression >= 15:
+                self.button_enable_nirvana.config(state='disabled')
             self.entry_boost_skills.delete(0, tk.END)
             self.entry_boost_skills.insert(0, '0')
             self.entry_boost_attributes.delete(0, tk.END)
@@ -913,21 +929,22 @@ Beware!"""
         self.button_forge_amulet.grid(row=4, column=3, sticky='ew')
         Hovertip(self.button_forge_amulet, 'Items inside the Horadric Cube with intrinsic magic properties (magic, rare, runewords(!) or crafted) will be turned into magic amulets.')
 
-        self.button_redeem_golem = tk.Button(self.tab2, text='Redeem Golem', command=self.redeem_golem, width=15, height=1, bg='#009999')
-        self.button_redeem_golem.grid(row=3, column=4, sticky='w')
-        Hovertip(self.button_redeem_golem, 'If your character commands an iron golem, dispel that golem and, if there is space, return the item to inventory.')
-
         self.button_ensure_cube = tk.Button(self.tab2, text='Ensure Cube', command=self.ensure_cube, width=10, height=1, bg='#009999')
         self.button_ensure_cube.grid(row=3, column=5, sticky='ew')
         Hovertip(self.button_ensure_cube, 'If your character has no Horadric Cube. Get one into your inventory. Supplanted items will be moved into the cube.')
 
         self.button_enable_nightmare = tk.Button(self.tab2, text='Enable Nightmare', command=self.enable_nightmare, width=15, height=1, bg='#009999')
-        self.button_enable_nightmare.grid(row=4, column=4, sticky='w')
-        Hovertip(self.button_enable_nightmare, 'If still in normal mode. Raise your character level to 38 (if necessary) and fill his stash with gold.')
+        self.button_enable_nightmare.grid(row=3, column=4, sticky='ew')
+        Hovertip(self.button_enable_nightmare, 'If still in normal mode. Enable Nightmare, and raise your character\'s level to 38 (if necessary) and fill his stash with gold.')
 
         self.button_enable_hell = tk.Button(self.tab2, text='Enable Hell', command=self.enable_hell, width=10, height=1, bg='#009999')
-        self.button_enable_hell.grid(row=4, column=5, sticky='ew')
-        Hovertip(self.button_enable_hell, 'If still in normal or nightmare mode. Raise your character level to 68 (if necessary) and fill his stash with gold.')
+        self.button_enable_hell.grid(row=4, column=4, sticky='ew')
+        Hovertip(self.button_enable_hell, 'If still in normal or nightmare mode. Enable Hell, and raise your character\'s level to 68 (if necessary) and fill his stash with gold.')
+
+        self.button_enable_nirvana = tk.Button(self.tab2, text='Enable Nirvana', command=self.enable_nirvana, width=15, height=1, bg='#009999')
+        self.button_enable_nirvana.grid(row=4, column=5, sticky='w')
+        # Hovertip(self.button_enable_nirvana, 'Beat Hell, transcend the World (enabling all waypoints), raise your character\'s level to 86 (if necessary), and fill his stash with gold.')
+        Hovertip(self.button_enable_nirvana, 'Beat Hell, and raise your character\'s level to 86 (if necessary), and fill his stash with gold.')
 
         var_runic_cube = tk.StringVar()
         var_runic_cube.set("ort, sol, t4, t4, b4, t0, a0")
@@ -988,8 +1005,12 @@ Beware!"""
 
         var_wp_hop = tk.IntVar()
         self.check_wp_hop = tk.Checkbutton(self.tab2, text="Waypoint 'Halls of Pain'", variable=var_wp_hop, command=lambda: self.set_wp_hop(bool(var_wp_hop.get())))
-        self.check_wp_hop.grid(row=8, column=2, sticky='w')
+        self.check_wp_hop.grid(row=8, column=4, sticky='w')
         Hovertip(self.check_wp_hop, "Active if Anya is in town. Will (for highest accessible difficulty) enable or disable the 'Halls of Pain' waypoint -- and in reciprocal effect, Anya's portal to Nihlathak's Temple.")
+
+        self.button_redeem_golem = tk.Button(self.tab2, text='Redeem Golem', command=self.redeem_golem, width=15, height=1, bg='#009999')
+        self.button_redeem_golem.grid(row=8, column=5, sticky='ew') # row=3, col=4
+        Hovertip(self.button_redeem_golem, 'If your character commands an iron golem, dispel that golem and, if there is space, return the item to inventory.')
 
         self.button_horazon = tk.Button(self.tab2, image=self.icon_potion_of_life, command=self.do_commit_horazon, bg='#009999')
         self.button_horazon.grid(row=9, column=0, columnspan=6, sticky='ew')
