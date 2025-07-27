@@ -530,9 +530,8 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         bm = '111111111111111111111111111111111111111'
         data.waypoint_map = {E_Progression.EP_NORMAL: bm, E_Progression.EP_NIGHTMARE: bm, E_Progression.EP_HELL: bm}
 
-        # TODO: This is extreme, but it will open up Tab V properly. Remove, once the setter to highest_accessible_act is fixed.
-        all_done = E_Quest.get_example_completed_quests()
-        data.data = data.data[:345] + (3 * all_done) + data.data[(345+3*len(all_done)):]
+        #all_done = E_Quest.get_example_completed_quests()
+        #data.data = data.data[:345] + (3 * all_done) + data.data[(345+3*len(all_done)):]
 
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
@@ -703,7 +702,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         data = self.verify_hero()
         if not data:
             return
-        bm = ((E_Waypoint.EW_HALLS_OF_PAIN.value) * '.') + ('1' if enable else '0')
+        bm = (E_Waypoint.EW_HALLS_OF_PAIN.value * '.') + ('1' if enable else '0')
         data.waypoint_map = {data.highest_difficulty: bm}
 
     def update_hero_widgets(self, enable: bool, *, do_update: bool = True):

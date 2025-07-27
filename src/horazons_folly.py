@@ -685,7 +685,7 @@ class E_Waypoint(Enum):
             return 3
         elif 30 <= self.value < 39:
             return 4
-        return -1
+        raise ValueError(f"Waypoint index {self.value} encountered. Out of range of known waypoint indices.")
 
     @property
     def is_in_town(self) -> bool:
@@ -710,9 +710,9 @@ class E_Quest(Enum):
 
     EQ_Q_DEN_OF_EVIL = 2
     EQ_Q_SISTERS___BURIAL_GROUNDS = 4
-    EQ_Q_SEARCH_FOR_CAIN = 6
-    EQ_Q_THE_FORGOTTEN_TOWER = 8
-    EQ_Q_TOOLS_OF_THE_TRADE = 10
+    EQ_Q_SEARCH_FOR_CAIN = 8  # [Note: Yes. Cain, Countess and Malus are mixed up in their orders.]
+    EQ_Q_THE_FORGOTTEN_TOWER = 10  # ..
+    EQ_Q_TOOLS_OF_THE_TRADE = 6  # ..
     EQ_Q_SISTERS_TO_THE_SLAUGHTER = 12
 
     EQ_M_TO_ACT_II = 14
@@ -728,10 +728,10 @@ class E_Quest(Enum):
     EQ_M_TO_ACT_III = 30
     EQ_M_HRATLI = 32
 
-    EQ_Q_THE_GOLDEN_BIRD = 34
-    EQ_Q_BLADE_OF_THE_OLD_RELIGION = 36
-    EQ_Q_KHALIM__S_WILL = 38
-    EQ_Q_LAM_ESEN__S_TOME = 40
+    EQ_Q_THE_GOLDEN_BIRD = 40  # [Note: Yes, the Golden Bird and Lam Esen's Tome are swapped.]
+    EQ_Q_BLADE_OF_THE_OLD_RELIGION = 38  # [Note: Yes, the Gidbinn and Khalim's Will are swapped.]
+    EQ_Q_KHALIM__S_WILL = 36  # ..
+    EQ_Q_LAM_ESEN__S_TOME = 34  # ..
     EQ_Q_THE_BLACKENED_TEMPLE = 42
     EQ_Q_THE_GUARDIAN = 44
 
@@ -739,8 +739,8 @@ class E_Quest(Enum):
     EQ_M_CAIN = 48
 
     EQ_Q_FALLEN_ANGEL = 50
-    EQ_Q_HELL__S_FORGE = 52
-    EQ_Q_TERROR__S_END = 54
+    EQ_Q_HELL__S_FORGE = 54  # [Note: Yes. Terror's End seems to come in order prior to Hell's Forge.]
+    EQ_Q_TERROR__S_END = 52  # ..
 
     EQ_M_TO_ACT_V = 56
     EQ_P_1 = 58
@@ -748,7 +748,7 @@ class E_Quest(Enum):
     EQ_P_3 = 62
     EQ_M_TERRORS_END = 64
     EQ_P_4 = 66
-    EQ_P5 = 68
+    EQ_P_5 = 68
 
     EQ_Q_SIEGE_ON_HARROGATH = 70
     EQ_Q_RESCUE_ON_MOUNT_ARREAT = 72
@@ -757,13 +757,40 @@ class E_Quest(Enum):
     EQ_Q_RITE_OF_PASSAGE = 78
     EQ_Q_EVE_OF_DESTRUCTION = 80
 
+    @property
+    def is_quest(self) -> bool:
+        return self.name[3] == 'Q'
+
+    @property
+    def is_marker(self) -> bool:
+        return self.name[3] == 'M'
+
+    @property
+    def is_padding(self) -> bool:
+        return self.name[3] == 'P'
+
+    @property
+    def index_act(self) -> int:
+        """:returns index of the act this enum item is associated with."""
+        if 0 <= self.value < 14:
+            return 0
+        elif 14 <= self.value < 30:
+            return 1
+        elif 30 <= self.value < 46:
+            return 2
+        elif 46 <= self.value < 70:
+            return 3
+        elif 70 <= self.value < 96:
+            return 4
+        raise ValueError(f"Quest item index {self.value} encountered. Out of range of known quest indices.")
+
     @staticmethod
     def get_example_completed_quests() -> bytes:
         """:returns an example of a 96 bytes quest structure in a game that has all quests and the cow level concluded."""
         return b'\x01\x00\x01\x10\x1d\x10M\x90\x1d\x14U\x10\x1d\x10\x01\x00\x01\x00\x1d\x10y\x1c\r\x10\x81\x11\x05\x10%\x1e\x01\x00\x01\x00\x01\x10\xfd\x10\xf9\x13\x01\x10\x1d\x10q\x10\x01\x00\x01\x00\x01\x10\x01\x13\x01\x10\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00!\x90\x01\x10\x8d\x17\x1d\x10}\x13\xed\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
-    def pos_byte(self, difficulty: E_Progression) -> int:
-        """:returns the first byte of this quest given difficulty level in the entire file."""
+    def pos_byte_in_d2s(self, difficulty: E_Progression) -> int:
+        """:returns the first byte of this quest given difficulty level in the entire .d2s file."""
         if difficulty == E_Progression.EP_NORMAL:
             addendum = 0
         elif difficulty == E_Progression.EP_NIGHTMARE:
@@ -772,19 +799,61 @@ class E_Quest(Enum):
             addendum = 2 * 96
         return self.value + addendum + 345
 
-    def set_quest(self, data: bytes, difficulty: E_Progression, complete_rather_than_reset: bool):
-        """Set quest to either done or untouched.
-        :param data: Whole-save-game as a large bytes data block.
-        :param difficulty: Difficulty level intended for quest data altering.
-        :param complete_rather_than_reset: If True, will set the quest to 1000000000001000, else 0000000000000000.
-        :returns a copy of the given whole-save-game-data with altered quest-data."""
-        val = self.get_example_completed_quests()[self.value:(self.value+2)] if complete_rather_than_reset else b'\x00\x00'
-        pos = self.pos_byte(difficulty)
+    @staticmethod
+    def get_quest_block(data_d2s: bytes, difficulty: E_Progression) -> bytes:
+        """:param data_d2s: Entire .d2s file bytes block.
+        :param difficulty: Difficulty level for that the quests block is to be extracted.
+        :returns the 96 bytes quest block data structure associated with the given difficulty level."""
+        if difficulty not in (E_Progression.EP_NORMAL, E_Progression.EP_NIGHTMARE, E_Progression.EP_HELL, E_Progression.EP_MASTER):
+            raise ValueError(f"Difficulty level '{difficulty}' not supported.")
+        index0 = E_Quest.EQ_M_WARRIV.pos_byte_in_d2s(difficulty)
+        return data_d2s[index0:(index0 + 96)]
 
-        return data[:pos] + val + data[(pos+2):]
+    @staticmethod
+    def set_quest_block(data_d2s: bytes, data_src: bytes, difficulty: E_Progression) -> bytes:
+        """:param data_d2s: Entire .d2s file bytes block.
+        :param data_src: 96 bytes block holding an entire quests section to be set for the given difficulty.
+        :param difficulty: Difficulty level for that the quests block is to be inserted.
+        :returns the d2s-File data where the given 96 bytes have been properly inserted into."""
+        if len(data_src) != 96:
+            raise ValueError(f"Quest-block byte structure is needed of length 96. Something of length '{len(data_src)}' was provided.")
+        if difficulty not in (E_Progression.EP_NORMAL, E_Progression.EP_NIGHTMARE, E_Progression.EP_HELL, E_Progression.EP_MASTER):
+            raise ValueError(f"Difficulty level '{difficulty}' not supported.")
+        index0 = E_Quest.EQ_M_WARRIV.pos_byte_in_d2s(difficulty)
+        return data_d2s[:index0] + data_src + data_d2s[(index0 + 96):]
+
+    def get_quest(self, data_quest: Optional[bytes] = None) -> bytes:
+        """:param data_quest: 96-byte structure of a complete quest-Block for some difficulty level.
+          It may be None. In that case the example (with all quests and cow level completed) will be used as source.
+        :returns the 2-bytes section concerned with the quest this Enum-Entry is concerned with."""
+        if data_quest is None:
+            data_quest = self.get_example_completed_quests()
+        return data_quest[self.value:(self.value+2)]
+
+    def set_quest(self, data: bytes, val: Union[bytes, str] = b'\x01\x20') -> bytes:
+        """Set the given value to the given quest data.
+        :param data: Some 96 bytes quest data structure for a given level of difficulty.
+        :param val: 2-bytes structure. Delivered either as 16-character bitmap (little endian) or as 2-bytes.
+          For details, take, e.g., a look into ./doc/quest_science/quests_examples.txt.
+        :returns a copy of the given 96 bytes with altered quest-data."""
+        if isinstance(val, str):
+            if len(val) < 16:
+                val = val + '0' * (16-len(val))
+            elif len(val) > 16:
+                raise ValueError(f"Quest data bitmap holding more than 16 bit encountered: '{val}'.")
+            val = bitmap2bytes(val[::-1])
+        if isinstance(val, bytes):
+            if len(val) < 2:
+                val = val + b'\x00' * (2 - len(val))
+            elif len(val) > 2:
+                raise  ValueError(f"Quest data byte-map holding more than 2 bytes encountered: '{val}'.")
+        if len(data) < 96:
+            data = data + b'\x00' * (96 - len(data))
+        return data[:self.value] + val + data[:(self.value + 2)]
 
     def __str__(self) -> str:
-        if self.name[3] == 'Q':
+        """:return human-readable string representation of this here Enum entry."""
+        if self.is_quest:
             s = self.name[5:]
             s = s.replace('__', "'")
             wordlets = ['OF', 'FOR', 'THE', 'TO', 'ON', 'IN']
@@ -2234,32 +2303,64 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         res = dict()
         quests = [q for q in E_Quest][1:]  # << Ignore leading EQ_NONE.
         for quest in quests:
-            pos = quest.pos_byte(difficulty)
+            pos = quest.pos_byte_in_d2s(difficulty)
             res[quest] = self.data[pos:(pos+2)]
         return res
 
     def get_quests_simplified(self) -> Dict[E_Progression, str]:
-        """:returns a bitmap with a bit for each quest. 0 means quest is 0 completely. Else 1. Aims at displays."""
+        """:returns a length 27-bitmap string with a bit for each quest. 0 means quest is 0 completely. Else 1. Aims at displays."""
         res = dict()  # type: Dict[E_Progression, str]
-        quests = [q for q in E_Quest][1:]  # << Ignore leading EQ_NONE.
+        quests = [q for q in E_Quest]  # << Ignore leading EQ_NONE.
         for difficulty in [E_Progression.EP_NORMAL, E_Progression.EP_NIGHTMARE, E_Progression.EP_HELL]:
             s = ''
             for quest in quests:
-                pos = quest.pos_byte(difficulty)
+                if not quest.is_quest:
+                    continue
+                pos = quest.pos_byte_in_d2s(difficulty)
                 s = s + ('0' if (self.data[pos:(pos+2)] == b'\x00\x00') else '1')
             res[difficulty] = s
         return res
 
     def set_quests_simplified(self, codes: Dict[E_Progression, str]):
-        quests = [q for q in E_Quest][1:]  # << Ignore leading EQ_NONE.
+        """Will set quests to completed('11100000 00001000 ') or reset ('00000000 00000000').
+        Markers will be set to '10000000 00000000' or 0, depending on their position between '1'-set quests.
+        :param codes:
+          keys: Target difficulty level. Normal, nightmare or hell.
+          values: length 27 bitmap, that may include '.' values for 'ignore this quest'.
+            Order matches the order of quests in the game from 'Cave of Evil', .., 'Eve of Destruction'
+            This sophisticated function will also set markers encountered on the way as appropriate.
+            If there are quest beyond a given marker, that are set, the marker is set to '\x01\x00'."""
+        quests = [q for q in E_Quest]
         for difficulty in codes:
-            if difficulty == E_Progression.EP_MASTER:
+            if difficulty not in (E_Progression.EP_NORMAL, E_Progression.EP_NIGHTMARE, E_Progression.EP_HELL):
                 continue
-            code = re.sub("[^0-1]", '.', codes[difficulty])
-            for j in range(min(len(code), len(quests))):
-                if code[j] not in '01':
+            code_27 = codes[difficulty]
+            if len(code_27) < 27:
+                code_27 = code_27 + '.' * (27 - len(code_27))
+            if len(code_27) > 27:
+                raise ValueError(f"Quest code is needed as 27-bitmap. Something of length '{len(code_27)}' was provided: {code_27}.")
+            code_40 = '.' * 40
+            c = 0
+            for j in range(len(quests)):
+                if quests[j].is_quest:
+                    code_40 = code_40[:j] + code_27[c] + code_40[(j+1):]
+                    c = c + 1
+            # The code up to the final '1' should have markers set.
+            code_to_be_marked = re.sub('[^1]*$', '', code_40)
+            for j in range(len(code_to_be_marked)):
+                if quests[j].is_marker:
+                    code_to_be_marked = code_to_be_marked[:j] + '1' + code_to_be_marked[(j+1):]
+            code_40 = code_to_be_marked + code_40[len(code_to_be_marked):]
+            data = E_Quest.get_quest_block(self.data, difficulty)
+            for j in range(len(quests)):
+                quest = quests[j]
+                if quests[j].is_padding:
                     continue
-                self.data = quests[j].set_quest(self.data, difficulty, code[j] == '1')
+                if code_40[j] == '0':
+                    data = data[:quest.value] + b'\x00\x00' + data[(quest.value + 2):]
+                elif code_40[j] == '1':
+                    data = data[:quest.value] + (b'\x07\x10' if quest.is_quest else b'\x01\x00') + data[(quest.value + 2):]
+            self.data = E_Quest.set_quest_block(self.data, data, difficulty)
 
     @property
     def highest_accessible_act(self) -> Dict[E_Progression, int]:
@@ -2271,7 +2372,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             #  Also, I interpret 'quest 6 in Act V completed' as 'has won the game'.
             #  So the indices are: Has travelled to Act (II, III, IV, V) and (has won).]
             for base in (E_Quest.EQ_M_TO_ACT_II, E_Quest.EQ_M_TO_ACT_III, E_Quest.EQ_M_TO_ACT_IV, E_Quest.EQ_M_TO_ACT_V):
-                index = base.pos_byte(prog)
+                index = base.pos_byte_in_d2s(prog)
                 if self.data[index:(index + 2)] == b'\x00\x00':
                     break
                 act = act + 1
@@ -2280,22 +2381,28 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     @highest_accessible_act.setter
     def highest_accessible_act(self, mp: Dict[E_Progression, int]):
-        """Sets markers to the quests data structures to make the acts accessible in theory."""
-        offsets = [[], [E_Quest.EQ_M_TO_ACT_II],
-                   [E_Quest.EQ_M_TO_ACT_III],
-                   [E_Quest.EQ_M_TO_ACT_IV],
-                   [E_Quest.EQ_M_TO_ACT_V, E_Quest.EQ_M_TERRORS_END]]  # type: List[List[E_Quest]]
-        for key in mp:
-            act = min(mp[key], 4)
+        """Sets markers to the quests data structures to make the acts accessible in theory. Meaning:
+        * Final quests in previous acts will be set to 11100000 00001000
+        * Markers in previous quests will be set to 10000000 00000000."""
+        quests = [q for q in E_Quest]
+        for difficulty in mp:
+            data = E_Quest.get_quest_block(self.data, difficulty)
+            act = min(mp[difficulty], 4)
             if act < 1:
                 continue  # Nothing to do. Act I is always accessible.
-            elif act > 4:
-                act = 4
-            for j in range(1, len(offsets)):
-                val = b'\x01\x00' if j <= act else b'\x00\x00'
-                for offset in offsets[j]:
-                    index = offset.pos_byte(key)
-                    self.data = self.data[:index] + val + self.data[(index + 2):]
+            for quest in quests:
+                if quest.is_padding:
+                    continue
+                if quest.is_quest and (quest not in [#E_Quest.EQ_Q_SISTERS_TO_THE_SLAUGHTER, E_Quest.EQ_Q_THE_SEVEN_TOMBS,
+                                                     E_Quest.EQ_Q_THE_GUARDIAN, E_Quest.EQ_Q_TERROR__S_END]):
+                    continue
+                if quest.index_act >= act:
+                    break
+                val_old = int.from_bytes(data[quest.value:(quest.value+2)], 'little')
+                val_new = int.from_bytes(b'\x01\x00' if quest.is_marker else b'\x07\x10', 'little')
+                val = int.to_bytes(val_old | val_new, 2, 'little')
+                data = data[:quest.value] + val + data[(quest.value+2):]
+            self.data = E_Quest.set_quest_block(self.data, data, difficulty)
 
     @property
     def n_cube_contents_shallow(self) -> int:
