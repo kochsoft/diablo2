@@ -527,8 +527,13 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         # [Note: Enabling all waypoints for a level 86 character is a nice touch, that I do want. Use-case for
         #  This option is battling Baal in Hell. However, there are issues around quests.
         #  Should this ever be fixed: Do similar calls for lower difficulties with enable Nightmare and enable Hell.]
-        # bm = '111111111111111111111111111111111111111'
-        # data.waypoint_map = {E_Progression.EP_NORMAL: bm, E_Progression.EP_NIGHTMARE: bm, E_Progression.EP_HELL: bm}
+        bm = '111111111111111111111111111111111111111'
+        data.waypoint_map = {E_Progression.EP_NORMAL: bm, E_Progression.EP_NIGHTMARE: bm, E_Progression.EP_HELL: bm}
+
+        # TODO: This is extreme, but it will open up Tab V properly. Remove, once the setter to highest_accessible_act is fixed.
+        all_done = E_Quest.get_example_completed_quests()
+        data.data = data.data[:345] + (3 * all_done) + data.data[(345+3*len(all_done)):]
+
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
     def runic_cube(self, text_runic_cube: str):
@@ -943,8 +948,7 @@ Beware!"""
 
         self.button_enable_nirvana = tk.Button(self.tab2, text='Enable Nirvana', command=self.enable_nirvana, width=15, height=1, bg='#009999')
         self.button_enable_nirvana.grid(row=4, column=5, sticky='w')
-        # Hovertip(self.button_enable_nirvana, 'Beat Hell, transcend the World (enabling all waypoints), raise your character\'s level to 86 (if necessary), and fill his stash with gold.')
-        Hovertip(self.button_enable_nirvana, 'Beat Hell, and raise your character\'s level to 86 (if necessary), and fill his stash with gold.')
+        Hovertip(self.button_enable_nirvana, 'Beat Hell, transcend the World (enabling all waypoints, solving all quests), raise your character\'s level to 86 (if necessary), and fill his stash with gold.')
 
         var_runic_cube = tk.StringVar()
         var_runic_cube.set("ort, sol, t4, t4, b4, t0, a0")

@@ -702,53 +702,68 @@ class E_Waypoint(Enum):
         return ' '.join(elts)
 
 class E_Quest(Enum):
-    """Code is the position in bytes, beginning after the quest 10-byte header (Woo!) at byte 345.
-    Convention: A double __ in an enum name shall signify an apostrophe."""
-    EQ_NONE = 0
+    """value is the position in bytes, beginning after the quest 10-byte header (Woo!) at byte 345.
+    Convention: A double __ in an enum name shall signify an apostrophe.
+    After the EQ there is a classification for a byte pair.
+      M: Marker (\x00\x00 or \x01\x00), Q: Quest, P: Padding (\x00\x00 always)"""
+    EQ_M_WARRIV = 0
 
-    EQ_DEN_OF_EVIL = 2
-    EQ_SISTERS___BURIAL_GROUNDS = 4
-    EQ_SEARCH_FOR_CAIN = 6
-    EQ_THE_FORGOTTEN_TOWER = 8
-    EQ_TOOLS_OF_THE_TRADE = 10
-    EQ_SISTERS_TO_THE_SLAUGHTER = 12
+    EQ_Q_DEN_OF_EVIL = 2
+    EQ_Q_SISTERS___BURIAL_GROUNDS = 4
+    EQ_Q_SEARCH_FOR_CAIN = 6
+    EQ_Q_THE_FORGOTTEN_TOWER = 8
+    EQ_Q_TOOLS_OF_THE_TRADE = 10
+    EQ_Q_SISTERS_TO_THE_SLAUGHTER = 12
 
-    EQ_RADAMENT__S_LAIR = 18
-    EQ_THE_HORADRIC_STAFF = 20
-    EQ_TAINTED_SUN = 22
-    EQ_ARCANE_SANCTUARY = 24
-    EQ_THE_SUMMONER = 26
-    EQ_THE_SEVEN_TOMBS = 28
+    EQ_M_TO_ACT_II = 14
+    EQ_M_JERHYN = 16
 
-    EQ_THE_GOLDEN_BIRD = 34
-    EQ_BLADE_OF_THE_OLD_RELIGION = 36
-    EQ_KHALIM__S_WILL = 38
-    EQ_LAM_ESEN__S_TOME = 40
-    EQ_THE_BLACKENED_TEMPLE = 42
-    EQ_THE_GUARDIAN = 44
+    EQ_Q_RADAMENT__S_LAIR = 18
+    EQ_Q_THE_HORADRIC_STAFF = 20
+    EQ_Q_TAINTED_SUN = 22
+    EQ_Q_ARCANE_SANCTUARY = 24
+    EQ_Q_THE_SUMMONER = 26
+    EQ_Q_THE_SEVEN_TOMBS = 28
 
-    EQ_FALLEN_ANGEL = 50
-    EQ_HELL__S_FORGE = 52
-    EQ_TERROR__S_END = 54
+    EQ_M_TO_ACT_III = 30
+    EQ_M_HRATLI = 32
 
-    EQ_SIEGE_ON_HARROGATH = 70
-    EQ_RESCUE_ON_MOUNT_ARREAT = 72
-    EQ_PRISON_OF_ICE = 74
-    EQ_BETRAYAL_IN_HARROGATH = 76
-    EQ_RITE_OF_PASSAGE = 78
-    EQ_EVE_OF_DESTRUCTION = 80
+    EQ_Q_THE_GOLDEN_BIRD = 34
+    EQ_Q_BLADE_OF_THE_OLD_RELIGION = 36
+    EQ_Q_KHALIM__S_WILL = 38
+    EQ_Q_LAM_ESEN__S_TOME = 40
+    EQ_Q_THE_BLACKENED_TEMPLE = 42
+    EQ_Q_THE_GUARDIAN = 44
+
+    EQ_M_TO_ACT_IV = 46
+    EQ_M_CAIN = 48
+
+    EQ_Q_FALLEN_ANGEL = 50
+    EQ_Q_HELL__S_FORGE = 52
+    EQ_Q_TERROR__S_END = 54
+
+    EQ_M_TO_ACT_V = 56
+    EQ_P_1 = 58
+    EQ_P_2 = 60
+    EQ_P_3 = 62
+    EQ_M_TERRORS_END = 64
+    EQ_P_4 = 66
+    EQ_P5 = 68
+
+    EQ_Q_SIEGE_ON_HARROGATH = 70
+    EQ_Q_RESCUE_ON_MOUNT_ARREAT = 72
+    EQ_Q_PRISON_OF_ICE = 74
+    EQ_Q_BETRAYAL_IN_HARROGATH = 76
+    EQ_Q_RITE_OF_PASSAGE = 78
+    EQ_Q_EVE_OF_DESTRUCTION = 80
 
     @staticmethod
-    def get_enum_entry_by_index(index: int):
-        """:returns the indexth quest in the list. Ignores EQ_NONE.
-        :raises ValueError(..) if index is either too large or <0."""
-        entries = [e for e in E_Quest][1:]  # << First entry is EQ_NONE.
-        if index < 0 or index >= len(entries):
-            raise ValueError(f"Impossible index '{index}'. There are {len(entries)} quests in total.")
-        return entries[index]
+    def get_example_completed_quests() -> bytes:
+        """:returns an example of a 96 bytes quest structure in a game that has all quests and the cow level concluded."""
+        return b'\x01\x00\x01\x10\x1d\x10M\x90\x1d\x14U\x10\x1d\x10\x01\x00\x01\x00\x1d\x10y\x1c\r\x10\x81\x11\x05\x10%\x1e\x01\x00\x01\x00\x01\x10\xfd\x10\xf9\x13\x01\x10\x1d\x10q\x10\x01\x00\x01\x00\x01\x10\x01\x13\x01\x10\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00!\x90\x01\x10\x8d\x17\x1d\x10}\x13\xed\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
     def pos_byte(self, difficulty: E_Progression) -> int:
-        """:returns the first byte of this quest given difficulty level."""
+        """:returns the first byte of this quest given difficulty level in the entire file."""
         if difficulty == E_Progression.EP_NORMAL:
             addendum = 0
         elif difficulty == E_Progression.EP_NIGHTMARE:
@@ -763,16 +778,20 @@ class E_Quest(Enum):
         :param difficulty: Difficulty level intended for quest data altering.
         :param complete_rather_than_reset: If True, will set the quest to 1000000000001000, else 0000000000000000.
         :returns a copy of the given whole-save-game-data with altered quest-data."""
-        val = int.to_bytes(2**12 + 1, 2, 'little', signed = False) if complete_rather_than_reset else b'\x00\x00'
+        val = self.get_example_completed_quests()[self.value:(self.value+2)] if complete_rather_than_reset else b'\x00\x00'
         pos = self.pos_byte(difficulty)
+
         return data[:pos] + val + data[(pos+2):]
 
     def __str__(self) -> str:
-        s = self.name[3:]
-        s = s.replace('__', "'")
-        wordlets = ['OF', 'FOR', 'THE', 'TO', 'ON', 'IN']
-        res = ' '.join([x.lower() if x in wordlets else (x[0].upper() + x[1:].lower()) for x in s.split('_')])
-        return res[0].upper() + res[1:]
+        if self.name[3] == 'Q':
+            s = self.name[5:]
+            s = s.replace('__', "'")
+            wordlets = ['OF', 'FOR', 'THE', 'TO', 'ON', 'IN']
+            res = ' '.join([x.lower() if x in wordlets else (x[0].upper() + x[1:].lower()) for x in s.split('_')])
+            return res[0].upper() + res[1:]
+        else:
+            return self.name[3:]
 
 class E_ItemBlock(Enum):
     """Convenience enum for handling the major item organisation sites.
@@ -2130,37 +2149,6 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
     def level_by_header(self, value: int):
         self.data = self.data[:43] + int.to_bytes(value, 1, 'little') + self.data[44:]
 
-    def get_quests(self, difficulty: E_Progression) -> Dict[E_Quest, bytes]:
-        res = dict()
-        quests = [q for q in E_Quest][1:]  # << Ignore leading EQ_NONE.
-        for quest in quests:
-            pos = quest.pos_byte(difficulty)
-            res[quest] = self.data[pos:(pos+2)]
-        return res
-
-    def get_quests_simplified(self) -> Dict[E_Progression, str]:
-        """:returns a bitmap with a bit for each quest. 0 means quest is 0 completely. Else 1. Aims at displays."""
-        res = dict()  # type: Dict[E_Progression, str]
-        quests = [q for q in E_Quest][1:]  # << Ignore leading EQ_NONE.
-        for difficulty in [E_Progression.EP_NORMAL, E_Progression.EP_NIGHTMARE, E_Progression.EP_HELL]:
-            s = ''
-            for quest in quests:
-                pos = quest.pos_byte(difficulty)
-                s = s + ('0' if (self.data[pos:(pos+2)] == b'\x00\x00') else '1')
-            res[difficulty] = s
-        return res
-
-    def set_quests_simplified(self, codes: Dict[E_Progression, str]):
-        quests = [q for q in E_Quest][1:]  # << Ignore leading EQ_NONE.
-        for difficulty in codes:
-            if difficulty == E_Progression.EP_MASTER:
-                continue
-            code = re.sub("[^0-1]", '.', codes[difficulty])
-            for j in range(min(len(code), len(quests))):
-                if code[j] not in '01':
-                    continue
-                self.data = quests[j].set_quest(self.data, difficulty, code[j] == '1')
-
     @property
     def waypoint_map(self) -> Dict[E_Progression, str]:
         """:returns bitmaps for the activated waypoints (little endian) for each level of difficulty.
@@ -2242,48 +2230,72 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         else:
             return 0
 
+    def get_quests(self, difficulty: E_Progression) -> Dict[E_Quest, bytes]:
+        res = dict()
+        quests = [q for q in E_Quest][1:]  # << Ignore leading EQ_NONE.
+        for quest in quests:
+            pos = quest.pos_byte(difficulty)
+            res[quest] = self.data[pos:(pos+2)]
+        return res
+
+    def get_quests_simplified(self) -> Dict[E_Progression, str]:
+        """:returns a bitmap with a bit for each quest. 0 means quest is 0 completely. Else 1. Aims at displays."""
+        res = dict()  # type: Dict[E_Progression, str]
+        quests = [q for q in E_Quest][1:]  # << Ignore leading EQ_NONE.
+        for difficulty in [E_Progression.EP_NORMAL, E_Progression.EP_NIGHTMARE, E_Progression.EP_HELL]:
+            s = ''
+            for quest in quests:
+                pos = quest.pos_byte(difficulty)
+                s = s + ('0' if (self.data[pos:(pos+2)] == b'\x00\x00') else '1')
+            res[difficulty] = s
+        return res
+
+    def set_quests_simplified(self, codes: Dict[E_Progression, str]):
+        quests = [q for q in E_Quest][1:]  # << Ignore leading EQ_NONE.
+        for difficulty in codes:
+            if difficulty == E_Progression.EP_MASTER:
+                continue
+            code = re.sub("[^0-1]", '.', codes[difficulty])
+            for j in range(min(len(code), len(quests))):
+                if code[j] not in '01':
+                    continue
+                self.data = quests[j].set_quest(self.data, difficulty, code[j] == '1')
+
     @property
     def highest_accessible_act(self) -> Dict[E_Progression, int]:
         """Evaluating quest structures for 'has travelled to Act II, III, IV, V'"""
         res = dict()  # type: Dict[E_Progression, int]
-        index_hd = self.data.find(b'Woo!', 335)
-        for j in range(3):
-            val = 0
+        for prog in (E_Progression.EP_NORMAL, E_Progression.EP_NIGHTMARE, E_Progression.EP_HELL):
+            act = 0
             # [Note: It appears that the 'Travelled to Act 5 flag' comes right after the three act IV quests.
             #  Also, I interpret 'quest 6 in Act V completed' as 'has won the game'.
             #  So the indices are: Has travelled to Act (II, III, IV, V) and (has won).]
-            for base in (index_hd + 14, index_hd + 30, index_hd + 46, index_hd + 56, index_hd + 64):
-                index = base + j * 96
-                bm = bytes2bitmap(self.data[index:(index+2)])[::-1]
-                if bm[0] == '1':
-                    val = val + 1
-                else:
+            for base in (E_Quest.EQ_M_TO_ACT_II, E_Quest.EQ_M_TO_ACT_III, E_Quest.EQ_M_TO_ACT_IV, E_Quest.EQ_M_TO_ACT_V):
+                index = base.pos_byte(prog)
+                if self.data[index:(index + 2)] == b'\x00\x00':
                     break
-            res[E_Progression(j * 5)] = val
+                act = act + 1
+            res[prog] = act
         return res
 
     @highest_accessible_act.setter
     def highest_accessible_act(self, mp: Dict[E_Progression, int]):
-        index_hd = self.data.find(b'Woo!', 335)
+        """Sets markers to the quests data structures to make the acts accessible in theory."""
+        offsets = [[], [E_Quest.EQ_M_TO_ACT_II],
+                   [E_Quest.EQ_M_TO_ACT_III],
+                   [E_Quest.EQ_M_TO_ACT_IV],
+                   [E_Quest.EQ_M_TO_ACT_V, E_Quest.EQ_M_TERRORS_END]]  # type: List[List[E_Quest]]
         for key in mp:
-            val = min(mp[key], 5)
-            if val < 1:
-                continue
-            base = index_hd + 10
-            if key == E_Progression.EP_NORMAL:
-                pass
-            elif key == E_Progression.EP_NIGHTMARE:
-                base = base + 96
-            elif key == E_Progression.EP_HELL:
-                base = base + 2 * 96
-            else:
-                continue
-            offsets = (base + 14, base + 30, base + 46, base + 56, base + 64)
-            for j in range(min(val, len(offsets))):
-                index = offsets[j]
-                bm = bytes2bitmap(self.data[index:(index + 2)])[::-1]
-                bm = '1' + bm[1:]
-                self.data = self.data[:index] + bitmap2bytes(bm[::-1]) + self.data[(index + 2):]
+            act = min(mp[key], 4)
+            if act < 1:
+                continue  # Nothing to do. Act I is always accessible.
+            elif act > 4:
+                act = 4
+            for j in range(1, len(offsets)):
+                val = b'\x01\x00' if j <= act else b'\x00\x00'
+                for offset in offsets[j]:
+                    index = offset.pos_byte(key)
+                    self.data = self.data[:index] + val + self.data[(index + 2):]
 
     @property
     def n_cube_contents_shallow(self) -> int:
@@ -3220,7 +3232,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
               f"learned skill-set : {self.skills2str()}\n" \
               f"quest map: {self.get_quests_simplified()}\n" \
               f"waypoint map: {self.waypoint_map}\n" \
-              f"acts completed: {self.highest_accessible_act}"
+              f"highest accessible act: {self.highest_accessible_act}"
         item_analysis = Item(self.data)
         items = item_analysis.get_block_items()
         for item in items:
