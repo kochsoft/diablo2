@@ -523,10 +523,16 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         data = self.verify_hero()
         if not data:
             return
+        # Reset all quests to 0.
+        # [Note: data.waypoint_map = ... below will ensure that the minimal set of quest data is applied.]
+        index_quests = E_Quest.EQ_M_WARRIV.pos_byte_in_d2s(E_Progression.EP_NORMAL)
+        data.data = data.data[:index_quests] + (b'\x00' * 96 * 3) + data.data[(index_quests + 3 * 96):]
         data.enable_nirvana()
         # [Note: Enabling all waypoints for a level 86 character is a nice touch, that I do want. Use-case for
-        #  This option is battling Baal in Hell. However, there are issues around quests.
-        #  Should this ever be fixed: Do similar calls for lower difficulties with enable Nightmare and enable Hell.]
+        #  This option is battling Baal in Hell.]
+        # [Note: First reset all waypoints. This will ensure that the next setting below will also do a quest update.]
+        bm = '100000000100000000100000000100100000000'
+        data.waypoint_map = {E_Progression.EP_NORMAL: bm, E_Progression.EP_NIGHTMARE: bm, E_Progression.EP_HELL: bm}
         bm = '111111111111111111111111111111111111111'
         data.waypoint_map = {E_Progression.EP_NORMAL: bm, E_Progression.EP_NIGHTMARE: bm, E_Progression.EP_HELL: bm}
 
@@ -947,7 +953,7 @@ Beware!"""
 
         self.button_enable_nirvana = tk.Button(self.tab2, text='Enable Nirvana', command=self.enable_nirvana, width=15, height=1, bg='#009999')
         self.button_enable_nirvana.grid(row=4, column=5, sticky='w')
-        Hovertip(self.button_enable_nirvana, 'Beat Hell, transcend the World (enabling all waypoints, solving all quests), raise your character\'s level to 86 (if necessary), and fill his stash with gold.')
+        Hovertip(self.button_enable_nirvana, 'Beat Hell, transcend the World (enabling all waypoints, resetting most quests), raise your character\'s level to 86 (if necessary), and fill his stash with gold.')
 
         var_runic_cube = tk.StringVar()
         var_runic_cube.set("ort, sol, t4, t4, b4, t0, a0")

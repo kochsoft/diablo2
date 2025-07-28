@@ -2383,19 +2383,16 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
     def highest_accessible_act(self, mp: Dict[E_Progression, int]):
         """Sets markers to the quests data structures to make the acts accessible in theory. Meaning:
         * Final quests in previous acts will be set to 11100000 00001000
-        * Markers in previous quests will be set to 10000000 00000000."""
-        quests = [q for q in E_Quest]
+        * Markers in previous quests will be set to 10000000 00000000.
+        Does not reset quests."""
+        quests = [E_Quest.EQ_M_TO_ACT_II, E_Quest.EQ_M_TO_ACT_III, E_Quest.EQ_Q_THE_GUARDIAN,
+            E_Quest.EQ_M_TO_ACT_IV, E_Quest.EQ_M_TO_ACT_V, E_Quest.EQ_Q_TERROR__S_END]
         for difficulty in mp:
             data = E_Quest.get_quest_block(self.data, difficulty)
             act = min(mp[difficulty], 4)
             if act < 1:
                 continue  # Nothing to do. Act I is always accessible.
             for quest in quests:
-                if quest.is_padding:
-                    continue
-                if quest.is_quest and (quest not in [#E_Quest.EQ_Q_SISTERS_TO_THE_SLAUGHTER, E_Quest.EQ_Q_THE_SEVEN_TOMBS,
-                                                     E_Quest.EQ_Q_THE_GUARDIAN, E_Quest.EQ_Q_TERROR__S_END]):
-                    continue
                 if quest.index_act >= act:
                     break
                 val_old = int.from_bytes(data[quest.value:(quest.value+2)], 'little')
