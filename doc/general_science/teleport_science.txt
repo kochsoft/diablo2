@@ -1,0 +1,89 @@
+Factory:
+========
+
+
+Original Data, do not change:
+=============================
+
+Teleport Stab (47 von 48 Charges)
+---------------------------------
+
+Item 'Gothic Staff' (31 bytes) (exceptional, armor: False, weapon: True, sockets: 0/0, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (0, 31)
+Max size in inventory: (3, 2), Defense (base): None, Durability (base): 40/40, Stack: None,
+Parent: IP_STORED, Storage: IS_CUBE, (r:0, c:0), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: False, newly_found: False, starter_gear: False, compact: False, ethereal: False, personalized: False, runeword: False, 
+type code: 8bs, quality: magically_enhanced(4), ilevel: 85, is charm: False, Bit length: 248 (31.0 bytes)
+No known mods recognized.
+  quest_sockets: [108:111], 000
+  quality: [150:154], 0010
+  custom_graphics: [154:155], 0
+  class_specific: [155:156], 0
+  quality_attributes: [156:178], 0000000000000101000010
+  runeword: [178:178], 
+  personalization: [178:178], 
+  tomes: [178:178], 
+  realm: [178:179], 0
+  defense: [179:179], 
+  durability: [179:196], 00010100000101000
+  stack: [196:196], 
+  set: [196:196], 
+  sockets: [196:196], 
+  mods: [196:237], 00110011010100001101100001111010000001100
+  mods_runeword: [248:248], 
+01010010101100100000100000000000000000010000000010100110000000000 0000 000 0001 00011100010001101100111000000100000000100011110010111100000011001111 010101 0010 0000000000000001010000100000101000001010000011001101010000110110000111101000000110011111111100
+b'JM\x10\x00\x80\x00e\x00\x00\x88#6\x07\x02\xc4\xd3\x03\xf3*\x01\x00\nAA\xc1\xac\xb0\xe1\x05\xe6?'
+
+Enigmatic CHARM ilevel 36
+-------------------------
+Item 'Charm Small' (39 bytes) (normal, armor: False, weapon: False, sockets: 0/0, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (0, 39)
+Max size in inventory: (1, 1), Defense (base): None, Durability (base): n.a., Stack: None,
+Parent: IP_STORED, Storage: IS_CUBE, (r:0, c:0), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: False, newly_found: False, starter_gear: False, compact: False, ethereal: False, personalized: False, runeword: False, 
+type code: cm1, quality: magically_enhanced(4), ilevel: 36, is charm: True, Bit length: 312 (39.0 bytes)
+No known mods recognized.
+  quest_sockets: [108:111], 000
+  quality: [150:154], 0010
+  custom_graphics: [154:158], 1100
+  class_specific: [158:159], 0
+  quality_attributes: [159:181], 0000000000000000000000
+  runeword: [181:181], 
+  personalization: [181:181], 
+  tomes: [181:181], 
+  realm: [181:182], 0
+  defense: [182:182], 
+  durability: [182:182], 
+  stack: [182:182], 
+  set: [182:182], 
+  sockets: [182:182], 
+  mods: [182:300], 1111100001100000011001101010001110000000011001000001100001100011011000100000111111100010001110110011000000011110000100
+  mods_runeword: [312:312], 
+01010010101100100000100000000000000000010000000010100110000000000 0000 000 0001 11000110101101101000110000000100000001100110000010111011000010101100 010010 0010 11000000000000000000000000001111100001100000011001101010001110000000011001000001100001100011011000100000111111100010001110110011000000011110000100111111111000
+b'JM\x10\x00\x80\x00e\x00\x008\xd6\x16\x03\x02f\xd0\r5\x12\r\x00\x00\xc0\x87\x81Yq\x80\t\x86\xb1\x11\xfc\x117\x03\x1e\xf2\x1f'
+
+Enigmatic CHARM ilevel 99
+-------------------------
+Item 'Charm Small' (39 bytes) (normal, armor: False, weapon: False, sockets: 0/0, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (0, 39)
+Max size in inventory: (1, 1), Defense (base): None, Durability (base): n.a., Stack: None,
+Parent: IP_STORED, Storage: IS_CUBE, (r:0, c:0), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: False, newly_found: False, starter_gear: False, compact: False, ethereal: False, personalized: False, runeword: False, 
+type code: cm1, quality: magically_enhanced(4), ilevel: 99, is charm: True, Bit length: 312 (39.0 bytes)
+No known mods recognized.
+  quest_sockets: [108:111], 000
+  quality: [150:154], 0010
+  custom_graphics: [154:158], 1100
+  class_specific: [158:159], 0
+  quality_attributes: [159:181], 0000000000000000000000
+  runeword: [181:181], 
+  personalization: [181:181], 
+  tomes: [181:181], 
+  realm: [181:182], 0
+  defense: [182:182], 
+  durability: [182:182], 
+  stack: [182:182], 
+  set: [182:182], 
+  sockets: [182:182], 
+  mods: [182:300], 1111100001000000011001101010001110000000011001000001100001100011011000100000111111100010001110110011000000011110000100
+  mods_runeword: [312:312], 
+01010010101100100000100000000000000000010000000010100110000000000 0000 000 0001 11000110101101101000110000000100000001100110000010111011000010101101 100011 0010 11000000000000000000000000001111100001000000011001101010001110000000011001000001100001100011011000100000111111100010001110110011000000011110000100111111111000
+b'JM\x10\x00\x80\x00e\x00\x008\xd6\x16\x03\x02f\xd0\r\xb51\r\x00\x00\xc0\x87\x80Yq\x80\t\x86\xb1\x11\xfc\x117\x03\x1e\xf2\x1f'
+
