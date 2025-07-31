@@ -300,3 +300,156 @@ These three bytes range from [Bit 76:Bit 100]. This means a bit shift of 4 if yo
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/crafted_runes.png" alt="Jah, Ith, Ber, and, for show, a Zod rune." class="center_img"><br />
   <figcaption><b>Fig.10</b> - Jah, Ith, Ber, some gems, a skull, and, for show, a Zod rune. All from Horazon's workshop.</figcaption>
 </figure>
+<h3>Small Charm Crafting, OSkills, the Enigma of Runeword Magic</h3>
+<p>
+Concluding this Wiki let's do some real black magic!
+One of the most fascinating properties in the game is the <b>Teleport +1</b> on the Enigma runeword.
+It is special in being not a skill, but a so-called oskill. The fine difference is, that usually
+a spell is either restricted to a specific class (<b>Teleport +1 (Sorceress only)</b>), or it is
+on some charged artefact that needs to be equipped, and repaired after usage.
+The Oskill is like having actually learned the spell. The character pays not in charges, but in mana!
+</p><p>
+Let's take the teleport oskill out of the Enigma and put it into a small charm for shoving into your pocket.
+First, we need access to an Enigma. No problem, if you have read above example on creating a
+"Breath of the Dying" runeword weapon.
+</p>
+<figure>
+  <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/armor_enigma.png" alt="A Great Hauberk elite armor bearing an Enigma Runeword." class="center_img"><br />
+  <figcaption><b>Fig.11</b> - Isn't it a beauty? Let's get to work!</figcaption>
+</figure>
+<p>
+Ensure, the Enigma is within the Horadric Cube, save the game, exit, open Horazon's Folly and there-in load your hero's .d2s file.
+This will show his entire inventory within the info field. One element, doubtless, is the Enigma.
+It might look like this:
+</p><code>
+Item 'Great Hauberk' (43 bytes) (elite, armor: True, weapon: False, sockets: 3/3, stack: False, set: False) IB_PLAYER #13 personalization: 'None', index: (1109, 1152)
+Max size in inventory: (3, 2), Defense (base): 463, Durability (base): 50/50, Stack: None,
+Parent: IP_STORED, Storage: IS_CUBE, (r:0, c:0), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: True, newly_found: False, starter_gear: False, compact: False, ethereal: False, personalized: False, runeword: True, 
+type code: urs, quality: normal(2), ilevel: 99, is charm: False, Bit length: 344 (43.0 bytes)
+No known mods recognized.
+  quest_sockets: [108:111], 110
+  quality: [150:154], 0100
+  custom_graphics: [154:155], 0
+  class_specific: [155:156], 0
+  quality_attributes: [156:156], 
+  runeword: [156:172], 1101110000001010
+  personalization: [172:172], 
+  tomes: [172:172], 
+  realm: [172:173], 0
+  defense: [173:184], 10011011100
+  durability: [184:201], 01001100010011000
+  stack: [201:201], 
+  set: [201:201], 
+  sockets: [201:205], 1100
+  mods: [205:205], 
+  mods_runeword: [214:332], 1111100001000000011001101010001110000000011001000001100001100011011000100000111111100010001110110011000000011110000100
+Byte code of the Basic Item (no runes!): b"JM\x10\x08\x80\x04e\x00\x00X'7\x072\xe8\x1c~\xd4\xb1\xb0\x03%;22\xe6\xff\x87\x80Yq\x80\t\x86\xb1\x11\xfc\x117\x03\x1e\xf2\x1f"
+</code>
+<p>
+Now you could hit "Forge Charm", drink the potion at the bottom of the screen, reload the game, and find an overpowered small charm, created from the runeword power.
+</p>
+<figure>
+  <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/small_charm_enigma.png" alt="The Enigma Runeword magic on a small charm." class="center_img"><br />
+  <figcaption><b>Fig.12</b> - Works as a charm. But can we have individual components?</figcaption>
+</figure>
+<p>At the beginning of this text there is a link to the .d2s format page <a href="https://github.com/WalterCouto/D2CE/blob/main/d2s_File_Format.md">D2CE</a>.
+Standing on its authors' shoulders enabled this entire Horadric Exchange project. Yet, the text of that format compendium does not include the
+specifics of modifications, that may be part of extened objects, granting them magical properties. However, I found it hard to find specifics on the
+modifications' inner workings on the internet. And this text, too, will leave questions open. Let's see, what we can learn.
+</p><p>
+For understanding modifications, we need to leave the green fields of byte code, and step down to the world of the binary.
+For that, <b>first know, that the following is in the strict little endian spirit of the whole project. Meaning,
+the most insignificant bits come first, and a binary of '1011' equals '1+4+8=13', and not '8+2+1=11'.
+</p>
+<code>
+1111100001000000011001101010001110000000011001000001100001100011011000100000111111100010001110110011000000011110000100
+</code>
+<p>
+Above is the entire modification section from the Enigma runeword modifications. But how to read it?
+First off, there is no such thing as a header to it. It is a plain list of the subsequent properties,
+that will not be necessarily displayed in the same order, when you view the item in the game.
+Also, the individual items are not of uniform length.
+The common factor is, that they all start with a 9 bit id. That id defines what comes after as parameters. Here are the specifics:
+</p>
+<ul>
+<li>111110000 10000000110: "Defense Bonus 759". After the 9-bit id, like in the regular defense section, we see 11 bits of plain defense value, with an offset of -10. So, the value we are looking for, is 759+10=769.</li>
+<li>011010100 0111000: "14 Life/Kill". The 14 in encoded plainly, in 7 bit.</li>
+<li>000001100 1000001: "45% Faster Run/Walk". 7 bit, too. The payload value is 65.</li>
+<li>100001100 011011000 100000: "Teleport +1". The coveted oskill property. Pretty confident, that the id is general for 'oskill'. The 9+6 parameter in turn is made from the skill ID "54" for teleport, and the skill level, which is plain 1<sup>1</sup>.</li>
+<li>111111100 010: "+2 to all Skills". A memorable ID, followed by 3 bits for the parameter.</li>
+<li>001110110 011000: "+64 Strength", based on character level (which is 86).</li>
+<li>000011110 000100: "+86 Magic Find", based on character level (which is 86).</li>
+</ul>
+<p>
+1): A large list of such IDs may be found here: <a href="https://github.com/WalterCouto/D2CE/blob/main/source/res/TXT/global/excel/skills.txt">https://github.com/WalterCouto/D2CE/blob/main/source/res/TXT/global/excel/skills.txt</a>.
+</p>
+<p>These are leads to dissecting any modification section. Afterwards you will have to translate the section back into appropriately shifted byte code and insert it into, e.g., a small charm. If python is an option for you, consider a function like that (it is not part of Horazon's Folly, which is about ease of use, which is not, what we get, when modifying individual bits, fun as that may be:
+</p>
+<code>
+def bin2bts(bin, pfname="/home/your_awesome_username/enigma.cube"):
+    """Will insert the given binary string (little endian) into a template for a small charm.
+    Then it will pad the result, convert it into a proper bytes string and write it to disk.
+    :param bin: Little endian style string holding the entire modification section to be put
+      into a small charm.
+    :param pfname: Path and file name to the .cube file that will be created. It will hold
+      a complete small charm that can be loaded into a Horadric Cube, using Horazon's Folly.
+    :returns: The bytes string that is also written into new file pfname."""
+    bin = '01010010101100100000100000000000000000010000000010100110000000000000000000011100011010110110100011000000010000000110011000001011101100001010110110001100101100000000000000000000000000' + bin + '111111111'
+    while len(bin) % 8 != 0:
+        bin = bin + '0'
+    n = len(bin)//8
+    val = int(bin[::-1],2)
+    bts = val.to_bytes(n,'little')
+    with open(pfname, 'wb') as OUT:
+        OUT.write(bts)
+    return bts
+</code>
+<p>Using above function will result in this byte code, when creating an oskill "Teleport +5"
+on a small charm.</p>
+<code>
+b'JM\x10\x00\x80\x00e\x00\x008\xd6\x16\x03\x02f\xd0\r\xb51\r\x00\x00@\x18\x1b\xc5\x7f'
+</code>
+<p>
+Experiment! Modify bit by bit. The worst that can happen, is that the game won't start due to corrupt inventory data. You can even replace the corrupt item with your next attempt, using Horazon's Folly.
+</p>
+<figure>
+  <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/small_charm_teleport_5.png" alt="Oskill Teleport +5 on a small charm." class="center_img"><br />
+  <figcaption><b>Fig.13</b> - Neatly tucked away into the backpack, this will allow anyone to fly. Provided level 22 has been reached and there is a minimum of mana.</figcaption>
+</figure>
+<h3>Putting an Army onto a Small Charm.</h3>
+<p>
+Consider that Paladin. The lonely hero, although such a nice social person! He should have
+an army to care for as no one does like he does.
+</p><p>
+Let's design a small charm for that! It should have some useful oskills. An oskill has the shape: <b>100001100[9 bit skill id][6 bit level]</b>. Our charm could have:
+</p>
+<ul>
+<li>101001000 001010 (37): Warmth +20</li>
+<li>011011000 101000 (54): Teleport +5</li>
+<li>101000100 001010 (69): Skeleton Mastery +20</li>
+<li>111100100 001010 (79): Golem Mastery +20</li>
+<li>011000100 010100 (70): Raise Skeleton +10</li>
+<li>000010100 010100 (80): Raise Skeletal Mage +10</li>
+<li>111110100 101000 (96): Revive: +5</li>
+<li>110100100 010100 (75): Clay Golem +10</li>
+<li>000001000 010100 (32): Valkyrie +10</li>
+</ul>
+<p>
+Putting it all together, each with the prefix, 100001100, leads to:
+</p>
+<code>
+>>> binary =  '100001100101001000001010100001100011011000101000100001100101000100001010100001100111100100001010100001100011000100010100100001100000010100010100100001100111110100101000100001100110100100010100100001100000001000010100'
+
+>>> bin2bts(binary, '/home/kochmn/small_charm_summoners_delight.cube')
+
+b'JM\x10\x00\x80\x00e\x00\x008\xd6\x16\x03\x02f\xd0\r\xb51\r\x00\x00@\x98\x12T\x18\x1bE\x98"T\x98\'T\x18#J\x18(J\x98/E\x98%J\x18\x10\xca\x7f'
+</code>
+<figure>
+  <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/small_charm_summoners_delight.png" alt="Oskill Necromancer Army and Lady on a small charm." class="center_img"><br />
+  <figcaption><b>Fig.14</b> - Pocket Army.</figcaption>
+</figure>
+<figure>
+  <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/paladin_army.png" alt="Paladin Army." class="center_img"><br />
+  <figcaption><b>Fig.15</b> - The Dead have returned to aid the cause of Heaven.</figcaption>
+</figure>
