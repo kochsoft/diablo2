@@ -1,39 +1,55 @@
+General Findings:
+=================
+Binary codes are in strict little endian.
+
+There seems to be no header to the mods section.
+
+The first bits, e.g., for
+the enigmatic Level 99 small charm, are: 111110000 10000000110
+This is some 9 bit ID for defense bonus, followed by the regular 11 bit
+for defense bonus. Hier: 769 == 759+10 == 10000000110. This is the first bonus
+in the mod-code. Works: Dropping it drops the defense bonus from the small charm.
+
+Continuing with enigmatic level 99 charm: Following the armor
+011010100 0111000 are id and value for 14 life/kill. Cutting them removes that
+property, too.
+
+
+Fun Fact: Experimenting, randomly found:
+bin="0001100001100011011000100" << +99 max damage.
+
 Factory:
 ========
-Teleport has skill id 54 == 011011. Theorie: Diese ID hat 9 bit: 011011000
+Teleport has skill id 54 == 011011000. Diese ID hat 9 bit.
+Wir wollen den OSkill.
 
 Mod TeleportStab.
-47 = 111101
-48 = 000011
+47 = 11110100
+48 = 00001100
 5 = 101...
 132 = 10100001 (Falls negativer Wert 127+5==132)
 Teleport Code, der das +5 enthält.
     0011001101010000110110000
+
 =>47/48 == 11110100 00001100 (jeweils ein Byte)
   mods: [196:237], 001100110101000 011011000 0 1111010000001100
-
 Theorie: 001100110101000 <- Das ist ein notwendiger Präfix.
 
 Mod Charm mit ilevel 99.
 +2 to Skills, 45% Run Walk, +1 Teleport, +759 Defense, +64 Strength based on Character Level (86), +14 Life/Kill, 86% Magic find based on Character Level (86)
 
-759: 1110111101
-Oder 33528
+Ruestungskklasse 759+10, 11bit: 10000000110
+Ruestungskklasse 761+10, 11bit: 11000000110
 
 Theorie: Dieser Code ist es, basiert auf der id 54 und dem +1 Level:
 011011000100000
+id: 011011000 bonus: 100 ??: 00
 
-99: 1111100001000000011001101010001110000000011001000001100001100011011000100000111111100010001110110011000000011110000100
-36: 1111100001100000011001101010001110000000011001000001100001100011011000100000111111100010001110110011000000011110000100
+99: 111110000 10000000110  #<< Ruestungsklasse 769
+011010100 01110000000011001000001100001100 011011000100000111111100010001110110011000000011110000100
 
-Konstruktion (Mod-Sektion des ilevel 99 charm durch '011011000100000' ersetzt:
+36: 111110000 11000000110 # << Ruestungsklasse 771 01101010001110000000011001000001100001100011011000100000111111100010001110110011000000011110000100
 
-s = '0101001010110010000010000000000000000001000000001010011000000000000000000001110001101011011010001100000001000000011001100000101110110000101011011000110010110000000000000000000000000001101100010000011111111100'[::-1]
-val = int(s,2)
-bts = val.to_bytes(208//8,'little')
-# JM\x10\x00\x80\x00e\x00\x008\xd6\x16\x03\x02f\xd0\r\xb51\r\x00\x00\x80\x8d\xe0?
-with open("/home/kochmn/enigma.cube", 'wb') as OUT:
-    OUT.write(bts)
 
 Template:
 
@@ -52,20 +68,10 @@ Teleport hat 54 == 0110110. Ersetze den Code.
 => 110101100011011000100
 Damit gelingt +1 Teleport (Sorceress only)! :-)
 
-bin = '01010010101100100000100000000000000000010000000010100110000000000000000000011100011010110110100011000000010000000110011000001011101100001010110110001100101100000000000000000000000000110101100011011000100111111111'
-bts = bin2bts(bin)
-bts == b'JM\x10\x00\x80\x00e\x00\x008\xd6\x16\x03\x02f\xd0\r\xb51\r\x00\x00\xc0\x1a\x1b\xf9\x0f'
-
 Weitere Experimente damit:
 => 110101100 011011000 110 anstelle von 100 liefert +3
 => 110101100 011011000 111 anstelle von 100 liefert +7
 107
-
-110101100  << ersetze diesen Prefix mit:
-^Führt zu nichts.
-
-bin='110101100011011000101'
-bts = bin2bts(bin)
 
 def bin2bts(bin, pfname="/home/kochmn/enigma.cube"):
     bin = '01010010101100100000100000000000000000010000000010100110000000000000000000011100011010110110100011000000010000000110011000001011101100001010110110001100101100000000000000000000000000' + bin + '111111111'
@@ -78,6 +84,32 @@ def bin2bts(bin, pfname="/home/kochmn/enigma.cube"):
         OUT.write(bts)
     return bts
 
+
+Sorceress Teleport +1
+  110101100011011000100
+
+bin=                                                     110101100011011000100'
+
+Hier war ich: Schon getestet. Hier fehlen dann Ruestung und +14 Life/kill
+bin='0000011001000001100001100011011000100000111111100010001110110011000000011110000100'
+
+Vermute, dass 011010100 auch eine ID ist: 86.
+bin='1110000000011001000001100001100011011000100000111111100010001110110011000000011110000100'
+
+
+
+
+ilevel99 armor cut und +14 life/kill cut: 011010100 0111000
+bin='0000011001000001100001100011011000100000111111100010001110110011000000011110000100'
+
+ilevel99 armor cut (removed prefix of 11111000010000000110); Funktioniert! Kann Armor Bonus wegnehmen.
+bin='01101010001110000000011001000001100001100011011000100000111111100010001110110011000000011110000100'
+
+ilevel99 complete
+bin='1111100001000000011001101010001110000000011001000001100001100011011000100000111111100010001110110011000000011110000100'
+
+bin='0 011011000 101' << leerer Zauber.
+bin="0001100001100011011000100" << Aus ilevel99 geboren: +99 max damage.
 
 Original Data, do not change:
 =============================
@@ -117,10 +149,10 @@ Enigmatic CHARM ilevel 36
 -------------------------
 +2 to Skills
 45% Run Walk
-+1 Teleport
-+761 Defense
++1 Teleport; id 54: 011011000, oskill bonus 1: 100 -> 011011000100
++761 Defense; 761+10, 11bit: 11000000110
 +64 Strength based on Character Level (86)
-+14 Life/Kill
++14 Life/Kill; 011010100 0111000
 86% Magic find based on Character Level (86)
 
 Item 'Charm Small' (39 bytes) (normal, armor: False, weapon: False, sockets: 0/0, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (0, 39)
@@ -152,10 +184,10 @@ Enigmatic CHARM ilevel 99
 -------------------------
 +2 to Skills
 45% Run Walk
-+1 Teleport
-+759 Defense
++1 Teleport; id 54: 011011000, oskill bonus 1: 100
++759 Defense; 759+10, 11bit: 10000000110
 +64 Strength based on Character Level (86)
-+14 Life/Kill
++14 Life/Kill; 011010100 0111000
 86% Magic find based on Character Level (86)
 
 Item 'Charm Small' (39 bytes) (normal, armor: False, weapon: False, sockets: 0/0, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (0, 39)
@@ -183,7 +215,7 @@ No known mods recognized.
 01010010101100100000100000000000000000010000000010100110000000000 0000 000 0001 11000110101101101000110000000100000001100110000010111011000010101101 100011 0010 11000000000000000000000000001111100001000000011001101010001110000000011001000001100001100011011000100000111111100010001110110011000000011110000100111111111000
 b'JM\x10\x00\x80\x00e\x00\x008\xd6\x16\x03\x02f\xd0\r\xb51\r\x00\x00\xc0\x87\x80Yq\x80\t\x86\xb1\x11\xfc\x117\x03\x1e\xf2\x1f'
 
-Wand Corpse Explosion (id: 74 == 0101001) +1 (Necro only):
+Wand Corpse Explosion (id: 74 == 010100100) +1 (Necro only):
 ======================================
 Item 'Wand' (26 bytes) (normal, armor: False, weapon: True, sockets: 0/1, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (0, 26)
 Max size in inventory: (2, 1), Defense (base): None, Durability (base): 15/15, Stack: None,
@@ -205,7 +237,7 @@ No known mods recognized.
   stack: [174:174], 
   set: [174:174], 
   sockets: [174:178], 1000
-  mods: [178:199], 110101100010100100100
+  mods: [178:199], 110101100 010100100100
   mods_runeword: [208:208], 
 01010010101100100000100000010000000000010000000010100110000000000 0000 000 0001 11101110011101100010011000000100000000001000110101001010100111011100 011000 0100 000111100001111000001000110101100010100100100111111111
 b'JM\x10\x08\x80\x00e\x00\x00x\xe7F\x06\x02\x10+\x95;\x86\xe0\xe1A\xacQ\x92\xff'
