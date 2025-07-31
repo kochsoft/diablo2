@@ -2,10 +2,14 @@ General Findings:
 =================
 Binary codes are in strict little endian.
 
-There seems to be no header to the mods section.
+There seems to be no header to the mods section. It is 9bit id and parameter bits
+all the way. Length of parameters seems to depend on the specific id and vary.
 
-The first bits, e.g., for
-the enigmatic Level 99 small charm, are: 111110000 10000000110
+Consider the modification section for the enigmatic small charm (level 99):
+[182:300] 1111100001000000011001101010001110000000011001000001100001100011011000100000111111100010001110110011000000011110000100
+A total of 118 bit. Let's decipher it:
+
+The first bits, are: 111110000 10000000110
 This is some 9 bit ID for defense bonus, followed by the regular 11 bit
 for defense bonus. Hier: 769 == 759+10 == 10000000110. This is the first bonus
 in the mod-code. Works: Dropping it drops the defense bonus from the small charm.
@@ -14,6 +18,20 @@ Continuing with enigmatic level 99 charm: Following the armor
 011010100 0111000 are id and value for 14 life/kill. Cutting them removes that
 property, too.
 
+And this seems to signify the 45% faster run/walk: 000001100 1000001 (65)
+
+And the coveted OSkill teleport +1. Parameters are
+the id of an oskill (9bit), and as parameters:
+  The id of the teleport skill (9bit), and the skill level (3bit): 100001100 011011000 100000
+
+Here go the +2 all Skills: 111111100 010
+
+Here are Strength 64 based on character level (86): 001110110 011000
+
+And finally, Magic Find 86%, based on Character Level (86): 000011110 000100
+
+
+--------------------
 
 Fun Fact: Experimenting, randomly found:
 bin="0001100001100011011000100" << +99 max damage.
@@ -84,26 +102,38 @@ def bin2bts(bin, pfname="/home/kochmn/enigma.cube"):
         OUT.write(bts)
     return bts
 
-
-Sorceress Teleport +1
+Sorceress Teleport +1:
   110101100011011000100
 
-bin=                                                     110101100011011000100'
+Oskill Teleport +1:
+  100001100011011000100000
+
+
+
+Das hier sind 64 Staerke, based on Character Level (86).
+bin='001110110 011000'
+
+Das hier sind 86% Magic find, based on Character Level (86).
+bin='000011110 000100'
+
+Hier verschwinden die +2 all Skills.
+bin='001110110011000000011110000100'
+
+Und hier fehlt auch der Teleport-Zauber.
+bin='111111100010001110110011000000011110000100'
+
+Und hier sind dann auch die 45% Run Walk weg!
+bin='100001100011011000100000111111100010001110110011000000011110000100'
 
 Hier war ich: Schon getestet. Hier fehlen dann Ruestung und +14 Life/kill
 bin='0000011001000001100001100011011000100000111111100010001110110011000000011110000100'
-
-Vermute, dass 011010100 auch eine ID ist: 86.
-bin='1110000000011001000001100001100011011000100000111111100010001110110011000000011110000100'
-
-
-
 
 ilevel99 armor cut und +14 life/kill cut: 011010100 0111000
 bin='0000011001000001100001100011011000100000111111100010001110110011000000011110000100'
 
 ilevel99 armor cut (removed prefix of 11111000010000000110); Funktioniert! Kann Armor Bonus wegnehmen.
 bin='01101010001110000000011001000001100001100011011000100000111111100010001110110011000000011110000100'
+
 
 ilevel99 complete
 bin='1111100001000000011001101010001110000000011001000001100001100011011000100000111111100010001110110011000000011110000100'
