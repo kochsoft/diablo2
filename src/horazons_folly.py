@@ -391,7 +391,7 @@ class E_Rune(Enum):
             return "r{0:02d}".format(self.value)
 
         gem_reference = E_Rune(self.value % 10 + 60)
-        quality = floor(self.value / 10) - 4
+        quality = (self.value // 10) - 4
         if quality < 0:
             quality = 0
         elif quality > 4:
@@ -1049,6 +1049,17 @@ d_data_tpl = {
 ring_rare_tpl = b'JM\x10\x00\x80\x00e\x00\x00(\x97\xe6\x06\x82/e\xccE\x8f\x85\xd4\xbd\xef\xe8\x8a\xd48\x8c\x88Y\x11\x0bN&|`!\x80!\x90\x82\xe9\x89\x9f4\x1eP\x81\xff'
 # < ------------------------------------------------------------------
 
+# > Gimmicky, forged items. ------------------------------------------
+"""Small (1x1 -- there are no checks to this end so far!) gimmicks as bonus feature for the create rune cube function."""
+d_gimmick = {
+    # Small Charm: Teleport +5 (oskill).
+    'tel': b'JM\x10\x00\x80\x00e\x00\x008\xd6\x16\x03\x02f\xd0\r\xb51\r\x00\x00@\x18\x1b\xc5\x7f',
+    # Small Charm: Breath of the Dying.
+    'bod': b'JM\x10\x00\x80\x00e\x00\x008\xd6\x16\x03\x02f\xd0\r\xb51\r\x00\x00\x00\x00\x9f\x00>\x01\xbe\x01\xbe\x08}\xfb\xf2pt\x81\xd6\t\xe8\x89D\x8c\xe2B\xf6\x1f',
+    # Small Charm: Summoner's Delight (see wiki).
+    'sdt': b'JM\x10\x00\x80\x00e\x00\x008\xd6\x16\x03\x02f\xd0\r\xb51\r\x00\x00@\x98\x12T\x18\x1bE\x98"T\x98\'T\x18#J\x18(J\x98/E\x98%J\x18\x10\xca\x7f'
+}
+# < ------------------------------------------------------------------
 
 def bytes2bitmap(data: bytes) -> str:
     return '{:0{width}b}'.format(int.from_bytes(data, 'little'), width = len(data) * 8)
@@ -2054,6 +2065,17 @@ class Item:
         return res
 
     @staticmethod
+    def create_gimmick(name: str, stash_type = E_ItemStorage.IS_CUBE, row: int = 0, col: int = 0) -> Optional[Item]:
+        """Very special interest. Returns an Item out of d_gimmick above. These are hand-cheated small charms."""
+        if name not in d_gimmick:
+            return None
+        item_gimmick = Item(d_gimmick[name], index_start=0, index_end=len(d_gimmick[name]))
+        item_gimmick.stash_type = stash_type
+        item_gimmick.col = col
+        item_gimmick.row = row
+        return item_gimmick
+
+    @staticmethod
     def create_rune(name: E_Rune, stash_type = E_ItemStorage.IS_CUBE, row: int = 0, col: int = 0) -> Optional[Item]:
         """Creates an 'JM...' byte string with the specified rune.
         :param name: Which rune is to be created?
@@ -2070,6 +2092,8 @@ class Item:
             '00001100' == '0', '10001100' == '1', '01001100' == '2', '11001100' == '3', '00101100' == '4',
             '10101100' == '5', '01101100' == '6', '11101100' == '7', '00011100' == '8', '10011100' == '9'.]"""
         if isinstance(name, str):
+            if name in d_gimmick:
+                return Item.create_gimmick(name, stash_type, row, col)
             try:
                 name = E_Rune.from_name(name)
             except KeyError:

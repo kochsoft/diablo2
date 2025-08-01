@@ -542,23 +542,28 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
     def runic_cube(self, text_runic_cube: str):
-        runes = list(filter(lambda x: x is not None, [E_Rune.from_name(w) for w in re.findall('([a-zA-Z0-9]+)', text_runic_cube)]))
+        """Parses the string given in the runic cube textbox. Allows for runes, gems, and the small charms
+        specified in d_gimmicks."""
+        codes_raw = re.findall('([a-zA-Z0-9]+)', text_runic_cube)
+        codes_runic = list()  # type: List[str]
+        items = list()  # type: List[Item]
+        for cr in codes_raw:
+            if cr in d_gimmick:
+                items.append(Item(d_gimmick[cr], 0, len(d_gimmick[cr])))
+            else:
+                codes_runic.append(cr)
+        runes = list(filter(lambda x: x is not None, [E_Rune.from_name(w) for w in codes_runic]))
         if not runes:
             tk.messagebox.showinfo("Runic Cube", "Use a comma-separated list of rune names and gem codes to create "
                                                  "that set of items in and around your Horadric Cube. E.g., 'ral, ort, tal'.")
             return
-        #runes = runes[:12]
-        items = list()  # type: List[Item]
-        for j in range(len(runes)):
-            row = floor(j / 3)
-            col = j % 3
-            items.append(Item.create_rune(runes[j], E_ItemStorage.IS_CUBE, row, col))
+        for rune in runes:
+            items.append(Item.create_rune(rune, E_ItemStorage.IS_CUBE)) #, row, col))
         data = self.verify_hero()
         if data is None:
             return
         # self.horadric_horazon.drop_horadric(data)
         data.place_items_into_storage_maps(items)
-        # data.add_items_to_player(int.to_bytes(len(items)) + b''.join([item.data_item for item in items]))
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
     @staticmethod
