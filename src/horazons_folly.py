@@ -1894,6 +1894,8 @@ class Item:
 
         # > Iterate through the diverse item blocks in sequence. -----
         # Player Header: Has only 4 bytes. Main file header is of 765 bytes length.
+        # Byytes [767:769] are a 2-byte item count. Counting only direct items, not those that are socketed,
+        # being perceived as part of a "mother item".
         index_start = self.data.find(b'JM', 765)
         index_end = index_start + 4
         res[E_ItemBlock.IB_PLAYER_HD] = index_start, index_end
@@ -1928,9 +1930,9 @@ class Item:
             # Mercenary Header: "jfJM<2 byte-direct item count>"
 
             # [Note: If no mercenary has been hired, the mercenary header will be just 'jf', followed
-            #  directly by the golem header 'kf'. If a mercenary has been hired and has no items, the
-            #  header will be jfJM00.]
-            mercenary_hd_is_large = (self.data[(index_start_mercenary_hd+2):(index_start_mercenary_hd+4)] != b'kf')
+            #  directly by the golem header 'kf'. If a mercenary has been hired, the
+            #  header will be jfJMxy, where xy is a 2-byte Item count.]
+            mercenary_hd_is_large = (self.data[(index_start_mercenary_hd+2):(index_start_mercenary_hd+4)] == b'JM')
             #mercenary_hd_is_large = (self.data.find(b'JM', index_start_mercenary_hd) == (index_start_mercenary_hd + 2)) and \
             #                        (self.data.find(b'JM', index_start_mercenary_hd + 3) == (index_start_mercenary_hd + 6))
             res[E_ItemBlock.IB_MERCENARY_HD] = index_start_mercenary_hd, (index_start_mercenary_hd + (6 if mercenary_hd_is_large else 2))
@@ -2554,7 +2556,9 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
 
     @property
     def has_mercenary(self) -> bool:
-        """:returns True if and only if the mercenary seed is != 0, which is interpreted as there is a mercenary."""
+        """:returns True if and only if the mercenary seed is != 0, which is interpreted as there is a mercenary.
+        [Note: Alternatively, you might scan for 'jfJM'. Only if a mercenary has been hired, a counter pseudo-
+         object will be present. Else it will be 'jfjk', jk being the signature for the Iron Golem inventory.]"""
         return int.from_bytes(self.data[179:183], byteorder='little') != 0
 
     @property
@@ -3903,19 +3907,34 @@ class Horadric:
     @staticmethod
     def create_rune_cube(cmd: str):
         (pfname, runes) = cmd.split(":",1)
-        runes = list(filter(lambda x: x is not None, [E_Rune.from_name(r) for r in runes.split(",")]))
+        lst_runes = list()  # type: List[Union[str, E_Rune]]
+        for r in re.split('\\s*[,;:]\\s*', runes):
+            rune = E_Rune.from_name(r)  # type: Optional[E_Rune]
+            lst_runes.append(rune if rune else r)
         content = b''
-        for j in range(len(runes)):
+        for j in range(len(lst_runes)):
             row = floor(j / 3)
             col = j % 3
-            item = Item.create_rune(runes[j], E_ItemStorage.IS_CUBE, row=row, col=col)
+            rune = lst_runes[j]
+            item = None  # type: Optional[Item]
+            if isinstance(rune, E_Rune):
+                item = Item.create_rune(rune, E_ItemStorage.IS_CUBE, row=row, col=col)
+            elif rune in d_gimmick:
+                item = Item(d_gimmick[rune], 0, len(d_gimmick[rune]))
+                item.stash_type = E_ItemStorage.IS_CUBE
+                vol = item.volume
+                if vol is None or any([val != 1 for val in vol]):
+                    _log.warning("Failure to place gimmick into cube. So far only items of size 1x1 are admitted for the command line version.")
+                    continue
+                item.row = row
+                item.col = col
             if item is None or item.data_item is None:
                 continue
             content = content + item.data_item
             print(f"Adding: {item}")
         with open(pfname, 'wb') as OUT:
             OUT.write(content)
-        print(f"Wrote runic cube with {len(runes)} runes to '{pfname}'")
+        print(f"Wrote runic cube with {len(lst_runes)} runes to '{pfname}'")
 
     def insert_horadric(self, data: Data, items: bytes):
         """Takes a byte block of Horadric cube player items and moves it into the players Horadric Cube.
