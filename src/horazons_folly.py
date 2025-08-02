@@ -1658,7 +1658,11 @@ class Item:
         if self.get_item_property(E_ItemBitProperties.IP_COMPACT):
             return list()
         ext_index = self.get_extended_item_index()
-        index0_mods = ext_index[E_ExtProperty.EP_MODS][0]
+        try:
+            index0_mods = ext_index[E_ExtProperty.EP_MODS][0]
+        except KeyError as err:
+            _log.warning(f"Failure to identify MODS for Item {Item.type_name}: {err}")
+            return None
         bmr = bytes2bitmap(self.data_item)[::-1][index0_mods:]
         mods = list()  # type: List[Dict[str, Mod_BitShape]]
         index_offset = 0
@@ -1922,9 +1926,11 @@ class Item:
 
         if index_start_mercenary_hd >= 0:
             # Mercenary Header: "jfJM<2 byte-direct item count>"
-            mercenary_hd_is_large = (self.data.find(b'JM', index_start_mercenary_hd) == (index_start_mercenary_hd + 2)) and \
-                                    (self.data.find(b'JM', index_start_mercenary_hd + 3) == (index_start_mercenary_hd + 6))
-            res[E_ItemBlock.IB_MERCENARY_HD] = index_start_mercenary_hd, (index_start_mercenary_hd + (6 if mercenary_hd_is_large else 2))
+            # mercenary_hd_is_large = (self.data.find(b'JM', index_start_mercenary_hd) == (index_start_mercenary_hd + 2)) and \
+            #                         (self.data.find(b'JM', index_start_mercenary_hd + 3) == (index_start_mercenary_hd + 6))
+            # res[E_ItemBlock.IB_MERCENARY_HD] = index_start_mercenary_hd, (index_start_mercenary_hd + (6 if mercenary_hd_is_large else 2))
+            # [Note: Found that, if the mercenary has no items, the hd becomes b'jfJM\x00\x00', still holding 6 bytes.]
+            res[E_ItemBlock.IB_MERCENARY_HD] = index_start_mercenary_hd, (index_start_mercenary_hd + 6)
             index_start = res[E_ItemBlock.IB_MERCENARY_HD][1]
         else:
             return Item.drop_empty_block_indices(res)
@@ -1984,8 +1990,12 @@ class Item:
         for block_relevant in index:
             if (block != E_ItemBlock.IB_UNSPECIFIED) and block_relevant != block:
                 continue
+            if block_relevant.is_header:
+                continue
             lst = index[block_relevant]
             for j in range(len(lst)):
+                if ((self.data[lst[j][0]:(lst[j][0]+2)]) != b'JM') or ((lst[j][1] - lst[j][0]) < 5):
+                    continue  # << Empty placeholder item '\x00\x00' for an empty section. E.g., from a mercenary without equipment.
                 item = Item(self.data, lst[j][0], lst[j][1], block_relevant, j)
                 if (parent in [E_ItemParent.IP_UNSPECIFIED, item.item_parent]) or \
                    (equipped in [E_ItemEquipment.IE_UNSPECIFIED, item.item_equipped]) or \
@@ -2954,7 +2964,12 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         # [Note: For backwards-compatibility. Delete all bytes prior to the first b'JM'.]
         items = re.sub(b'^.*?JM', b'JM', items)
         count = self.count_main_items(items)
-        index_start = Item(self.data).get_block_index()[E_ItemBlock.IB_PLAYER][0]
+        block_index = Item(self.data).get_block_index()
+        try:
+            index_start = block_index[E_ItemBlock.IB_PLAYER][0]
+        except KeyError:
+            # [Note: This can happen in the admittedly pathological case of the player not having any items at all.]
+            index_start = block_index[E_ItemBlock.IB_PLAYER_HD][1]
         self.data = self.data[0:index_start] + items + self.data[index_start:]
         self.set_item_count(E_ItemBlock.IB_PLAYER_HD, self.get_item_count_player(True) + count)
         # print(f"Attempting to add {count} new items to the player's inventory.")

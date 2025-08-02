@@ -553,7 +553,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
             else:
                 codes_runic.append(cr)
         runes = list(filter(lambda x: x is not None, [E_Rune.from_name(w) for w in codes_runic]))
-        if not runes:
+        if (not runes) and (not items):
             tk.messagebox.showinfo("Runic Cube", "Use a comma-separated list of rune names and gem codes to create "
                                                  "that set of items in and around your Horadric Cube. E.g., 'ral, ort, tal'.")
             return
