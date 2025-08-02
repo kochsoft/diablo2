@@ -1926,11 +1926,14 @@ class Item:
 
         if index_start_mercenary_hd >= 0:
             # Mercenary Header: "jfJM<2 byte-direct item count>"
-            # mercenary_hd_is_large = (self.data.find(b'JM', index_start_mercenary_hd) == (index_start_mercenary_hd + 2)) and \
-            #                         (self.data.find(b'JM', index_start_mercenary_hd + 3) == (index_start_mercenary_hd + 6))
-            # res[E_ItemBlock.IB_MERCENARY_HD] = index_start_mercenary_hd, (index_start_mercenary_hd + (6 if mercenary_hd_is_large else 2))
-            # [Note: Found that, if the mercenary has no items, the hd becomes b'jfJM\x00\x00', still holding 6 bytes.]
-            res[E_ItemBlock.IB_MERCENARY_HD] = index_start_mercenary_hd, (index_start_mercenary_hd + 6)
+
+            # [Note: If no mercenary has been hired, the mercenary header will be just 'jf', followed
+            #  directly by the golem header 'kf'. If a mercenary has been hired and has no items, the
+            #  header will be jfJM00.]
+            mercenary_hd_is_large = (self.data[(index_start_mercenary_hd+2):(index_start_mercenary_hd+4)] != b'kf')
+            #mercenary_hd_is_large = (self.data.find(b'JM', index_start_mercenary_hd) == (index_start_mercenary_hd + 2)) and \
+            #                        (self.data.find(b'JM', index_start_mercenary_hd + 3) == (index_start_mercenary_hd + 6))
+            res[E_ItemBlock.IB_MERCENARY_HD] = index_start_mercenary_hd, (index_start_mercenary_hd + (6 if mercenary_hd_is_large else 2))
             index_start = res[E_ItemBlock.IB_MERCENARY_HD][1]
         else:
             return Item.drop_empty_block_indices(res)
