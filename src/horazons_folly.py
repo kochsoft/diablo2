@@ -2240,7 +2240,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
     @property
     def has_iron_golem(self) -> bool:
         item_analysis = Item(self.data)
-        hd = item_analysis.get_block_items(E_ItemBlock.IB_IRONGOLEM_HD)
+        hd = item_analysis.get_block_items(E_ItemBlock.IB_IRONGOLEM)
         if not hd:
             return False
         data = hd[0].data_item[2]
