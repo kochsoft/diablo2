@@ -1,0 +1,217 @@
+KingSlayer Analysis
+===================
+
+Charm Analysis.
+===============
+011110 == 30
+101100 == 13
+100010 == 17
+10011 == 25
+1100010 = 35
+10000011 == 193
+010101000= 42 (static field)
+
+data_rw = '100010000100000110100000110 1100111001 1100100101101000 0110001101011000101010000111000001100011010001010101100000101000
+	00110011001001011000111000111100001111000 01110010111000100'
+
+
+data = "01100011010001010101100000101000"
+
+
+Python Code:
+============
+bin2bts(data_rw)
+
+def bin2bts(bin, pfname="/home/kochmn/ks.cube"):
+    bin = '01010010101100100000100000000000000000010000000010100110000000000000000000011100011010110110100011000000010000000110011000001011101100001010110110001100101100000000000000000000000000' + bin + '111111111'
+    while len(bin) % 8 != 0:
+        bin = bin + '0'
+    n = len(bin)//8
+    val = int(bin[::-1],2)
+    bts = val.to_bytes(n,'little')
+    with open(pfname, 'wb') as OUT:
+        OUT.write(bts)
+    return bts
+
+
+Fun Facts
+=========
+(Kingslayer)
+Enh. Damage   +234%: 100010000010101110010101110 #<< id1: 100010000, val 234: 010101110, val 234: 010101110 (27 bit)
+Extra Gold     +40%: 111100100001100010 #<< id: 111100100, val 140: 001100010
+Inc. Att. Spd  +30%: 1011101000100110 #<<: id: 101110100, val 50: 0100110
+oskill Vengeance +1: 100001100111101100100000 #<< oskill: 100001100, vengeance (111): 111101100, +1: 100000 (24 bit)
+Target Defense -25%: 0010111001001100 #<< id: 001011100 val(-25%): 1001100 (und ja, 1001111 fuehrt auf -121%)
+Open Wounds     25%: 1110000101001100 #<< id: 111000010 val( 25%): 1001100
+Crushing Blow   33%: 0001000101000010 #<< id: 000100010 val( 33%): 1000010
+
+(Crescent Moon)
+Enh. Damage   +193%: 100010000100000110100000110  #<< id: 100010000 val193: 100000110 val193: 100000110
+Ignore Target Def. : 1100111001 #<< id: 110011100 "1": 1
+Magic Absorb    +11: 1100100101101000 #<< id: 110010010 "+11": 1101000
+7% lvl 13 Static Field on Att.: 01100011010110001010100001110000 #<< id: 011000110 "Lvl.13" 101100 "Static Field (42)": 010101000 0 "7%": 1110000
+data = 01100011010001010101100000101000 #<< id: 011000110 "Lvl.17": 100010 "Chain Lightning (53)": 101011000 0 "10%": 0101000
+Spirit Wolf Lvl. 18, 30/30: 00110011001001011000111000111100001111000
+  #<< charged: 001100110 "17": 010010 "Spirit Wolf": 110001110 "0": 0 "30": 01111000 "30": 01111000
+Red. Monster Lightn. Res -35%: 01110010111000100 #<< id: 011100101 "35": 11000100
+
+Charged Staff, Teleport +1 (47/48): 00110011010100001101100001111010000001100
+  #<< "Charged:" 001100110 "+5": 101000 "Teleport": 011011000 0 "47": 11110100 "48": 00001100
+Extra Gold    +115%: 111100100111010110
+oskill Fissure  +17: 100001100010101110100010
+oskill Teleport  +1: 100001100011011000100000 #<< oskill: 100001100 Teleport: 011011000 "+1": 100000
+max Poison Res +25%: 01110100010011 #<< id: 011101000 val 25: 10011 (5bit! Ein sechstes Bit aendert nichts mehr).
+
+
+Original Data:
+==============
+
+Balrog Blade "Kingslayer".
+--------------------------
+data_rw = '1000100000101011100101011101111001000011000101011101000100110100001100111101100100000001011100100110011100001010011000001000101000010'
+
+Item 'Balrog Blade' (51 bytes) (elite, armor: False, weapon: True, sockets: 4/4, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'Lancelot', index: (0, 51)
+Max size in inventory: (4, 1), Defense (base): None, Durability (base): 41/50, Stack: None,
+Parent: IP_STORED, Storage: IS_CUBE, (r:0, c:0), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: True, newly_found: False, starter_gear: False, compact: False, ethereal: False, personalized: True, runeword: True, 
+type code: 7gs, quality: normal(2), ilevel: 87, is charm: False, Bit length: 408 (51.0 bytes)
+No known mods recognized.
+  quest_sockets: [108:111], 001
+  quality: [150:154], 0100
+  custom_graphics: [154:155], 0
+  class_specific: [155:156], 0
+  quality_attributes: [156:156], 
+  runeword: [156:172], 0011101000001010
+  personalization: [172:235], 001100110000110111011110001110100110011011111101100101110000000
+  tomes: [235:235], 
+  realm: [235:236], 0
+  defense: [236:236], 
+  durability: [236:253], 01001100100101000
+  stack: [253:253], 
+  set: [253:253], 
+  sockets: [253:257], 0010
+  mods: [257:257], 
+  mods_runeword: [266:399], 1000100000101011100101011101111001000011000101011101000100110100001100111101100100000001011100100110011100001010011000001000101000010
+01010010101100100000100000010000000000011010000010100110000000000 0000 000 0001 11101100111001101100111000000100001011001100101010001000100110001011 110101 0100 00001110100000101000110011000011011101111000111010011001101111110110010111000000000100110010010100000101111111111000100000101011100101011101111001000011000101011101000100110100001100111101100100000001011100100110011100001010011000001000101000010111111111
+b'JM\x10\x08\x80\x05e\x00\x00xs6\x07B3\x15\x91\xd1\xab\xc0\x05\xc5\x0c\xbb\xc7e\xf6\x9b\x0e \x93\x82\xfeGP\xa7\xee\t\xa3.\xb20o\x02:\x99C\x19D\xa1\xff'
+Item 'Mal Rune' (14 bytes) (normal, armor: False, weapon: False, sockets: 0/0, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (51, 65)
+Max size in inventory: (1, 1), Defense (base): None, Durability (base): n.a., Stack: None,
+Parent: IP_ITEM, Storage: IS_UNSPECIFIED, (r:0, c:0), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: False, newly_found: False, starter_gear: False, compact: True, ethereal: False, personalized: False, runeword: False, 
+type code: r23, quality: none(100), ilevel: None, is charm: False, Bit length: 112 (14.0 bytes)
+No known mods recognized.
+No extended item index.
+01010010101100100000100000000000000001010000000010100110000110000 0000 000 0000 010011100100110011001100000001000000   
+b"JM\x10\x00\xa0\x00e\x18\x00 '3\x03\x02"
+Item 'Um Rune' (14 bytes) (normal, armor: False, weapon: False, sockets: 0/0, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (65, 79)
+Max size in inventory: (1, 1), Defense (base): None, Durability (base): n.a., Stack: None,
+Parent: IP_ITEM, Storage: IS_UNSPECIFIED, (r:0, c:1), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: False, newly_found: False, starter_gear: False, compact: True, ethereal: False, personalized: False, runeword: False, 
+type code: r22, quality: none(100), ilevel: None, is charm: False, Bit length: 112 (14.0 bytes)
+No known mods recognized.
+No extended item index.
+01010010101100100000100000000000000001010000000010100110000110000 1000 000 0000 010011100100110001001100000001000000   
+b"JM\x10\x00\xa0\x00e\x18\x02 '#\x03\x02"
+Item 'Gul Rune' (14 bytes) (normal, armor: False, weapon: False, sockets: 0/0, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (79, 93)
+Max size in inventory: (1, 1), Defense (base): None, Durability (base): n.a., Stack: None,
+Parent: IP_ITEM, Storage: IS_UNSPECIFIED, (r:0, c:2), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: False, newly_found: False, starter_gear: False, compact: True, ethereal: False, personalized: False, runeword: False, 
+type code: r25, quality: none(100), ilevel: None, is charm: False, Bit length: 112 (14.0 bytes)
+No known mods recognized.
+No extended item index.
+01010010101100100000100000000000000001010000000010100110000110000 0100 000 0000 010011100100110010101100000001000000   
+b"JM\x10\x00\xa0\x00e\x18\x04 'S\x03\x02"
+Item 'Fal Rune' (14 bytes) (normal, armor: False, weapon: False, sockets: 0/0, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (93, 107)
+Max size in inventory: (1, 1), Defense (base): None, Durability (base): n.a., Stack: None,
+Parent: IP_ITEM, Storage: IS_UNSPECIFIED, (r:0, c:3), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: False, newly_found: False, starter_gear: False, compact: True, ethereal: False, personalized: False, runeword: False, 
+type code: r19, quality: none(100), ilevel: None, is charm: False, Bit length: 112 (14.0 bytes)
+No known mods recognized.
+No extended item index.
+01010010101100100000100000000000000001010000000010100110000110000 1100 000 0000 010011101000110010011100000001000000   
+b'JM\x10\x00\xa0\x00e\x18\x06 \x17\x93\x03\x02'
+
+
+Gheed's Fortune
+---------------
+Cube content.
+=============
+Item 'Charm Grand' (29 bytes) (normal, armor: False, weapon: False, sockets: 0/0, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (0, 29)
+Max size in inventory: (3, 1), Defense (base): None, Durability (base): n.a., Stack: None,
+Parent: IP_STORED, Storage: IS_CUBE, (r:1, c:0), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: False, newly_found: False, starter_gear: False, compact: False, ethereal: False, personalized: False, runeword: False, 
+type code: cm3, quality: unique(7), ilevel: 88, is charm: True, Bit length: 232 (29.0 bytes)
+No known mods recognized.
+  quest_sockets: [108:111], 000
+  quality: [150:154], 1110
+  custom_graphics: [154:158], 1100
+  class_specific: [158:159], 0
+  quality_attributes: [159:171], 111001101000
+  runeword: [171:171], 
+  personalization: [171:171], 
+  tomes: [171:171], 
+  realm: [171:172], 0
+  defense: [172:172], 
+  durability: [172:172], 
+  stack: [172:172], 
+  set: [172:172], 
+  sockets: [172:172], 
+  mods: [172:223], 111100100111010110000010100111111101110101001111000
+  mods_runeword: [232:232], 
+01010010101100100000100000000000000000010000000010100110000000000 0000 100 0001 11000110101101101100110000000100000010011011100001001100100101011010 001101 1110 110001110011010000111100100111010110000010100111111101110101001111000111111111
+b'JM\x10\x00\x80\x00e\x00 8\xd66\x03\x02\xd9!\x93Z\xec\x8d\xb3\xf0\xe4\x1a\x94\xbf+\x8f\xff'
+
+
+Legend Sword "Crescent Moon"
+----------------------------
+Item 'Legend Sword' (49 bytes) (elite, armor: False, weapon: True, sockets: 3/3, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (0, 49)
+Max size in inventory: (3, 2), Defense (base): None, Durability (base): 38/44, Stack: None,
+Parent: IP_STORED, Storage: IS_CUBE, (r:0, c:0), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: True, newly_found: False, starter_gear: False, compact: False, ethereal: False, personalized: False, runeword: True, 
+type code: 72h, quality: normal(2), ilevel: 76, is charm: False, Bit length: 392 (49.0 bytes)
+No known mods recognized.
+  quest_sockets: [108:111], 110
+  quality: [150:154], 0100
+  custom_graphics: [154:155], 0
+  class_specific: [155:156], 0
+  quality_attributes: [156:156], 
+  runeword: [156:172], 1101010000001010
+  personalization: [172:172], 
+  tomes: [172:172], 
+  realm: [172:173], 0
+  defense: [173:173], 
+  durability: [173:190], 00110100011001000
+  stack: [190:190], 
+  set: [190:190], 
+  sockets: [190:194], 1100
+  mods: [194:194], 
+  mods_runeword: [203:378], 1000100001000001101000001101100111001110010010110100001100011010110001010100001110000011000110100010101011000001010000011001100100101100011100011110000111100001110010111000100
+01010010101100100000100000010000000000010010000010100110000000000 0000 000 0001 11101100010011000001011000000100110100010000100110001010010000100110 011001 0100 0011010100000010100001101000110010001100111111111100010000100000110100000110110011100111001001011010000110001101011000101010000111000001100011010001010101100000101000001100110010010110001110001111000011110000111001011100010011111111100000
+b'JM\x10\x08\x80\x04e\x00\x00x#\x83\x06\xb2\x08\x19%d\xa6\xb0\x02\x85\xc5\xc4\xfc\x8f\x10,\xd8\x9c\x93\x16\xc6\x1a\x15\x0e\xc6\xa2\x1a\x14\xcc\xa4q<<\x9c\x8e\xfc\x07'
+Item 'Shael Rune' (14 bytes) (normal, armor: False, weapon: False, sockets: 0/0, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (49, 63)
+Max size in inventory: (1, 1), Defense (base): None, Durability (base): n.a., Stack: None,
+Parent: IP_ITEM, Storage: IS_UNSPECIFIED, (r:0, c:0), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: False, newly_found: False, starter_gear: False, compact: True, ethereal: False, personalized: False, runeword: False, 
+type code: r13, quality: none(100), ilevel: None, is charm: False, Bit length: 112 (14.0 bytes)
+No known mods recognized.
+No extended item index.
+01010010101100100000100000000000000001010000000010100110000110000 0000 000 0000 010011101000110011001100000001000000   
+b'JM\x10\x00\xa0\x00e\x18\x00 \x173\x03\x02'
+Item 'Um Rune' (14 bytes) (normal, armor: False, weapon: False, sockets: 0/0, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (63, 77)
+Max size in inventory: (1, 1), Defense (base): None, Durability (base): n.a., Stack: None,
+Parent: IP_ITEM, Storage: IS_UNSPECIFIED, (r:0, c:1), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: False, newly_found: False, starter_gear: False, compact: True, ethereal: False, personalized: False, runeword: False, 
+type code: r22, quality: none(100), ilevel: None, is charm: False, Bit length: 112 (14.0 bytes)
+No known mods recognized.
+No extended item index.
+01010010101100100000100000000000000001010000000010100110000110000 1000 000 0000 010011100100110001001100000001000000   
+b"JM\x10\x00\xa0\x00e\x18\x02 '#\x03\x02"
+Item 'Tir Rune' (14 bytes) (normal, armor: False, weapon: False, sockets: 0/0, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (77, 91)
+Max size in inventory: (1, 1), Defense (base): None, Durability (base): n.a., Stack: None,
+Parent: IP_ITEM, Storage: IS_UNSPECIFIED, (r:0, c:2), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: False, newly_found: False, starter_gear: False, compact: True, ethereal: False, personalized: False, runeword: False, 
+type code: r03, quality: none(100), ilevel: None, is charm: False, Bit length: 112 (14.0 bytes)
+No known mods recognized.
+No extended item index.
+01010010101100100000100000000000000001010000000010100110000110000 0100 000 0000 010011100000110011001100000001000000   
+b'JM\x10\x00\xa0\x00e\x18\x04 \x073\x03\x02'
