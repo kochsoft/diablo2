@@ -413,7 +413,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         data = self.verify_hero()
         if not data:
             return
-        pfname_in = tk.filedialog.askopenfilename(parent=self.root, title='Save Horadric Cube Contents.',
+        pfname_in = tk.filedialog.askopenfilename(parent=self.root, title='Load Horadric Cube Contents.',
                         filetypes=[('Horadric Cube File', '*.cube')], initialdir=self.pname_work)
         if os.path.isfile(pfname_in):
             self.horadric_horazon.load_horadric(pfname_in)
