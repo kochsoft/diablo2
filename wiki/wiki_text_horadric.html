@@ -225,8 +225,10 @@ Note however, that, as stated above, all is promised to hold true to v1.10-v1.14
 It is true, that these attributes are encoded in 21 bits. However, they are regular in being
 encoded forward. Their being hard to decipher stems from the fact, that they encode
 a rudimentary floating point schema: The least significant (little endian!) 8 bits
-encode "64" for "1/4", "128" for "2/4", and "192" for "3/4". The powers that be
-at Blizzard North, in their infinite wisdom, decided, that balancing of some
+encode "64" for "1/4", "128" for "2/4", and "192" for "3/4"
+<i>(i.e., "2<sup>-2</sup>", "2<sup>-1</sup>", and "2<sup>-2</sup>+2<sup>-1</sup>", if you prefer
+reading the whole 21 bit number as one large little endian binary float, with a decimal point behind the 8<sup>th</sup> digit)</i>.
+The powers that be at Blizzard North, in their infinite wisdom, decided, that balancing of some
 characters like the Amazon, or, most notably, the Assassin requires quarter points.
 See, e.g., <a href="https://diablo.fandom.com/wiki/Assassin#Attributes">here, at diablo.fandom</a>.
 </p><p>
@@ -385,13 +387,20 @@ Also, the individual items are not of uniform length. The common factor is, that
 <li>000001100 1000001: "45% Faster Run/Walk". 7 bit, too. The payload value is 65.</li>
 <li>100001100 011011000 100000: "Teleport +1". The coveted oskill property. The id is general for 'oskill'. The 9+6 parameter is made from the skill ID "54" for teleport, and the skill level, which here is plain 1<sup>1</sup>.</li>
 <li>111111100 010: "+2 to all Skills". A memorable ID, followed by 3 bits for the parameter.</li>
-<li>001110110 011000: "+64 Strength", based on character level (which is 86).</li>
-<li>000011110 000100: "+86 Magic Find", based on character level (which is 86).</li>
+<li>001110110 011000: "+64 Strength", based on character level (which is 86)<sup>2</sup>.</li>
+<li>000011110 000100: "+86 Magic Find", based on character level (which is 86)<sup>2</sup>.</li>
 </ul>
 <p>
 1): A large list of such IDs may be found here: <a href="https://github.com/WalterCouto/D2CE/blob/main/source/res/TXT/global/excel/skills.txt">https://github.com/WalterCouto/D2CE/blob/main/source/res/TXT/global/excel/skills.txt</a>.
-</p>
-<p>These are leads to dissecting any modification section. Afterwards you will have to translate the section back into appropriately shifted byte code and insert it into, e.g., a small charm. If python is an option for you, consider a function like that (it is not part of Horazon's Folly, which is about ease of use, which is not, what we get, when modifying individual bits. Fun as that may be:
+</p><p>
+2): This is another floating point value, representing the factor to be multiplied onto the character level.
+The point comes behind the 3rd of the 6 numbers. The value is still little endian binary.
+Thus, we have the digits for <i>2<sup>-3</sup>2<sup>-2</sup>2<sup>-1</sup>2<sup>0</sup>2<sup>1</sup>2<sup>2</sup></i>.
+In these examples <i>000100</i> equals <i>2<sup>0</sup>==1</i>, leading to a Magic Find value of 1*86=86 for a level 86 character.
+Likewise, <i>011000</i> equals <i>2<sup>-2</sup>+2<sup>-1</sup>==3/4</i>, leading to a strength bonus of (3/4)*86=64 for a level 86
+character. It seems, that the decimals of the precise 64.5 result are truncated.
+</p><p>
+These are leads to dissecting any modification section. Afterwards you will have to translate the section back into appropriately shifted byte code and insert it into, e.g., a small charm. If python is an option for you, consider a function like that (it is not part of Horazon's Folly, which is about ease of use, which is not, what we get, when modifying individual bits. Fun as that may be:
 </p>
 
 <code>
@@ -470,5 +479,5 @@ function. Try the codes 'tel', 'sdt', or 'bod'.
 <br /><br />
 <figure>
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/paladin_army.png" alt="The dreaded Halloween Party Paladin." class="center_img"><br />
-  <figcaption><b>Fig.15</b> - The Dead have returned to aid the cause of Heaven.</figcaption>
+  <figcaption><b>Fig.15</b> - The dreaded Halloween Party Paladin.</figcaption>
 </figure>
