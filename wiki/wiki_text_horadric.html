@@ -382,7 +382,7 @@ that will not be necessarily displayed in the same order, when you view the item
 Also, the individual items are not of uniform length. The common factor is, that they all start with a 9 bit id. That id defines what comes after as parameters. Here are the specifics:
 </p>
 <ul>
-<li>111110000 10000000110: "Defense Bonus 759". After the 9-bit id, like in the regular defense section, we see 11 bits of plain defense value, with an offset of -10. So, the value we are looking for, is 759+10=769.</li>
+<li>111110000 10000000110: "Defense Bonus 759". After the 9-bit id, like in the regular defense section, we see 11 bits of plain defense value, with an offset of 10. So, the value we are looking for, is 759+10=769.</li>
 <li>011010100 0111000: "14 Life/Kill". The 14 in encoded plainly, in 7 bit.</li>
 <li>000001100 1000001: "45% Faster Run/Walk". 7 bit, too. The payload value is 65.</li>
 <li>100001100 011011000 100000: "Teleport +1". The coveted oskill property. The id is general for 'oskill'. The 9+6 parameter is made from the skill ID "54" for teleport, and the skill level, which here is plain 1<sup>1</sup>.</li>

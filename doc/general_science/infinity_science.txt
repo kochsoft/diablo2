@@ -17,34 +17,14 @@ Charm Analysis.
 010011 == 50
 101100001 == 269
 11001000 == 20
+111000100 == 71 (dim Vision)
 
-data_rw = "11111000001101100100 10110100001101001 0110101001011000 1100011000110001 11101001011100110000101 00110011010110001101111001000010010000100 001100101101010100"
-
-Poison Nova
-#<< id: 001000110 lvl(20): 001010 skill(92): 001110100 ?: 0 val(100): 0100110
-
-
-data = "1100011000110001"
-
-Defense        +300: 11111000001101100100 #<< id: 111110000 val(310): 01101100100
-Poison Resist  +100: 10110100001101001 #<< id: 101101000 val(150): 01101001
-+13 life after kill: 0110101001011000 #<< id: 011010100 val(13): 1011000
-50% faster hit recovery   : 1100011000110001 #<< id: 110001100 val(70): 0110001
-Lvl. 20 Thorns Aura if eq.: 11101001011100110000101 #<< id: 111010010 skill(103): 111001100 lvl(20): 00101   (btw, conviction aura has 123 == 110111100)
-Lvl. 13 Spirit of Barbs (33/33 charges): 00110011010110001101111001000010010000100 #<<
-    id: 001100110 lvl(13): 101100 skill(246): 011011110 ?: 0 val(33) 10000100 val(33) 10000100
-+35% Poison Skill Damage: 001100101101010100 #<< id: 001100101 val(85): 101010100
+1100000100
+46 für 6  => -32
+data = "100111000 0000001000 0000001000 100110000"
 
 
-Lvl 20 Aura Thorns (id: 103) if equipped Skill (20 == 0010100) (103 == 111001100). (btw, conviction aura has 123 == 110111100)
-50% Faster Hit Recovery
-+35% Poison Skill Damage
-+300 Defense (310 == 011011001)
-+100% Poison Resist (150 == 01101001)
-+13 Life after Kill
-Lvl. 13 Spirit of Barbs (33/33 Charges) Skill id: (246 == 011011110)
 
-data="10110100001101001" #<< Poison Resist +80; 10111100==61 for +11 => 01101001==150
 
 
 Python Code:
@@ -113,6 +93,14 @@ Lvl. 13 Spirit of Barbs (33/33 charges): 001100110101100011011110010000100100001
     id: 001100110 lvl(13): 101100 skill(246): 011011110 ?: 0 val(33) 10000100 val(33) 10000100
 +35% Poison Skill Damage: 001100101101010100 #<< id: 001100101 val(85): 101010100
 
+(Stealth)
++6  Dexterity          : 0100000000110010  #<< id: 010000000 val(38): 0110010
++15 Maximum Stamina    : 11010000011110100 #<< id: 110100000 val(47): 11110100
+Magic Damage Reduce 3  : 110001000110000   #<< id: 110001000 val( 3): 110000
+25% Faster Run Walk    : 0000011001011010  #<< id: 000001100 val(45): 1011010
+25% Faster Hit Recovery: 1100011001011010  #<< id: 110001100 val(45): 1011010
+25% Faster Cast Rate   : 1001011001011010  #<< id: 100101100 val(45): 1011010
+
 (Gheed's Fortune)
 Extra Gold    +115%: 111100100111010110 #<< id: 111100100 val(215): 111010110
 Magic Find     +27%: 00001010011111110  #<< id: 000010100 val(127): 11111110
@@ -137,6 +125,14 @@ Max Fire Resist +10   : 00010100001010 #<< id: 000101000 val(10): 01010
 Max Lightn. Resist +10: 01010100001010 #<< id: 010101000 val(10): 01010
 max Cold Res +25%     : 00110100010011 #<< id: 001101000 val 25: 10011 (5bit! Ein sechstes Bit aendert nichts mehr).
 max Poison Res +25%   : 01110100010011 #<< id: 011101000 val 25: 10011 (5bit! Ein sechstes Bit aendert nichts mehr).
++515 Attack Rating: 1100100001100000001 #<< id: 110010000 val(515) 1100000001
+Fire Damage (129-258): 00001100010000001010000001 #<< id: 000011000 val(129): 10000001 val(258): 010000001
+Increase Maximum Durability 14%: 1101001000100010 #<< id: 110100100 val(34): 0100010
+Knockback: 1000101001000000 #<< id: 100010100 val(1): 1000000
+12 Poison Damage over 3s: 10011100010010100001001010000110100100 #<< id: 100111000 val(41) 1001010000 val(41) 1001010000 val(75): 110100100
+  [Note: 40 is the damage taken over 10 seconds. The value repeats in the second parameter. 75 is the total duration number of frames. D2 runs in 25fps.]
+1-4 Cold Damage: 0110110001000000000100000011010010 #<< id: 011011000 val(1): 10000000 val(4): 001000000 val(75 frames==3s) 11010010
+10% damage taken to mana: 010011100010100 #<< id: 010011100 val(10): 010100
 
 Teleport +1 (Sorc): 110101100011011000100 #<< id: 110101100 tel: 011011000 val(1): 100
 
@@ -462,3 +458,37 @@ No known mods recognized.
   mods_runeword: [344:344], 
 01010010101100100000100000000000000000010000000010100110000000000 0000 000 0001 11000110101101101000110000000100000001100110000010111011000010101101 100011 0010 1100000000000000000000000000111110000011011001001011010000110100101101010010110001100011000110001111010010111001100001010011001101011000110111100100001001000010000110010110101010011111111100
 b'JM\x10\x00\x80\x00e\x00\x008\xd6\x16\x03\x02f\xd0\r\xb51\r\x00\x00\xc0\x07\x9b\xb4\xb0\xb4\xd2\x18c\xbct\x862k\xec\t\taZ\xe5?'
+
+Armor Stealth (Tal Eth) - 30% Poison Resist and Regenerate Mana 15.
+=============
++25% Faster Run
++25% Faster Cast
++25% Faster Hit Rec.
++6 Dexterity
++15 Max Stamina
+Magic Damage Reduce 3
+
+Item 'Ancient Armor' (40 bytes) (normal, armor: True, weapon: False, sockets: 2/2, stack: False, set: False) IB_UNSPECIFIED #None personalization: 'None', index: (0, 40)
+Max size in inventory: (3, 2), Defense (base): 233, Durability (base): 60/60, Stack: None,
+Parent: IP_STORED, Storage: IS_CUBE, (r:0, c:0), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: True, newly_found: False, starter_gear: False, compact: False, ethereal: False, personalized: False, runeword: True, 
+type code: aar, quality: normal(2), ilevel: 45, is charm: False, Bit length: 320 (40.0 bytes)
+No known mods recognized.
+  quest_sockets: [108:111], 010
+  quality: [150:154], 0100
+  custom_graphics: [154:155], 0
+  class_specific: [155:156], 0
+  quality_attributes: [156:156], 
+  runeword: [156:172], 0111100100001010
+  personalization: [172:172], 
+  tomes: [172:172], 
+  realm: [172:173], 0
+  defense: [173:184], 11001111000
+  durability: [184:201], 00111100001111000
+  stack: [201:201], 
+  set: [201:201], 
+  sockets: [201:205], 0100
+  mods: [205:205], 
+  mods_runeword: [214:310], 010000000011001011010000011110100110001000110000000001100101101011000110010110101001011001011010
+01010010101100100000100000010000000000010010000010100110000000000 0000 000 0001 10000110100001100100111000000100010101100000110100110100100011111001 011010 0100 0001111001000010100110011110000011110000111100001001111111110100000000110010110100000111101001100010001100000000011001011010110001100101101010010110010110101111111110
+b'JM\x10\x08\x80\x04e\x00\x00\x18\x16&\x07\xa2\x06\xcb\x12\x9f\x96\xe0\te\x1e<<\xe4\xbf\x00\xd3\x82\x97\x11\x03\x98\xd6\x98V\x9a\xd6\x7f'
