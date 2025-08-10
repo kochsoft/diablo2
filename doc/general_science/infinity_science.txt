@@ -24,6 +24,9 @@ Charm Analysis.
 data = "100111000 0000001000 0000001000 100110000"
 
 
+data = "10011100011111111101111111111010111110"
+
+0111011101
 
 
 
@@ -130,7 +133,7 @@ Fire Damage (129-258): 00001100010000001010000001 #<< id: 000011000 val(129): 10
 Increase Maximum Durability 14%: 1101001000100010 #<< id: 110100100 val(34): 0100010
 Knockback: 1000101001000000 #<< id: 100010100 val(1): 1000000
 12 Poison Damage over 3s: 10011100010010100001001010000110100100 #<< id: 100111000 val(41) 1001010000 val(41) 1001010000 val(75): 110100100
-  [Note: 40 is the damage taken over 10 seconds. The value repeats in the second parameter. 75 is the total duration number of frames. D2 runs in 25fps.]
+  [Note: 40 is the damage taken over 10 seconds, min and max. 75 is the total duration number of frames. D2 runs in 25fps.]
 1-4 Cold Damage: 0110110001000000000100000011010010 #<< id: 011011000 val(1): 10000000 val(4): 001000000 val(75 frames==3s) 11010010
 10% damage taken to mana: 010011100010100 #<< id: 010011100 val(10): 010100
 
