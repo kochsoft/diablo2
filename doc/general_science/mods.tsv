@@ -1,0 +1,46 @@
+name	id	param_0	param_1	param_2	param_3	param_4	example	comment
+Enhanced Damage (%)	100010000	9i	9i				100010000010101110010101110	The parameter is repeated exactly.
+Enhanced Damage to Undead (%)	010111100	9i20					010111100100010010	
+Defense Bonus	111110000	11i10					11111000001101100100	
+Enhanced Defense (%)	000010000	9i					000010000100101010	
+Extra Gold (%)	111100100	9i100					111100100001100010	
+Magic Find (%)	000010100	8i100					00001010011111110	
+Vendor Cost (-%)	111010100	7i					1110101001111000	
+Increased Attack Speed (%)	101110100	7i20					1011101000100110	
+Faster Hit Recovery (%)	110001100	7i20					1100011000110001	
+skill	110101100	9i	3i				110101100011011000100	First param is skill id. Second is lvl bonus.
+oskill	100001100	9i	6i				100001100111101100100000	First param is skill id. Second is lvl bonus.
+Aura on Equip	111010010	9i	5i				11101001011100110000101	First param is skill id. Second is lvl.
+Target Defense (-%)	001011100	7i					0010111001001100	
+Open Wounds Probability (%)	111000010	7i					1110000101001100	
+Crushing Blow Probability (%)	000100010	7i					0001000101000010	
+Ignore Target Defense	110011100	1i					1100111001	That parameter seems to be simply ‚1‘.
+Prevent Monster Healing	101011100	7i					1010111001000000	The 7i seems to be simply ‚1000000‘.
+Absorb Lightning	100010010	7i					1000100100010100	
+Absorb Magic	110010010	7i					1100100101101000	
+Poison Skill Damage Bonus (%)	001100101	9i50					001100101101010100	
+On Attack: Lvl. X Skill Y Autocast Prob (%)	011000110	6i	9i	1i	7i		01100011010001010101100000101000	The 1i seems to be simply ‚0‘.
+On Kill: Lvl. X, Skill Y, Autocast Prob (%)	001000110	6i	9i	1i	7i		00100011000101000111010000100110	Thr 1i seems to be simply ‚0‘.
+On Being Hit: Lvl. X, Skill Y, Autocast Prob (%)	100100110	6i	9i	1i	7i		10010011000101000110100000000101	The 1i seems to be simply ‚0‘.
+On Hit: Life Steal	001111000	7i					0011110000111000	
+On Kill: Life Steal	011010100	7i					0110101001011000	
+Charged Item: Lvl. X Skill Y k/N	001100110	6i	9i	1i	8i	8i	00110011001001011000111000111100001111000	The 1i seems to be simply ‚0‘.
+Reduce Enemy Lightning Resist (-%)	011100101	8i					01110010111000100	
+Reduce Enemy Fire Resist (-%)	101100101	8i					10110010111000100	
+Reduce Enemy Cold Resist (-%)	111100101	8i					11110010111000100	
+Resist Lightning (%)	100101000	8i50					10010100010111100	
+Resist Cold (%)	110101000	8i50					1101010001011110	
+Resist Poison (%)	101101000	8i50					10110100001000001	
+Resist Fire (%)	111001000	8i50					11100100010111100	
+Max Fire Resist (+%)	000101000	5i					00010100001010	
+Max Lightning Resist (+%)	010101000	5i					01010100001010	
+Max Cold Resist (+%)	001101000	5i					00110100001010	
+Max Poison Resist (+%)	011101000	5i					01110100010011	
+Strength Bonus	000000000	8i32					00000000001111100	Yes, strength seems to have 1 bit more than the others.
+Energy Bonus	100000000	7i32					1000000000111110	
+Dexterity Bonus	010000000	7i32					0100000000111110	
+Vitality Bonus	110000000	7i32					1100000000111110	
+All Skills Bonus	111111100	3i					111111100010	
+Faster Run and Walk (%)	000001100	7i20					0000011001000001	
+Strength Bonus Based on Char Lvl.	001110110	6f3					001110110011000	
+Magic Find Bonus Based on Char Lvl. (%)	000011110	6f3					000011110000100	

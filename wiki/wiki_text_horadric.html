@@ -400,7 +400,9 @@ In these examples <i>000100</i> equals <i>2<sup>0</sup>=1</i>, leading to a Magi
 Likewise, <i>011000</i> equals <i>2<sup>-2</sup>+2<sup>-1</sup>==3/4</i>, leading to a strength bonus of (3/4)*86=64 for a level 86
 character. It seems, that the decimals of the precise 64.5 result are truncated.
 </p><p>
-These are leads to dissecting any modification section. Afterwards you will have to translate the section back into appropriately shifted byte code and insert it into, e.g., a small charm. If python is an option for you, consider a function like that (it is not part of Horazon's Folly, which is about ease of use, which is not, what we get, when modifying individual bits. Fun as that may be:
+These are leads to dissecting any modification section. Afterwards you will have to translate the section back into appropriately
+shifted byte code and insert it into, e.g., a small charm. If python is an option for you, consider a function like that
+(it is not part of Horazon's Folly, which is about ease of use, which is not, what we get, when modifying individual bits. Fun as that may be:
 </p>
 
 <code>
@@ -429,7 +431,10 @@ on a small charm:</p>
 b'JM\x10\x00\x80\x00e\x00\x008\xd6\x16\x03\x02f\xd0\r\xb51\r\x00\x00@\x18\x1b\xc5\x7f'
 </code>
 <p>
-Experiment! Modify bit by bit. The worst that can happen, is that the game won't start due to corrupt inventory data. You can even replace the corrupt item with your next attempt, using Horazon's Folly.
+Experiment! Modify bit by bit. The worst that can happen, is that the game won't start due to corrupt inventory data.
+You can even replace the corrupt item with your next attempt, using Horazon's Folly.
+For what it is worth, <a href="https://github.com/kochsoft/diablo2/blob/main/doc/general_science/mods.tsv">this file</a>
+already includes a couple of bit sequences that seem valid.
 </p>
 
 <figure>
@@ -470,7 +475,7 @@ b'JM\x10\x00\x80\x00e\x00\x008\xd6\x16\x03\x02f\xd0\r\xb51\r\x00\x00@\x98\x12T\x
 </code>
 <p>
 As a gimmick, these examples may also be created from the Horazon's Folly "Runes to Cube"
-function. Try the codes 'tel', 'sdt', or 'bod'.
+function. Try the codes 'tel', 'sdt', 'bod', or 'inf'.
 </p>
 <figure>
   <img src="https://github.com/kochsoft/diablo2/blob/main/wiki/small_charm_summoners_delight.png" alt="Oskill Necromancer Army and Lady on a small charm." class="center_img"><br />
