@@ -11,6 +11,16 @@
 # ============
 # As always, all is in little endian.
 #
+# constants:
+# ----------
+# Plain bit sequence without any letters. To be cited as is.
+#
+# skill ids:
+# ----------
+# 9s
+#   Standing for a 9 bit sequence representing a specific
+#   skill id from skills.txt.
+#
 # integer:
 # --------
 # number_of_bits i [(offset=0)]: Signifies an integer, potentially with an offset.
@@ -25,3 +35,12 @@
 #     possible value is 2^{-8}, the largest possible value is 2^13-2^{-8}.
 #     Say, our character has 15.25 HP (can happen, e.g., for an Assassin).
 #     That value would be: 00000010 1111000000000 (the space denotes the decimal point).
+#
+# Prefix '+':
+# -----------
+# The value inserted here is >= the value in the preceding column.
+#
+# Predix '=':
+# -----------
+# The value inserted here is == the value in the preceding column.
+
