@@ -21,12 +21,14 @@ import os
 import re
 import logging
 import argparse
+from Tools.i18n.pygettext import is_literal_string
 from collections import OrderedDict as odict
 from argparse import RawTextHelpFormatter
 from numbers import Number
 from pathlib import Path
 from math import ceil, floor
 from shutil import which
+from tokenize import group
 from typing import List, Dict, Optional, Union, Tuple, OrderedDict, Any
 from enum import Enum
 
@@ -120,6 +122,39 @@ class TableMods:
     def __str__(self) -> str:
         return f"Table with {len(self.data)} rows from '{self.pfname}'." if self.data else f"Empty table from '{self.pfname}'."
 
+
+class ParamMod:
+    def __init__(self, param: str):
+        """:param param: A mod parameter like '>6i50'. See ./doc/general_science/readme_mods.txt for details."""
+        self.param = param
+
+    @staticmethod
+    def parse(param: str) -> Optional[Dict[str, Union[str, int, None]]]:
+        """:param param: A mod parameter like '>6i50'. See ./doc/general_science/readme_mods.txt for details."""
+        if not param:
+            return None
+        res = dict() # type: Dict[str, Union[str, int]]
+
+        # Regex: Find out about literals.
+        search_literal = re.search('^([>=]?)([0-9]+)$', param)
+        is_literal = True if search_literal else False
+        res['literal'] = search_literal.groups()[1] if is_literal else None
+
+        # Regex: Parse the entire param.
+        search_all = re.search("^([>=]?)([0-9]*)([fi]?)([0-9]*)$", param)
+        if search_all is None:
+            _log.warning(f"Encountered invalid modification parameter '{param}. Returning None.'")
+            return None
+        groups_all = search_all.groups()
+        res['relation'] = groups_all[0]
+        if is_literal:
+            res['n_bits'] = len(res['literal'])
+        else:
+            res['n_bits'] = int(groups_all[1]) if len(groups_all[1]) else 0
+        res['tp'] = groups_all[2]
+        res['offset'] = int(groups_all[3]) if len(groups_all[3]) else 0
+        return res
+
 class Modification:
     """Small class for analyzing one specific modification.
     :param binary: Potentially the complete binary string this Incubus session is about.
@@ -147,6 +182,10 @@ class Incubus:
 
 
 if __name__ == '__main__':
-    mods = TableMods()
-    print(mods)
+    #mods = TableMods()
+    #print(mods)
+    print(ParamMod.parse('>1100'))
+    print(ParamMod.parse('1100'))
+    print(ParamMod.parse('6f5'))
+    print(ParamMod.parse('=a6f5'))
     print('Done.')
