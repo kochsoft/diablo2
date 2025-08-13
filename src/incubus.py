@@ -23,20 +23,25 @@ import logging
 import argparse
 from collections import OrderedDict as odict
 from argparse import RawTextHelpFormatter
+from numbers import Number
 from pathlib import Path
 from math import ceil, floor
+from shutil import which
 from typing import List, Dict, Optional, Union, Tuple, OrderedDict, Any
 from enum import Enum
-
-
-logging.basicConfig(level=logging.INFO, format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',datefmt='%H:%M:%S')
-_log = logging.getLogger()
 
 
 # > Config.sys. ------------------------------------------------------
 pfname_mods_tsv = str(os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mods.tsv'))
 # < ------------------------------------------------------------------
 
+
+logging.basicConfig(level=logging.INFO, format='[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',datefmt='%H:%M:%S')
+_log = logging.getLogger()
+
+
+"""Example string: Infinity."""
+example_infinity = "00100011000101010101100000100110111010010110111100001100000011001110110100010000101000101101000101011100101111011000001000100001010101011100100000011111011000100000001010001000001100100110101010110101110001010001111111110000"
 
 class E_ColumnType(Enum):
     CT_NO = 0
@@ -55,39 +60,6 @@ class E_ColumnType(Enum):
     CT_EXAMPLE = 13
     CT_COMMENT = 14
 
-
-def read_mods_tsv(pfname: Optional[str] = None) -> List[Dict[E_ColumnType, str]]:
-    """Free function for reading mods.tsv."""
-    if pfname is None:
-        pfname = pfname_mods_tsv
-    if not Path.is_file(Path(pfname)):
-        _log.error(f"Failure to load modification .tsv file '{pfname}'. Returning empty data structure.")
-        return list()
-    res = list()  # type: List[Dict[E_ColumnType, str]]
-    with (open(pfname, 'r') as IN):
-        # [Note: Eat the header line!]
-        IN.readline()
-        n_columns = len(list(E_ColumnType))
-        def parse_line(line_: str) -> Optional[Dict[E_ColumnType, str]]:
-            entries = line_.rstrip().split("\t", n_columns - 1)
-            if not entries:
-                return None
-            res_ = dict()  # type: Dict[E_ColumnType, str]
-            for j in range(n_columns):
-                res_[E_ColumnType(j)] = entries[j] if j < len(entries) else ''
-            if (E_ColumnType.CT_ID not in res_) or bool(re.match("^[0-1]{9}$", res_[E_ColumnType.CT_ID])) == False:
-                return None
-            return res_
-        while True:
-            line = IN.readline()
-            if not line:
-                break
-            entry = parse_line(line)
-            if entry:
-                res.append(entry)
-    return res
-
-
 class E_StateMod(Enum):
     """State enum for the Modification class."""
     SM_OK = 0
@@ -95,13 +67,79 @@ class E_StateMod(Enum):
     SM_INVALID_VALUE = 2
 
 
+class TableMods:
+    """Wrapper class for the mods.tsv content. For easy access to core features."""
+    def __init__(self, pfname: Optional[str] = None):
+        self.pfname = pfname
+        self.data = TableMods.read_mods_tsv(pfname)
+
+    @staticmethod
+    def read_mods_tsv(pfname: Optional[str] = None) -> List[Dict[E_ColumnType, str]]:
+        """:param pfname: Target pfname to the .tsv file."""
+        if pfname is None:
+            pfname = pfname_mods_tsv
+        if not Path.is_file(Path(pfname)):
+            _log.error(f"Failure to load modification .tsv file '{pfname}'. Returning empty data structure.")
+            return list()
+        res = list()  # type: List[Dict[E_ColumnType, str]]
+        with (open(pfname, 'r') as IN):
+            # [Note: Eat the header line!]
+            IN.readline()
+            n_columns = len(list(E_ColumnType))
+
+            def parse_line(line_: str) -> Optional[Dict[E_ColumnType, str]]:
+                entries = line_.rstrip().split("\t", n_columns - 1)
+                if not entries:
+                    return None
+                res_ = dict()  # type: Dict[E_ColumnType, str]
+                for j in range(n_columns):
+                    tp = E_ColumnType(j)
+                    if tp == E_ColumnType.CT_NO:
+                        continue  # << Is useful in the .ods file only, for sorting the table.
+                    res_[tp] = entries[j] if j < len(entries) else ''
+                if (E_ColumnType.CT_ID not in res_) or bool(re.match("^[0-1]{9}$", res_[E_ColumnType.CT_ID])) == False:
+                    return None
+                # else: res_[E_ColumnType.CT_NO] = int(res_[E_ColumnType.CT_ID][::-1], 2)
+                return res_
+
+            while True:
+                line = IN.readline()
+                if not line:
+                    break
+                entry = parse_line(line)
+                if entry:
+                    res.append(entry)
+        return res
+
+    def get_line_by_id(self, id_mod: str) -> Optional[Dict[E_ColumnType, str]]:
+        """:param id_mod: Modification id as little endian binary string of length 9. E.g., '011011000' for cold damage.
+        :returns a dict of the line identified by id_mod. Or None in case of failure."""
+        ind = [id_mod == val[E_ColumnType.CT_ID] for val in self.data]
+        return self.data[ind.index(True)] if True in ind else None
+
+    def __str__(self) -> str:
+        return f"Table with {len(self.data)} rows from '{self.pfname}'." if self.data else f"Empty table from '{self.pfname}'."
+
 class Modification:
     """Small class for analyzing one specific modification.
     :param binary: Potentially the complete binary string this Incubus session is about.
     :param index0:"""
-    def __init__(self, binary: str, index0: int, mods_tsv: List[Dict[str]]):
-        self.binary = binary
-        self.mods_tsv = mods_tsv
+    def __init__(self, binary: str, index0: int, table_mods: TableMods):
+        self.binary = str(binary)
+        self.index0 = max(index0, 0)
+        if len(binary) < (9 + index0) or not bool(re.match("^[0-1]+$", binary)):
+            raise ValueError(f"Invalid binary source string '{binary}' encountered.")
+        self.table_mods = table_mods
+
+    @property
+    def id_mod(self) -> Optional[str]:
+        """:returns the id of this mod if such a """
+        return None if len(self.binary) < self.index0 + 9 else self.binary[self.index0:(self.index0+9)]
+
+    #def split(self) -> Optional[Dict[E_ColumnType, str]]: TODO! Hier war ich.
+    #    """:returns"""
+    #    id_mod = self.id_mod
+    #    line = self.table_mods.get_line_by_id()
 
 
 class Incubus:
@@ -109,5 +147,6 @@ class Incubus:
 
 
 if __name__ == '__main__':
-    mods = read_mods_tsv()
+    mods = TableMods()
+    print(mods)
     print('Done.')
