@@ -129,8 +129,40 @@ class ParamMod:
         self.param = param
 
     @staticmethod
+    def int2binary(val: int, n_bits: int) -> str:
+        """:returns a little endian binary representation of n_bits from given int val. The  return string will be >=0
+        and also capped at the maximum allowed by the number of bits. Hence, range is {0,..,2^{n_bits}-1}."""
+        if n_bits < 0:
+            raise ValueError(f"Number of bits must be >=0. '{n_bits}' has been encountered.")
+        elif n_bits == 0:
+            return ''
+        if val < 0:
+            val = 0
+        elif val >= 2**n_bits:
+            val = 2**n_bits - 1
+        binary = '{0:b}'.format(val)[::-1]
+        return binary + ('0' * (n_bits - len(binary)))
+
+    @staticmethod
+    def binary2int(binary: str) -> int:
+        """:returns an int representation of given little endian binary."""
+        return int(binary[::-1], 2)
+
+    @staticmethod
     def parse(param: str) -> Optional[Dict[str, Union[str, int, None]]]:
-        """:param param: A mod parameter like '>6i50'. See ./doc/general_science/readme_mods.txt for details."""
+        """Parses a parameter code into its components.
+        :param param: A mod parameter like '>6i50'. See ./doc/general_science/readme_mods.txt for details.
+        :returns a dict or None in case of failure. Structure:
+          'literal': Binary of a constant literal. Or None, if param is not a literal.
+            Literals are always interpreted as plain integers.
+          'relation': '>' or '=' it it is a requirement that a value of this param structure is either >=
+            or = to a value that has been preceding it.
+          'n_bits': Number of bits that is expected for this structure template.
+          'tp': Value type. 'i' in case of integers, 'f' in case of floats, '' in case of literals.
+          'offset': In case of integers this is the offset that has to be added to the in-game value to reach
+            the save-game representation. E.g. '10' for armor class. In-Game armor of 100 is saved as 110.
+            In case of little endian binary floats this defines the position of the point. 0 equals an integer.
+            The higher the offset, the further the point moves to the right."""
         if not param:
             return None
         res = dict() # type: Dict[str, Union[str, int]]
@@ -154,6 +186,47 @@ class ParamMod:
         res['tp'] = groups_all[2]
         res['offset'] = int(groups_all[3]) if len(groups_all[3]) else 0
         return res
+
+    def val2bin_templated(self, val: Optional[Union[int, float]], val_prior: Optional[Union[int, float]] = None) -> Optional[str]:
+        """Converts an in-game value into a little endian binary sequence according to this object's spec."""
+        if val is None:
+            return None
+        codes = self.parse(self.param)
+        if (codes['relation'] == '>' and val < val_prior) or (codes['relation'] == '='):
+            val = val_prior
+        if codes is None:
+            return None
+        elif codes['tp'] == '':
+            binary = codes['literal']
+        elif codes['tp'] == 'i':
+            binary = self.int2binary(int(val) + codes['offset'], codes['n_bits'])
+        elif codes['tp'] == 'f':
+            binary = self.int2binary(int((2**codes['offset']) * val), codes['n_bits'])
+        else:
+            return None
+        return binary
+
+    def bin2val_templated(self, binary: Optional[str]) -> Optional[Union[int, float]]:
+        """Translates a binary sequence to a numeric value, according to the rules of this template."""
+        if binary is None:
+            return None
+        codes = self.parse(self.param)
+        if codes is None:
+            return None
+        elif len(binary) != codes['n_bits']:
+            raise ValueError(f"Binary sequence '{binary}' does not fit numeric template '{self.param}'.")
+        elif codes['tp'] == '':
+            val = self.binary2int(codes['literal'])
+        elif codes['tp'] == 'i':
+            val = self.binary2int(binary) - codes['offset']
+        elif codes['tp'] == 'f':
+            val = float(self.binary2int(binary)) / (2 ** codes['offset'])
+        else:
+            return None
+        return val
+
+    def __str__(self) -> str:
+        return self.param
 
 class Modification:
     """Small class for analyzing one specific modification.
@@ -184,8 +257,9 @@ class Incubus:
 if __name__ == '__main__':
     #mods = TableMods()
     #print(mods)
-    print(ParamMod.parse('>1100'))
-    print(ParamMod.parse('1100'))
-    print(ParamMod.parse('6f5'))
-    print(ParamMod.parse('=a6f5'))
+    pm = ParamMod('8f3')
+    val = 10.375
+    binary = pm.val2bin_templated(val)
+    val0 = pm.bin2val_templated(binary)
+    print(f"{val} -> {binary} -> {val0}. According to '{pm}'.")
     print('Done.')
