@@ -28,7 +28,6 @@ from numbers import Number
 from pathlib import Path
 from math import ceil, floor
 from shutil import which
-from tokenize import group
 from typing import List, Dict, Optional, Union, Tuple, OrderedDict, Any
 from enum import Enum
 
@@ -123,10 +122,15 @@ class TableMods:
         return f"Table with {len(self.data)} rows from '{self.pfname}'." if self.data else f"Empty table from '{self.pfname}'."
 
 
-class ParamMod:
+class ModificationItem:
+    """Class for parsing and using a single modification template, like, e.g., '6i50'."""
+    cache_parsed = dict()
+    """Cache for parsed templates."""
+
     def __init__(self, param: str):
         """:param param: A mod parameter like '>6i50'. See ./doc/general_science/readme_mods.txt for details."""
         self.param = param
+        self._binary = None  # type: Optional[str]
 
     @staticmethod
     def int2binary(val: int, n_bits: int) -> str:
@@ -155,7 +159,7 @@ class ParamMod:
         :returns a dict or None in case of failure. Structure:
           'literal': Binary of a constant literal. Or None, if param is not a literal.
             Literals are always interpreted as plain integers.
-          'relation': '>' or '=' it it is a requirement that a value of this param structure is either >=
+          'relation': '>' or '='. It is a requirement that a value of this param structure is either >=
             or = to a value that has been preceding it.
           'n_bits': Number of bits that is expected for this structure template.
           'tp': Value type. 'i' in case of integers, 'f' in case of floats, '' in case of literals.
@@ -163,6 +167,8 @@ class ParamMod:
             the save-game representation. E.g. '10' for armor class. In-Game armor of 100 is saved as 110.
             In case of little endian binary floats this defines the position of the point. 0 equals an integer.
             The higher the offset, the further the point moves to the right."""
+        if param in ModificationItem.cache_parsed:
+            return ModificationItem.cache_parsed[param]
         if not param:
             return None
         res = dict() # type: Dict[str, Union[str, int]]
@@ -185,14 +191,33 @@ class ParamMod:
             res['n_bits'] = int(groups_all[1]) if len(groups_all[1]) else 0
         res['tp'] = groups_all[2]
         res['offset'] = int(groups_all[3]) if len(groups_all[3]) else 0
+        ModificationItem.cache_parsed['param'] = res
         return res
+
+    @property
+    def code(self) -> Optional[Dict[str, Union[str, int, None]]]:
+        return self.parse(self.param)
+
+    @property
+    def range(self) -> Union[Tuple[int, int], Tuple[float, float]]:
+        """:returns the valid range of values for this ModificationItem."""
+        code = self.code
+        if code['literal'] is not None:
+            val = self.binary2int(code['literal'])
+            return val, val
+        elif code['tp'] == 'i':
+            return (-code['offset']), (2**code['n_bits'] - code['offset'] - 1)
+        elif code['tp'] == 'f':
+            return 0, (2**(code['n_bits']-code['offset']) - 2**(-code['offset']))
+        else:
+            raise ValueError(f"Unsupported type code '{code['tp']}' encountered.")
 
     def val2bin_templated(self, val: Optional[Union[int, float]], val_prior: Optional[Union[int, float]] = None) -> Optional[str]:
         """Converts an in-game value into a little endian binary sequence according to this object's spec."""
         if val is None:
             return None
-        codes = self.parse(self.param)
-        if (codes['relation'] == '>' and val < val_prior) or (codes['relation'] == '='):
+        codes = self.code
+        if (val_prior is not None) and ((codes['relation'] == '>' and val < val_prior) or (codes['relation'] == '=')):
             val = val_prior
         if codes is None:
             return None
@@ -210,7 +235,7 @@ class ParamMod:
         """Translates a binary sequence to a numeric value, according to the rules of this template."""
         if binary is None:
             return None
-        codes = self.parse(self.param)
+        codes = self.code
         if codes is None:
             return None
         elif len(binary) != codes['n_bits']:
@@ -225,8 +250,45 @@ class ParamMod:
             return None
         return val
 
+    @property
+    def has_relation(self) -> bool:
+        """:returns True if and only if this ModificationItem has a valid parameter and a non-trivial relation symbol."""
+        code = self.code
+        return False if ((code is None) or (code['relation'] == '')) else True
+
+    def binary_matches(self, binary: str, binary_prior: Optional[str] = None) -> bool:
+        """Does the given little endian binary match this Modification?"""
+        code = self.code
+        if code is None:
+            raise ValueError(f"This ModificationItem has no valid parameter to check against: '{self.param}'.")
+        regexp = '^[0-9]{' + str(code['n_bits']) + '}$'
+        is_fit = bool(re.match(regexp, binary))
+        if is_fit and self.has_relation and (binary_prior is not None):
+            if code['relation'] == '=':
+                is_fit = (int(binary[::-1], 2) == int(binary_prior[::-1], 2))
+            elif code['relation'] == '>':
+                is_fit = (int(binary[::-1], 2) >= int(binary_prior[::-1], 2))
+            else:
+                raise ValueError(f"Unsupported relation symbol '{code['relation']}' encountered.")
+        return is_fit
+
+    @property
+    def value(self) -> Optional[Union[int, float]]:
+        return self.bin2val_templated(self._binary)
+
+    @property
+    def binary(self) -> Optional[str]:
+        """Getter for the binary attached to this ModificationItem if any."""
+        return self._binary
+
+    @binary.setter
+    def binary(self, binary: Optional[str]):
+        if (binary is not None) and not self.binary_matches(binary):
+            raise ValueError(f"Given binary '{binary}' does not fit template '{self.param}.")
+        self._binary = binary
+
     def __str__(self) -> str:
-        return self.param
+        return f"{self.param}({self.binary})"
 
 class Modification:
     """Small class for analyzing one specific modification.
@@ -244,11 +306,8 @@ class Modification:
         """:returns the id of this mod if such a """
         return None if len(self.binary) < self.index0 + 9 else self.binary[self.index0:(self.index0+9)]
 
-    #def split(self) -> Optional[Dict[E_ColumnType, str]]: TODO! Hier war ich.
-    #    """:returns"""
-    #    id_mod = self.id_mod
-    #    line = self.table_mods.get_line_by_id()
-
+    def get_parameters(self) -> List[ModificationItem]:
+        pass
 
 class Incubus:
     pass
@@ -257,9 +316,10 @@ class Incubus:
 if __name__ == '__main__':
     #mods = TableMods()
     #print(mods)
-    pm = ParamMod('8f3')
-    val = 10.375
-    binary = pm.val2bin_templated(val)
-    val0 = pm.bin2val_templated(binary)
-    print(f"{val} -> {binary} -> {val0}. According to '{pm}'.")
+    pm__ = ModificationItem('>8i3')
+    print(pm__.binary_matches('111100000','01110000'))
+    val__ = -4
+    binary__ = pm__.val2bin_templated(val__)
+    val0__ = pm__.bin2val_templated(binary__)
+    print(f"{val__} -> {binary__} -> {val0__}. According to '{pm__}'.")
     print('Done.')
