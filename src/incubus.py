@@ -16,6 +16,7 @@ Markus-Hermann Koch, mhk@markuskoch.eu, 2025/08/11
 """
 
 from __future__ import annotations
+from horazons_folly import E_Characters, d_skills
 
 import os
 import re
@@ -196,6 +197,42 @@ class ModificationParameter:
         res['offset'] = int(groups_all[3]) if len(groups_all[3]) else 0
         ModificationParameter.cache_parsed['param'] = res
         return res
+
+    @property
+    def is_skill(self) -> bool:
+        """:returns True if and only if self.param equals '9s', signifying a skill id."""
+        return isinstance(self.param, str) and ('9s' == self.param)
+
+    @staticmethod
+    def get_name_skill(id_skill: Union[int, str]) -> str:
+        """Takes a string id and returns a human-readable name. E.g., '54' is the Sorceress spell 'Teleport'. Compare 'Skills.txt'."""
+        if isinstance(id_skill, str):
+            id_skill = int(id_skill[::-1], 2)
+        if 6 <= id_skill < 36:
+            character = E_Characters.EC_AMAZON
+            offset = 6
+        elif 36 <= id_skill < 66:
+            character = E_Characters.EC_SORCERESS
+            offset = 36
+        elif 66 <= id_skill < 96:
+            character = E_Characters.EC_NECROMANCER
+            offset = 66
+        elif 96 <= id_skill < 126:
+            character = E_Characters.EC_PALADIN
+            offset = 96
+        elif 126 <= id_skill < 156:
+            character = E_Characters.EC_BARBARIAN
+            offset = 126
+        elif 221 <= id_skill < 251:
+            character = E_Characters.EC_DRUID
+            offset = 221
+        elif 251 <= id_skill < 281:
+            character = E_Characters.EC_ASSASSIN
+            offset = 251
+        else:
+            return 'no skill'
+        index = id_skill - offset
+        return d_skills[character][index] if index < len(d_skills[character]) else f'unknown skill ({id_skill})'
 
     @property
     def code(self) -> Optional[Dict[str, Union[str, int, None]]]:
@@ -387,13 +424,24 @@ class ModificationItem:
     def __str__(self) -> str:
         spec = self.table_mods.get_line_by_id(self.id_mod)
         if spec is None:
-            return f"Unknown modification[{self.parsed['index0']}:{self.parsed['index1']}]"
+            return f"Hitherto unknown modification[{self.parsed['index0']}:{self.parsed['index1']}]"
         res = f"{spec[E_ColumnType.CT_NAME]}[{self.parsed['index0']}:{self.parsed['index1']}]"
-        params = self.parsed['parameters']
+        params = self.parsed['parameters']  # type: List[ModificationParameter]
+        label_cols = list()  # type: List[E_ColumnType]
         if params:
             res += '('
-            for param in params:
-                res += str(param) + ', '  #<< TODO: Hier war ich.
+            for j in range(len(params)):
+                param = params[j]
+                param_binary = self.binary[param.index0:param.index1]
+                if param.is_skill:
+                    value = '(' + param.get_name_skill(param_binary) + ')'
+                else:
+                    value = f'({param.bin2val_templated(param_binary)})'
+                prefix_suffix = spec[E_ColumnType(j + 3)].split(',', 1)
+                if len(prefix_suffix) < 2:
+                    prefix_suffix.append('')
+                value = prefix_suffix[0] + value + prefix_suffix[1]
+                res += str(param) + value + ', '  #<< TODO: Hier war ich.
             res += ')'
         return res
 
