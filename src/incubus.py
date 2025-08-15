@@ -65,6 +65,56 @@ Magic Find[162:179](8i100[171:179](30)%)
 On Being Struck: Autocast[179:211](6i[188:194]level(21)9s[194:203], (Cyclone Armor)0[203:204], (0)7i[204:211], (10)%)"""
 example_infinity = "00100011000101010101100000100110111010010110111100001100000011001110110100010000101000101101000101011100101111011000001000100001010101011100100000011111011000100000001010001000001100100110101010110101110001010001111111110000"
 
+"""This is most ugly. Due to incubus.py being a dependency of horazons_folly.py it is difficult to import
+d_skills and E_Characters from there. Attempts, to do this, led to an unstable program. Not wanting to create
+a fourth .py file for this, nor to put these central elements into small incubus.py, I decided to go with
+a redundant copy for now. As said: Ugly. But also: Works."""
+redundant_skills = {
+    'amazon': ["Magic Arrow", "Fire Arrow", "Inner Sight", "Critical Strike", "Jab",
+                             "Cold Arrow", "Multiple Shot", "Dodge", "Power Strike", "Poison Javelin",
+                             "Exploding Arrow", "Slow Missiles", "Avoid", "Impale", "Lightning Bolt",
+                             "Ice Arrow", "Guided Arrow", "Penetrate", "Charged Strike", "Plague Javelin",
+                             "Strafe", "Immolation Arrow", "Decoy", "Evade", "Fend",
+                             "Freezing Arrow", "Valkyrie", "Pierce", "Lightning Strike", "Lightning Fury"],
+    'sorceress': ["Fire Bolt", "Warmth", "Charged Bolt", "Ice Bolt", "Frozen Armor",
+                                "Inferno", "Static Field", "Telekinesis", "Frost Nova", "Ice Blast",
+                                "Blaze", "Fireball", "Nova", "Lightning", "Shiver Armor",
+                                "Fire Wall", "Enchant", "Chain Lightning", "Teleport", "Glacial Spike",
+                                "Meteor", "Thunder Storm", "Energy Shield", "Blizzard", "Chilling Armor",
+                                "Fire Mastery", "Hydra", "Lightning Mastery", "Frozen Orb", "Cold Mastery"],
+    'necromancer': ["Amplify Damage", "Teeth", "Bone Armor", "Skeleton Mastery", "Raise Skeleton",
+                                  "Dim Vision", "Weaken", "Poison Dagger", "Corpse Explosion", "Clay Golem",
+                                  "Iron Maiden", "Terror", "Bone Wall", "Golem Mastery", "Skeletal Mage",
+                                  "Confuse", "Life Tap", "Poison Explosion", "Bone Spear", "Blood Golem",
+                                  "Attract", "Decrepify", "Bone Prison", "Summon Resist", "Iron Golem",
+                                  "Lower Resist", "Poison Nova", "Bone Spirit", "Fire Golem", "Revive"],
+    'paladin': ["Sacrifice", "Smite", "Might", "Prayer", "Resist Fire",
+                              "Holy Bolt", "Thorns", "Holy Fire", "Defiance", "Resist Cold",
+                              "Zeal", "Charge", "Blessed Aim", "Cleansing", "Resist Lightning",
+                              "Vengeance", "Blessed Hammer", "Concentration", "Holy Freeze", "Vigor",
+                              "Conversion", "Holy Shield", "Holy Shock", "Sanctuary", "Meditation",
+                              "Fist of the Heavens", "Fanaticism", "Conviction", "Redemption", "Salvation"],
+    'barbarian': ["Bash", "Sword Mastery", "Axe Mastery", "Mace Mastery", "Howl", "Find Potion",
+                                "Leap", "Double Swing", "Polearm Mastery", "Throwing Mastery", "Spear Mastery", "Taunt", "Shout",
+                                "Stun", "Double Throw", "Increased Stamina", "Find Item",
+                                "Leap Attack", "Concentrate", "Iron Skin", "Battle Cry",
+                                "Frenzy", "Increased Speed", "Battle Orders", "Grim Ward",
+                                "Whirlwind", "Berserk", "Natural Resistance", "War Cry", "Battle Command"],
+    'druid': ["Raven", "Poison Creeper", "Werewolf", "Lycanthropy", "Firestorm",
+                            "Oak Sage", "Summon Spirit Wolf", "Werebear", "Molten Boulder", "Arctic Blast",
+                            "Carrion Wine", "Feral Rage", "Maul", "Fissure", "Cyclone Armor",
+                            "Heart of Wolverine", "Summon Dire Wolf", "Rabies", "Fire Claws", "Twister",
+                            "Solar Creeper", "Hunger", "Shockwave", "Volcano", "Tornado",
+                            "Spirit of Barbs", "Summon Grizzly", "Fury", "Armageddon", "Hurricane"],
+    'assassin': ["Fire Blast", "Claw Mastery", "Psychic Hammer", "Tiger Strike", "Dragon Talon",
+                               "Shock Web", "Blade Sentinel", "Burst of Speed", "Fists of Fire", "Dragon Claw",
+                               "Charged Bolt Sentry", "Wake of Fire", "Weapon Block", "Cloak of Shadows", "Cobra Strike",
+                               "Blade Fury", "Fade", "Shadow Warrior", "Claws of Thunder", "Dragon Tail",
+                               "Lightning Sentry", "Wake of Inferno", "Mind Blast", "Blades of Ice", "Dragon Flight",
+                               "Death Sentry", "Blade Shield", "Venom", "Shadow Master", "Phoenix Strike"]
+}
+
+
 class E_ColumnType(Enum):
     CT_NO = 0
     CT_NAME = 1
@@ -229,30 +279,30 @@ class ModificationParameter:
         if isinstance(id_skill, str):
             id_skill = int(id_skill[::-1], 2)
         if 6 <= id_skill < 36:
-            character = E_Characters.EC_AMAZON
+            character = 'amazon'
             offset = 6
         elif 36 <= id_skill < 66:
-            character = E_Characters.EC_SORCERESS
+            character = 'sorceress'
             offset = 36
         elif 66 <= id_skill < 96:
-            character = E_Characters.EC_NECROMANCER
+            character = 'necromancer'
             offset = 66
         elif 96 <= id_skill < 126:
-            character = E_Characters.EC_PALADIN
+            character = 'paladin'
             offset = 96
         elif 126 <= id_skill < 156:
-            character = E_Characters.EC_BARBARIAN
+            character = 'barbarian'
             offset = 126
         elif 221 <= id_skill < 251:
-            character = E_Characters.EC_DRUID
+            character = 'druid'
             offset = 221
         elif 251 <= id_skill < 281:
-            character = E_Characters.EC_ASSASSIN
+            character = 'assassin'
             offset = 251
         else:
             return 'no skill'
         index = id_skill - offset
-        return d_skills[character][index] if index < len(d_skills[character]) else f'unknown skill ({id_skill})'
+        return redundant_skills[character][index] if index < len(redundant_skills[character]) else f'unknown skill ({id_skill})'
 
     @property
     def code(self) -> Optional[Dict[str, Union[str, int, None]]]:
@@ -499,10 +549,6 @@ class ModificationSet:
         return res
 
 if __name__ == '__main__':
-    # [Note: Keeping these imports here avoids circular dependency issues when this .py is used from Horazon's Folly.]
-    from horazons_folly import E_Characters
-    from horazons_folly import d_skills
-
     mods = TableMods()
     ms = ModificationSet(example_infinity)
     # #<< id: 001000110 lvl(20): 001010 skill(53): 101011000; val(100): 00100110

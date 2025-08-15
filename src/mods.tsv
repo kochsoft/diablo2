@@ -43,6 +43,7 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 127	All Skills Bonus	111111100	+					3i					111111100010	
 135	Open Wounds Probability	111000010	,%					7i					1110000101001100	
 136	Crushing Blow Probability	000100010	,%					7i					0001000101000010	
+138	Mana Bonus on Kill	010100010						7i					0101000100100000	
 145	Absorb Lightning	100010010						7i					1000100100010100	
 147	Absorb Magic	110010010						7i					1100100101101000	
 151	Aura on Equip	111010010		+				9s	5i				11101001011100110000101	First param is skill id. Second is lvl.
