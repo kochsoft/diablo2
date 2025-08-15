@@ -122,15 +122,18 @@ class TableMods:
         return f"Table with {len(self.data)} rows from '{self.pfname}'." if self.data else f"Empty table from '{self.pfname}'."
 
 
-class ModificationItem:
-    """Class for parsing and using a single modification template, like, e.g., '6i50'."""
+class ModificationParameter:
+    """Class for parsing and using a single modification template, for a single value. E.g., '6i50'."""
     cache_parsed = dict()
     """Cache for parsed templates."""
 
     def __init__(self, param: str):
         """:param param: A mod parameter like '>6i50'. See ./doc/general_science/readme_mods.txt for details."""
         self.param = param
-        self._binary = None  # type: Optional[str]
+        # Convenience members for holding an index0 within a larger binary where this parameter instance is sited in.
+        self._index0 = None  # type: Optional[int]
+        # Convenience members for holding an index1 within a larger binary where this parameter instance is sited in.
+        self._index1 = None  # type: Optional[int]
 
     @staticmethod
     def int2binary(val: int, n_bits: int) -> str:
@@ -167,8 +170,8 @@ class ModificationItem:
             the save-game representation. E.g. '10' for armor class. In-Game armor of 100 is saved as 110.
             In case of little endian binary floats this defines the position of the point. 0 equals an integer.
             The higher the offset, the further the point moves to the right."""
-        if param in ModificationItem.cache_parsed:
-            return ModificationItem.cache_parsed[param]
+        if param in ModificationParameter.cache_parsed:
+            return ModificationParameter.cache_parsed[param]
         if not param:
             return None
         res = dict() # type: Dict[str, Union[str, int]]
@@ -179,7 +182,7 @@ class ModificationItem:
         res['literal'] = search_literal.groups()[1] if is_literal else None
 
         # Regex: Parse the entire param.
-        search_all = re.search("^([>=]?)([0-9]*)([fi]?)([0-9]*)$", param)
+        search_all = re.search("^([>=]?)([0-9]*)([fis]?)([0-9]*)$", param)
         if search_all is None:
             _log.warning(f"Encountered invalid modification parameter '{param}. Returning None.'")
             return None
@@ -191,7 +194,7 @@ class ModificationItem:
             res['n_bits'] = int(groups_all[1]) if len(groups_all[1]) else 0
         res['tp'] = groups_all[2]
         res['offset'] = int(groups_all[3]) if len(groups_all[3]) else 0
-        ModificationItem.cache_parsed['param'] = res
+        ModificationParameter.cache_parsed['param'] = res
         return res
 
     @property
@@ -200,7 +203,7 @@ class ModificationItem:
 
     @property
     def range(self) -> Union[Tuple[int, int], Tuple[float, float]]:
-        """:returns the valid range of values for this ModificationItem."""
+        """:returns the valid range of values for this ModificationParameter."""
         code = self.code
         if code['literal'] is not None:
             val = self.binary2int(code['literal'])
@@ -211,6 +214,11 @@ class ModificationItem:
             return 0, (2**(code['n_bits']-code['offset']) - 2**(-code['offset']))
         else:
             raise ValueError(f"Unsupported type code '{code['tp']}' encountered.")
+
+    @property
+    def n_bits(self) -> int:
+        code = self.code
+        return code['n_bits'] if code else 0
 
     def val2bin_templated(self, val: Optional[Union[int, float]], val_prior: Optional[Union[int, float]] = None) -> Optional[str]:
         """Converts an in-game value into a little endian binary sequence according to this object's spec."""
@@ -252,15 +260,18 @@ class ModificationItem:
 
     @property
     def has_relation(self) -> bool:
-        """:returns True if and only if this ModificationItem has a valid parameter and a non-trivial relation symbol."""
+        """:returns True if and only if this ModificationParameter has a valid parameter and a non-trivial relation symbol."""
         code = self.code
         return False if ((code is None) or (code['relation'] == '')) else True
 
-    def binary_matches(self, binary: str, binary_prior: Optional[str] = None) -> bool:
-        """Does the given little endian binary match this Modification?"""
+    def does_binary_match(self, binary: str, binary_prior: Optional[str] = None) -> bool:
+        """Does the given little endian binary match this Modification?
+        :param binary: LE binary code to be matched.
+        :param binary_prior: A potential prior binary code. Relevant, if self.param has a relation symbol.
+        :returns True of and only if given binary would be a valid value for this ModificationParameter."""
         code = self.code
         if code is None:
-            raise ValueError(f"This ModificationItem has no valid parameter to check against: '{self.param}'.")
+            raise ValueError(f"This ModificationParameter has no valid parameter to check against: '{self.param}'.")
         regexp = '^[0-9]{' + str(code['n_bits']) + '}$'
         is_fit = bool(re.match(regexp, binary))
         if is_fit and self.has_relation and (binary_prior is not None):
@@ -273,53 +284,126 @@ class ModificationItem:
         return is_fit
 
     @property
-    def value(self) -> Optional[Union[int, float]]:
-        return self.bin2val_templated(self._binary)
+    def index0(self) -> Optional[int]:
+        return self._index0
 
     @property
-    def binary(self) -> Optional[str]:
-        """Getter for the binary attached to this ModificationItem if any."""
-        return self._binary
+    def index1(self) -> Optional[int]:
+        return self._index1
 
-    @binary.setter
-    def binary(self, binary: Optional[str]):
-        if (binary is not None) and not self.binary_matches(binary):
-            raise ValueError(f"Given binary '{binary}' does not fit template '{self.param}.")
-        self._binary = binary
+    def set_indices(self, binary0: Optional[str] = None, index0: int = 0, index_prior: Optional[int] = None) -> bool:
+        """Will reset self._index0 and self._index1 to None in case of failure. Else will set them thus, that they
+        limit this Parameter instance's binary code within given binary0.
+        :param binary0: A complete modification set binary. It may be None, to reset these indices.
+        :param index0: Index within binary0 where this Modification Parameter instance is sited.
+        :param index_prior: If 0<=index_prior<(index0-9) will use that sequence in binary0 for prior value.
+        :returns True if and only if setting and included parameter verification succeeded.
+          False if the tested binary does not fit this Parameter."""
+        self._index0 = None
+        self._index1 = None
+        if binary0 is None:
+            return True  # << This is no crime.
+        index1 = index0 + self.n_bits
+        if len(binary0) < index1:
+            _log.error(f"Given binary is too short for this parameter of length '{self.n_bits}' being sited at index '{index0}': '{binary0}'.")
+            return False
+        binary = binary0[index0:index1]
+        binary_prior = binary0[index_prior:index0] if ((index_prior is not None) and (0 <= index_prior < (index0 - 9))) else None
+        if (binary is not None) and not self.does_binary_match(binary, binary_prior):
+            _log.error(f"Given binary '{binary}' at index0 '{index0}' does not fit template '{self.param}.")
+            return False
+        self._index0 = index0
+        self._index1 = index1
+        return True
 
     def __str__(self) -> str:
-        return f"{self.param}({self.binary})"
+        return f"{self.param}[{self.index0}:{self.index1}]"
 
-class Modification:
-    """Small class for analyzing one specific modification.
-    :param binary: Potentially the complete binary string this Incubus session is about.
-    :param index0:"""
+class ModificationItem:
+    """Small class for analyzing one specific modification. Like, e.g., oSkill Teleport +1:
+      '100001100011011000100000' (i.e., 9-bit-id oskill: 100001100 Teleport: 011011000 "+1": 100000)
+    :param binary: Binary string describing an entire item modification set. Comprising ids and all attached parameters.
+    :param index0: Starting index within binary this specific Modification Item is concerned with.
+    :param table_mods: Modification lookup table."""
     def __init__(self, binary: str, index0: int, table_mods: TableMods):
         self.binary = str(binary)
-        self.index0 = max(index0, 0)
-        if len(binary) < (9 + index0) or not bool(re.match("^[0-1]+$", binary)):
+        self.index0 = index0
+        if (len(binary) < (9 + index0)) or not bool(re.match("^[0-1]+$", binary)):
             raise ValueError(f"Invalid binary source string '{binary}' encountered.")
         self.table_mods = table_mods
+        self.parsed = self.parse_parameters(self.binary, self.index0, self.table_mods)
 
     @property
     def id_mod(self) -> Optional[str]:
         """:returns the id of this mod if such a """
-        return None if len(self.binary) < self.index0 + 9 else self.binary[self.index0:(self.index0+9)]
+        return None if len(self.binary) < 9 else self.binary[:9]
 
-    def get_parameters(self) -> List[ModificationItem]:
-        pass
+    @staticmethod
+    def parse_parameters(binary: str, index0: int, table: TableMods) -> Dict[str, Any]:
+        """Attempts to parse the given binary into a list of parameters. If successful, this will describe an
+        entire magical property.
+        :param binary: A little endian binary string describing a complete modification set.
+        :param index0: Index within binary of the modification id we are interested in.
+        :param table: Table of known modification specifications.
+        :returns dict.
+          'is_valid': bool. Was a known modification type found and could it be parsed?
+          'index0': int. Repeats the given index0.
+          'index1': index within binary of the first entry beyond this modification item.
+            May be == len(binary) if this is the last item or if this modification could not be identified,
+            making it a residual (which is not valid).
+          'parameters': List of ModificationParameter. Will be empty if this not 'is_valid'.
+            Else will hold the entire list of ModificationParameters this item is concerned with."""
+        # [Note: Initializing as failure case, leading to a residual binary. Anything better needs to be earned.]
+        res = {
+            'is_valid': False,
+            'index0': index0,
+            'index1': len(binary),
+            'parameters': list()  # type: List[ModificationParameter]
+        }  # type: Dict[str, Any]
+        if len(binary) < (index0 + 9):
+            return res
+        id_mod = binary[index0:(index0 + 9)]
+        spec = table.get_line_by_id(id_mod)
+        if spec is None:
+            return res
+        params = list()
+        index_prior = None
+        index_current = index0 + 9
+        for key in [E_ColumnType.CT_PARAM_0, E_ColumnType.CT_PARAM_1, E_ColumnType.CT_PARAM_2, E_ColumnType.CT_PARAM_3, E_ColumnType.CT_PARAM_4]:
+            if not spec[key]:
+                break
+            param = ModificationParameter(spec[key])
+            acceptable = param.set_indices(binary, index_current, index_prior)
+            if not acceptable:
+                return res
+            params.append(param)
+            index_prior = index_current
+            index_current = param.index1
+        res['index1'] = index_current
+        res['parameters'] = params
+        res['is_valid'] = True
+        return res
 
-class Incubus:
+    def __str__(self) -> str:
+        spec = self.table_mods.get_line_by_id(self.id_mod)
+        if spec is None:
+            return f"Unknown modification[{self.parsed['index0']}:{self.parsed['index1']}]"
+        res = f"{spec[E_ColumnType.CT_NAME]}[{self.parsed['index0']}:{self.parsed['index1']}]"
+        params = self.parsed['parameters']
+        if params:
+            res += '('
+            for param in params:
+                res += str(param) + ', '  #<< TODO: Hier war ich.
+            res += ')'
+        return res
+
+class ModificationSet:
     pass
 
 
 if __name__ == '__main__':
-    #mods = TableMods()
-    #print(mods)
-    pm__ = ModificationItem('>8i3')
-    print(pm__.binary_matches('111100000','01110000'))
-    val__ = -4
-    binary__ = pm__.val2bin_templated(val__)
-    val0__ = pm__.bin2val_templated(binary__)
-    print(f"{val__} -> {binary__} -> {val0__}. According to '{pm__}'.")
+    mods = TableMods()
+    mi = ModificationItem(example_infinity,0,mods)
+    # #<< id: 001000110 lvl(20): 001010 skill(53): 101011000; val(100): 00100110
+    print(mi)
     print('Done.')
