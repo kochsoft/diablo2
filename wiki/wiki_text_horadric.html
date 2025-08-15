@@ -1,3 +1,4 @@
+/.py
 <h1>Horadric Exchange -- a v1.10-v1.14d Diablo II inter-Character Item Swapper and Save Game Editor</h1>
 
 <figure>
@@ -67,6 +68,10 @@ The project mainly comprises
     It contains a lot of knowledge for anyone endeavoring to understand Diablo II
     save-game files.
   </li>
+  <li><b>incubus.py</b>: Another simple script, specializing in extended item modification lists.
+    At this time (August 2025) it, and its data source <b>mods.tsv</b> are still under heavy development,
+    but there is a growing number of modifications that can be parsed for display already.
+  </li>
   <li><b>horadric_exchange.py</b>: A comprehensive GUI frontend for <code>horazons_folly.py</code>.
     It brings one dependency: <code>tkinter</code>, the basic, python GUI system.
     On windows, it may be selected as optional during installation of the Python 3
@@ -112,7 +117,7 @@ The project mainly comprises
 <h2>Setup</h2>
 
 <p>
-Installation is as simple as putting both <b>.py</b> files, <b>item_codes.tsv</b>, <b>armor_weapons.tsv</b>, and the two graphics,
+Installation is as simple as putting the three <b>.py</b> files, <b>item_codes.tsv</b>, <b>armor_weapons.tsv</b>, <b>mods.tsv</b>, and the two graphics,
 <b>logo_horadric_exchange.png</b> and <b>potion_of_life.png</b>, into one directory
 and running the desired script using a python 3 interpreter with the script
 directory as working directory.

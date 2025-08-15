@@ -24,6 +24,8 @@ Markus-Hermann Koch, mhk@markuskoch.eu, 2025/01/29.
 
 from __future__ import annotations
 
+from incubus import ModificationSet
+
 import re
 import os
 import sys
@@ -1872,7 +1874,14 @@ class Item:
         res = ""
         bmr = bytes2bitmap(self.data_item)[::-1]
         for key in indices:
-            res += f"  {key}: [{indices[key][0]}:{indices[key][1]}], {bmr[indices[key][0]:indices[key][1]]}"
+            binary = bmr[indices[key][0]:indices[key][1]]
+            res += f"  {key}: [{indices[key][0]}:{indices[key][1]}], "
+            if key in (E_ExtProperty.EP_MODS, E_ExtProperty.EP_MODS_RUNEWORD):
+                mod_parsing = str(ModificationSet(binary))
+                mod_parsing = re.sub('\\n', "\n    * ", mod_parsing)
+                res += mod_parsing
+            else:
+                res += f"{binary}"
             if key != E_ExtProperty.EP_MODS_RUNEWORD:
                 res += "\n"
         return res
@@ -1896,7 +1905,7 @@ class Item:
 
         # > Iterate through the diverse item blocks in sequence. -----
         # Player Header: Has only 4 bytes. Main file header is of 765 bytes length.
-        # Byytes [767:769] are a 2-byte item count. Counting only direct items, not those that are socketed,
+        # Bytes [767:769] are a 2-byte item count. Counting only direct items, not those that are socketed,
         # being perceived as part of a "mother item".
         index_start = self.data.find(b'JM', 765)
         index_end = index_start + 4

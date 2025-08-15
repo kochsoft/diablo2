@@ -13,10 +13,20 @@ It will become a dependency of horazons_folly.py, but also offer elementary
 command line functionality as a stand-alone script.
 
 Markus-Hermann Koch, mhk@markuskoch.eu, 2025/08/11
+
+Notes:
+======
+* All bit sequences handled herein are expected as little endian and
+  strictly processed as such. It was a design flaw in Horazon's Folly
+  to dabble in big endian binaries at all.
+
+Literature:
+===========
+* [1]: Tab-separated list of modifications with parameters and rules that I managed to guess with confidence.
+*   ./src/mods.tsv
 """
 
 from __future__ import annotations
-from horazons_folly import E_Characters, d_skills
 
 import os
 import re
@@ -42,7 +52,17 @@ logging.basicConfig(level=logging.INFO, format='[%(asctime)s] {%(filename)s:%(li
 _log = logging.getLogger()
 
 
-"""Example string: Infinity."""
+"""Example string: Infinity.
+On Kill: Autocast[0:32](6i[9:15]level(20)9s[15:24], (Chain Lightning)0[24:25], (0)7i[25:32], (50)%)
+Aura on Equip[32:55](9s[41:50](Conviction)5i[50:55], +(12))
+Faster Run and Walk (%)[55:71](7i20[64:71](35)%)
+Enhanced Damage[71:98](9i[80:89](325)%=9i[89:98], (325)%)
+Reduce Enemy Lightning Resist[98:115](8i[107:115]-(55)%)
+Crushing Blow Probability[115:131](7i[124:131](40)%)
+Prevent Monster Healing[131:147](1000000[140:147](1))
+Vitality Bonus based on Char Level[147:162](6f3[156:162]Level *(0.5))
+Magic Find[162:179](8i100[171:179](30)%)
+On Being Struck: Autocast[179:211](6i[188:194]level(21)9s[194:203], (Cyclone Armor)0[203:204], (0)7i[204:211], (10)%)"""
 example_infinity = "00100011000101010101100000100110111010010110111100001100000011001110110100010000101000101101000101011100101111011000001000100001010101011100100000011111011000100000001010001000001100100110101010110101110001010001111111110000"
 
 class E_ColumnType(Enum):
@@ -345,7 +365,7 @@ class ModificationParameter:
             _log.error(f"Given binary is too short for this parameter of length '{self.n_bits}' being sited at index '{index0}': '{binary0}'.")
             return False
         binary = binary0[index0:index1]
-        binary_prior = binary0[index_prior:index0] if ((index_prior is not None) and (0 <= index_prior < (index0 - 9))) else None
+        binary_prior = binary0[index_prior:index0] if ((index_prior is not None) and (0 <= index_prior < index0)) else None
         if (binary is not None) and not self.does_binary_match(binary, binary_prior):
             _log.error(f"Given binary '{binary}' at index0 '{index0}' does not fit template '{self.param}.")
             return False
@@ -373,7 +393,11 @@ class ModificationItem:
     @property
     def id_mod(self) -> Optional[str]:
         """:returns the id of this mod if such a """
-        return None if len(self.binary) < 9 else self.binary[:9]
+        return None if len(self.binary) < (9 + self.index0) else self.binary[self.index0:(9+self.index0)]
+
+    @property
+    def is_valid(self) -> bool:
+        return True if (self.parsed is not None) and (self.parsed['is_valid']) else False
 
     @staticmethod
     def parse_parameters(binary: str, index0: int, table: TableMods) -> Dict[str, Any]:
@@ -424,10 +448,9 @@ class ModificationItem:
     def __str__(self) -> str:
         spec = self.table_mods.get_line_by_id(self.id_mod)
         if spec is None:
-            return f"Hitherto unknown modification[{self.parsed['index0']}:{self.parsed['index1']}]"
+            return f"Hitherto unknown modification[{self.parsed['index0']}:{self.parsed['index1']}] with id '{self.binary[self.parsed['index0']:(self.parsed['index0']+9)]}'."
         res = f"{spec[E_ColumnType.CT_NAME]}[{self.parsed['index0']}:{self.parsed['index1']}]"
         params = self.parsed['parameters']  # type: List[ModificationParameter]
-        label_cols = list()  # type: List[E_ColumnType]
         if params:
             res += '('
             for j in range(len(params)):
@@ -441,17 +464,47 @@ class ModificationItem:
                 if len(prefix_suffix) < 2:
                     prefix_suffix.append('')
                 value = prefix_suffix[0] + value + prefix_suffix[1]
-                res += str(param) + value + ', '  #<< TODO: Hier war ich.
+                if j > 0:
+                    value = ', ' + value
+                res += str(param) + value
             res += ')'
         return res
 
 class ModificationSet:
-    pass
+    """Master class parsing a given Item's entire modification binary."""
+    cache_table_mods = TableMods()  # type: TableMods
 
+    def __init__(self, binary: str):
+        """:param binary: Complete binary of a complete mod-section."""
+        self.binary = binary
+        self.items_modification = list()  # type: List[ModificationItem]
+        index0 = 0
+        while index0 < len(self.binary):
+            mod = ModificationItem(self.binary, index0, self.cache_table_mods)
+            if mod.id_mod == '111111111':
+                # [Note: 512 is the code for the terminal id. It is no mod per se and should not be part of a mod list.]
+                break
+            self.items_modification.append(mod)
+            if not mod.is_valid:
+                # [Note: A non-valid mod is designed to hold the unparsable remainder binary and should be part of
+                #  the modification list. Its chief problem is the first mod within it being hitherto unknown in [1].]
+                break
+            index0 = mod.parsed['index1']
+
+    def __str__(self):
+        res = self.binary + "\n"
+        for mod in self.items_modification:
+            res += str(mod) + "\n"
+        res = res.rstrip()
+        return res
 
 if __name__ == '__main__':
+    # [Note: Keeping these imports here avoids circular dependency issues when this .py is used from Horazon's Folly.]
+    from horazons_folly import E_Characters
+    from horazons_folly import d_skills
+
     mods = TableMods()
-    mi = ModificationItem(example_infinity,0,mods)
+    ms = ModificationSet(example_infinity)
     # #<< id: 001000110 lvl(20): 001010 skill(53): 101011000; val(100): 00100110
-    print(mi)
+    print(ms)
     print('Done.')
