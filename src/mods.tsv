@@ -5,8 +5,13 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 3	Vitality Bonus	110000000						7i32					1100000000111110	
 11	Maximum Stamina	110100000	+					8i32					11010000011110100	
 16	Enhanced Defense	000010000	,%					9i					000010000100101010	
-17	Enhanced Damage	100010000	,%	,%				9i	=9i				100010000010101110010101110	The parameter is repeated exactly.
+17	Enhanced Damage	100010000	,%	,%				9i	>9i				100010000010101110010101110	The second parameter seems to be decisive.
 19	Increase Attack Rating	110010000						10i					1100100001100000001	
+20	Increased Chance to Block	001010000	,%					7i					0010100001010100	
+21	Minimum Damage Bonus	101010000						6i					101010000110000	Yes, the value has 6 bit.
+22	Maximum Damage Bonus	011010000						7i					0110100001011111	Yes, the value has 7 bit.
+23	Minimum Damage Bonus(b)	111010000						6i					111010000110000	Seems to be redundant to mod 21. Found on Steel runeword.
+24	Maximum Damage Bonus(b)	000110000						7i					0001100001100000	Seems to be redundant to mod 22. Found on Steel runeword.
 31	Defense Bonus	111110000						11i10					11111000001101100100	
 33	Defense against Melee	100001000						8i					10000100001001100	
 35	Magic Damage Reduce	110001000	-					6i					110001000110000	
@@ -29,12 +34,13 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 86	On Kill: Life Steal	011010100						7i					0110101001011000	
 87	Vendor Cost	111010100	-,%					7i					1110101001111000	
 89	Light Bonus	100110100						4i4					1001101001111	
-93	Increased Attack Speed (%)	101110100	,%					7i20					1011101000100110	
-96	Faster Run and Walk (%)	000001100	,%					7i20					0000011001000001	
+93	Increased Attack Speed	101110100	,%					7i20					1011101000100110	
+96	Faster Run and Walk	000001100	,%					7i20					0000011001000001	
 97	oskill	100001100		+				9s	6i				100001100111101100100000	First param is skill id. Second is lvl bonus.
 99	Faster Hit Recovery	110001100	,%					7i20					1100011000110001	
 105	Faster Cast Rate	100101100	,%					7i20					1001011001011010	
 107	skill	110101100		+				9s	3i				110101100011011000100	First param is skill id. Second is lvl bonus.
+110	Poison Length Reduced	011101100	,%					8i20					01110110010110100	
 114	Damage taken adds to Mana	010011100	,%					6i					010011100010100	Unclear which values are really accepted how.
 115	Ignore Target Defense	110011100						1					1100111001	That parameter seems to be simply ‚1‘.
 116	Target Defense	001011100	-,%					7i					0010111001001100	
