@@ -378,7 +378,8 @@ class ModificationParameter:
         :returns True of and only if given binary would be a valid value for this ModificationParameter."""
         code = self.code
         if code is None:
-            raise ValueError(f"This ModificationParameter has no valid parameter to check against: '{self.param}'.")
+            _log.warning(f"This ModificationParameter has no valid parameter to check against: '{self.param}'.")
+            return False
         regexp = '^[0-9]{' + str(code['n_bits']) + '}$'
         is_fit = bool(re.match(regexp, binary))
         if is_fit and self.has_relation and (binary_prior is not None):

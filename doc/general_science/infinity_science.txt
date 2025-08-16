@@ -20,26 +20,8 @@ Charm Analysis.
 111000100 == 71 (dim Vision)
 
 
-data_rw = '100010000001010000001010000 101010000110000 0110100001100000 111010000110000 00011000011000001011101001011010 1110000100100110 1111100101100000000010101100000'
-
-+21% chance of blocking(0010100001010100) +25% attack speed, +3 min damage
-001010000101010000110000011010000110000011101000011000000011000011000001011101001011010
-
-
-
-
-100010000 001010000 001010000101010000110000011010000110000011101000011000000011000011000001011101001011010 1110000100100110 1111100101100000000010101100000
-
-data = '1111100101110000000010101100001'
-
-data = "0001100001100000 1011101001011010"
-data = "01110110010110100"
-
-
-  mods_runeword: [206:358], 10001000000101000000101000010101000011000001101000011000001110100001100000001100001100000101110100101101011100001001001101111100101100000000010101100000
-    * Enhanced Damage[0:27](9i[9:18](20)%=9i[18:27], (20)%)
-    * Hitherto unknown modification[27:152] with id '101010000'.
-1110000100100110 #<< Open Wounds 50%
+data_rw = '010001000 010000' (34)
+data = "010001000110000"
 
 
 Python Code:
@@ -533,13 +515,31 @@ b'JM\x10\x00\x80\x00e\x00\x00(\xe7v\x06\x02?p\xea\xc0\xd11\x05v\xa0\xa1\x01B\x93
 Lore Helmet
 ===========
 100000000010101010011010001101111111001000101000100100000
-    * Energy Bonus[0:16](7i32[9:16](10))
-    * Light Bonus[16:29](4i4[25:29](2))
-    * All Skills Bonus[29:41](3i[38:41]+(1))
-    * Hitherto unknown modification[41:57] with id '010100010'.
+* Energy Bonus[0:16](7i32[9:16](10))
+* Light Bonus[16:29](4i4[25:29](2))
+* All Skills Bonus[29:41](3i[38:41]+(1))
+* Mana Bonus on Kill[41:57](7i[50:57](2))
 
 Short Sword STEEL:
 ==================
+This runeword seems to be somewhat broken. E.g., I am unable to witness any effect of the "unkonwn mod" at the end. Although it is valid code.
+Also, what is it with the redundancy with the Min and Max Damage Bonus?
   mods_runeword: [206:358], 10001000000101000000101000010101000011000001101000011000001110100001100000001100001100000101110100101101011100001001001101111100101100000000010101100000
-    * Enhanced Damage[0:27](9i[9:18](20)%=9i[18:27], (20)%)
-    * Hitherto unknown modification[27:152] with id '101010000'.
+    * Enhanced Damage[0:27](9i[9:18](20)%>9i[18:27], (20)%)
+    * Minimum Damage Bonus[27:42](6i[36:42](3))
+    * Maximum Damage Bonus[42:58](7i[51:58](3))
+    * Minimum Damage Bonus(b)[58:73](6i[67:73](3))
+    * Maximum Damage Bonus(b)[73:89](7i[82:89](3))
+    * Increased Attack Speed[89:105](7i20[98:105](25)%)
+    * Open Wounds Probability[105:121](7i[114:121](50)%)
+    * Hitherto unknown modification[121:152] with id '111110010'.
+
+Ancient's Pledge:
+=================
+00001000001001100011100100011111100100101000111111001101010001011101010110100011111100010011100010100
+    * Enhanced Defense[0:18](9i[9:18](50)%)
+    * Resist Fire[18:35](8i50[27:35](13)%)
+    * Resist Lightning[35:52](8i50[44:52](13)%)
+    * Resist Cold[52:69](8i50[61:69](43)%)
+    * Resist Poison[69:86](8i50[78:86](13)%)
+    * Damage taken adds to Mana[86:101](6i[95:101](10)%)
