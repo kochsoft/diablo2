@@ -551,7 +551,9 @@ class ModificationSet:
 
 if __name__ == '__main__':
     mods = TableMods()
-    ms = ModificationSet(example_infinity)
+    #ms = ModificationSet(example_infinity)
+    example = '10011100010010100001001010000110100100'
+    mi = ModificationItem(example,0,ModificationSet.cache_table_mods)
     # #<< id: 001000110 lvl(20): 001010 skill(53): 101011000; val(100): 00100110
-    print(ms)
+    print(mi)
     print('Done.')

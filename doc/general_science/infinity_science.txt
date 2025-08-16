@@ -20,9 +20,10 @@ Charm Analysis.
 111000100 == 71 (dim Vision)
 
 
-data_rw = '010001000 010000' (34)
-data = "010001000110000"
+data='001111110010011'
 
+
+001111110110000
 
 Python Code:
 ============
@@ -543,3 +544,10 @@ Ancient's Pledge:
     * Resist Cold[52:69](8i50[61:69](43)%)
     * Resist Poison[69:86](8i50[78:86](13)%)
     * Damage taken adds to Mana[86:101](6i[95:101](10)%)
+
+
+
+
+
+Too Posisonus charm (Damage values encode 111111111, breaking extension index computation in Horazon's Folly!)
+"Item 'Charm Small' (29 bytes) (normal, armor: False, weapon: False, sockets: 0/0, stack: False, set: False) IB_PLAYER #0 personalization: 'None', index: (857, 886)\nMax size in inventory: (1, 1), Defense (base): None, Durability (base): n.a., Stack: None,\nParent: IP_STORED, Storage: IS_CUBE, (r:0, c:0), Equip: IE_UNSPECIFIED\nidentified: True, broken: False, socketed: False, newly_found: False, starter_gear: False, compact: False, ethereal: False, personalized: False, runeword: False, \ntype code: cm1, quality: magically_enhanced(4), ilevel: 99, is charm: True, Bit length: 232 (29.0 bytes)\nNo known mods recognized.\n  quest_sockets: [108:111], 000\n  quality: [150:154], 0010\n  custom_graphics: [154:158], 1100\n  class_specific: [158:159], 0\n  quality_attributes: [159:181], 0000000000000000000000\n  runeword: [181:181], \n  personalization: [181:181], \n  tomes: [181:181], \n  realm: [181:182], 0\n  defense: [182:182], \n  durability: [182:182], \n  stack: [182:182], \n  set: [182:182], \n  sockets: [182:182], \n  mods: [182:191], 100111000\n    * Poison damage X-Y over duration Z[0:9]\n  mods_runeword: [200:220], 01111111111010111110\n    * Hitherto unknown modification[0:20] with id '011111111'.\n01010010101100100000100000000000000000010000000010100110000000000 0000 000 0001 11000110101101101000110000000100000001100110000010111011000010101101 100011 0010 110000000000000000000000000010011100011111111101111111111010111110111111111000\nb'JM\\x10\\x00\\x80\\x00e\\x00\\x008\\xd6\\x16\\x03\\x02f\\xd0\\r\\xb51\\r\\x00\\x00@\\x8e\\xff\\xfe\\xd7\\xf7\\x1f'"

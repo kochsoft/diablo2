@@ -3,6 +3,7 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 1	Energy Bonus	100000000						7i32					1000000000111110	
 2	Dexterity Bonus	010000000						7i32					0100000000111110	
 3	Vitality Bonus	110000000						7i32					1100000000111110	
+7	Life Bonus	111000000						9i32					111000000001001000	
 11	Maximum Stamina	110100000	+					8i32					11010000011110100	
 16	Enhanced Defense	000010000	+,%					9i					000010000100101010	
 17	Enhanced Damage	100010000	,%	,%				9i	>9i				100010000010101110010101110	The second parameter seems to be decisive.
@@ -27,7 +28,7 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 46	Max Poison Resist	011101000	+,%					5i					01110100010011	
 48	Fire Damage X-Y	000011000	Min	Max				8i	>9i				00001100010000001010000001	Min and Max
 54	Cold Damage X-Y-Z	011011000	Min	Max	,frames			8i	>9i	8i			0110110001000000000100000011010010	Min, Max and Duration in frames. D2 runs at 25fps.
-57	Poison damage X-Y over duration Z	100111000	Min(10s)	Max(10s)	,frames			10i	10i	9i			10011100010010100001001010000110100100	Min X, Max Y. Both state the amount of damage this poison causes over 10 seconds. Z is the duration in frames. D2 runs at 25fps.
+57	Poison damage X-Y over duration Z	100111000	Min(10s)	Max(10s)	,frames			10i	10i	9i			10011100010010100001001010000110100100	Min X, Max Y. Both state the amount of damage this poison causes over roughly 10 seconds, and 256 frames. Z is the duration in frames. D2 runs at 25fps.
 60	On Hit: Life Steal	001111000						7i					0011110000111000	
 75	Increase Maximum Durability	110100100	+,%					7i20					1101001000100010	Seems to be a superiority modification for, e.g., superior armor.
 79	Extra Gold from Monsters	111100100	+,%					9i100					111100100001100010	
@@ -61,6 +62,7 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 220	Strength Bonus based on Char Level	001110110	level *					6f3					001110110011000	
 223	Vitality Bonus based on Char Level	111110110	Level *					6f3					111110110001000	
 240	Magic Find Bonus based on Char Level	000011110	Level *,%					6f3					000011110000100	
+252	Repair Damage over Time	001111110	1 in 100s/					6i					001111110010011	The example, having value 50, repairs one in 100s/50=2s.
 332	Poison Skill Damage Bonus	001100101	,%					9i50					001100101101010100	
 333	Reduce Enemy Fire Resist	101100101	-,%					8i					10110010111000100	
 334	Reduce Enemy Lightning Resist	011100101	-,%					8i					01110010111000100	
