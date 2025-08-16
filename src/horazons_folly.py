@@ -1145,7 +1145,7 @@ class Mod_BitShape:
 known_mods = [
     Mod_BitShape(16, 9, True, 'item_armor_percent', is_mod_superior_armor=True),
     Mod_BitShape(75, 7, True, 'item_maxdurability_percent', is_mod_superior_weapon=True, is_mod_superior_armor=True),
-    Mod_BitShape(17, 9, True, 'item_maxdamage_percent', is_mod_superior_weapon=True),
+    Mod_BitShape(17, 18, True, 'item_maxdamage_percent', is_mod_superior_weapon=True),
     Mod_BitShape(18, 9, True, 'item_mindamage_percent'),
     Mod_BitShape(22, 7, True, 'maxdamage', is_mod_superior_weapon=True),
     Mod_BitShape(68, 7, True, 'attackrate', is_mod_superior_weapon=True),
