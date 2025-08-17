@@ -51,14 +51,19 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 115	Ignore Target Defense	110011100						1					1100111001	That parameter seems to be simply ‚1‘.
 116	Target Defense	001011100	-,%					7i					0010111001001100	
 117	Prevent Monster Healing	101011100						1000000					1010111001000000	The 7i seems to be simply ‚1000000‘.
+121	Enhanced Damage to Demons	100111100	,%					9i20					100111100011111010	
 122	Enhanced Damage to Undead	010111100	,%					9i20					010111100100010010	
 127	All Skills Bonus	111111100	+					3i					111111100010	
 135	Open Wounds Probability	111000010	,%					7i					1110000101001100	
 136	Crushing Blow Probability	000100010	,%					7i					0001000101000010	
 138	Mana Bonus on Kill	010100010						7i					0101000100100000	
+139	Life Bonus on Demon Kill	110100010						7i					1101000100001000	
+143	Absorb Fire	111100010	+					7i					1111000100101000	
+144	Absorb Lightning	000010010	%					7i					0000100101101000	
 145	Absorb Lightning	100010010						7i					1000100100010100	
 147	Absorb Magic	110010010						7i					1100100101101000	
 151	Aura on Equip	111010010		+				9s	5i				11101001011100110000101	First param is skill id. Second is lvl.
+152	Indestructible	000110010						1					0001100101	
 188	Add Skill Tab	001111010	tab	char		+		3i	3i	0000000000	3i		0011110100100010000000000111	Tab index from bottom to top, character index, and level bonus.
 196	On Kill: Autocast	001000110	level			,%		6i	9s	0	7i		00100011000101000111010000100110	Thr 1i seems to be simply ‚0‘.
 198	On Attack: Autocast	011000110	level			,%		6i	9s	0	7i		01100011010001010101100000101000	The 1i seems to be simply ‚0‘.
