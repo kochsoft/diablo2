@@ -20,16 +20,10 @@ Charm Analysis.
 111000100 == 71 (dim Vision)
 
 
-TODO: Hier war ich.
-data_rw = "100111100 011111010 1101000100001000"   +170% daemon damage value 190 -> 9i20, +8 life after demon kill.
+data = "110110110000100000001110100000" (224)
 
- 1111000100101000 0001100101
+data = "110110110000010000"
 
-
-data="0000100101101000"
-
-
-000110010
 
 Python Code:
 ============
@@ -559,6 +553,46 @@ Ethereal Edge
     * Increased Attack Speed[46:62](7i20[55:62](25)%)
     * Hitherto unknown modification[62:122] with id '100111100'.
 
+Spire of Lazarus
+================
+100000000111101011011000011010100010001000101000100101000101111100100110001000000011100000110010100100100110101100010101000110110101100100011000010110101100101011000100
+    * Energy Bonus[0:16](7i32[9:16](15))
+    * Mana Recovery[16:33](8i[25:33](43)%)
+    * Physical Damage Reduce[33:48](6i[42:48]-(5))
+    * Resist Lightning[48:65](8i50[57:65](75)%)
+    * Lightning Damage[65:90](6i[74:80]Min(1)10i[80:90], Max(28))
+    * All Skills Bonus (Class specific)[90:105](3i[99:102]class(1)3i[102:105], +(1))
+    * skill[105:126](9s[114:123](Static Field)3i[123:126], +(3))
+    * skill[126:147](9s[135:144](Lightning)3i[144:147], +(2))
+    * skill[147:168](9s[156:165](Chain Lightning)3i[165:168], +(1))
+
+Coif of Glory
+=============
+mods: [197:282], 1111100000010100000000000100000100110010010100010000010100011100100000000000001011100
+    * Defense Bonus[0:20](11i10[9:20](10))
+    * Hitherto unknown modification[20:85] with id '000001000'.
+
+Some Great Charm of Ormaline's
+==============================
+  mods: [182:247], 01101000010000000001100001000000110101000011111000000010101000000
+    * Maximum Damage Bonus[0:16](7i[9:16](1))
+    * Maximum Damage Bonus(b)[16:32](7i[25:32](1))
+    * Resist Cold[32:49](8i50[41:49](12)%)
+    * Hitherto unknown modification[49:65] with id '000001010'.
+
+Unique Bow Eagle Horn
+---------------------
+  mods: [186:284], 01000000010011101000100000001001100001001101100101000001001100111001110110110000010000001110001100
+    * Dexterity Bonus[0:16](7i32[9:16](25))
+    * Enhanced Max Damage[16:43](9i[25:34](200)%>9i[34:43], (200)%)
+    * All Skills Bonus (Class specific)[43:58](3i[52:55]class(0)3i[55:58], +(1))
+    * Ignore Target Defense[58:68](1[67:68](1))
+    * Enhanced Max Damage based on Char Level[68:83](6f3[77:83]Level *(2.0)%)
+    * Attack Rating based on Char Level[83:98](6f1[92:98]Level *(6.0))
+
+
 ----
 Too Posisonus charm (Damage values encode 111111111, breaking extension index computation in Horazon's Folly!)
 "Item 'Charm Small' (29 bytes) (normal, armor: False, weapon: False, sockets: 0/0, stack: False, set: False) IB_PLAYER #0 personalization: 'None', index: (857, 886)\nMax size in inventory: (1, 1), Defense (base): None, Durability (base): n.a., Stack: None,\nParent: IP_STORED, Storage: IS_CUBE, (r:0, c:0), Equip: IE_UNSPECIFIED\nidentified: True, broken: False, socketed: False, newly_found: False, starter_gear: False, compact: False, ethereal: False, personalized: False, runeword: False, \ntype code: cm1, quality: magically_enhanced(4), ilevel: 99, is charm: True, Bit length: 232 (29.0 bytes)\nNo known mods recognized.\n  quest_sockets: [108:111], 000\n  quality: [150:154], 0010\n  custom_graphics: [154:158], 1100\n  class_specific: [158:159], 0\n  quality_attributes: [159:181], 0000000000000000000000\n  runeword: [181:181], \n  personalization: [181:181], \n  tomes: [181:181], \n  realm: [181:182], 0\n  defense: [182:182], \n  durability: [182:182], \n  stack: [182:182], \n  set: [182:182], \n  sockets: [182:182], \n  mods: [182:191], 100111000\n    * Poison damage X-Y over duration Z[0:9]\n  mods_runeword: [200:220], 01111111111010111110\n    * Hitherto unknown modification[0:20] with id '011111111'.\n01010010101100100000100000000000000000010000000010100110000000000 0000 000 0001 11000110101101101000110000000100000001100110000010111011000010101101 100011 0010 110000000000000000000000000010011100011111111101111111111010111110111111111000\nb'JM\\x10\\x00\\x80\\x00e\\x00\\x008\\xd6\\x16\\x03\\x02f\\xd0\\r\\xb51\\r\\x00\\x00@\\x8e\\xff\\xfe\\xd7\\xf7\\x1f'"
+
+

@@ -437,7 +437,7 @@ class ModificationItem:
         self.binary = str(binary)
         self.index0 = index0
         if (len(binary) < (9 + index0)) or not bool(re.match("^[0-1]+$", binary)):
-            raise ValueError(f"Invalid binary source string '{binary}' encountered.")
+            _log.error(f"Invalid binary source string '{binary}' encountered at index0 == '{index0}'. This hints at a bug in mods.tsv.")
         self.table_mods = table_mods
         self.parsed = self.parse_parameters(self.binary, self.index0, self.table_mods)
 
