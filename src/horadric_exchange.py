@@ -772,10 +772,12 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                 self.button_enable_hell.config(state='disabled')
             if data.progression >= 15:
                 self.button_enable_nirvana.config(state='disabled')
-            self.entry_boost_skills.delete(0, tk.END)
-            self.entry_boost_skills.insert(0, '0')
-            self.entry_boost_attributes.delete(0, tk.END)
-            self.entry_boost_attributes.insert(0, '0')
+            if len(self.entry_boost_skills.get()) == 0:
+                self.entry_boost_skills.delete(0, tk.END)
+                self.entry_boost_skills.insert(0, '0')
+            if len(self.entry_boost_attributes.get()) == 0:
+                self.entry_boost_attributes.delete(0, tk.END)
+                self.entry_boost_attributes.insert(0, '0')
             if data.is_hardcore():
                 self.check_hardcore.select()
             else:

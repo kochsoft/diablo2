@@ -833,7 +833,7 @@ class E_Quest(Enum):
         return data_quest[self.value:(self.value+2)]
 
     def set_quest(self, data: bytes, val: Union[bytes, str] = b'\x01\x20') -> bytes:
-        """Set the given value to the given quest data.
+        """Set the given single-quest (2 bytes!) value to the given quest data.
         :param data: Some 96 bytes quest data structure for a given level of difficulty.
         :param val: 2-bytes structure. Delivered either as 16-character bitmap (little endian) or as 2-bytes.
           For details, take, e.g., a look into ./doc/quest_science/quests_examples.txt.
@@ -843,7 +843,7 @@ class E_Quest(Enum):
                 val = val + '0' * (16-len(val))
             elif len(val) > 16:
                 raise ValueError(f"Quest data bitmap holding more than 16 bit encountered: '{val}'.")
-            val = bitmap2bytes(val[::-1])
+            val = bitmap2bytes(val)
         if isinstance(val, bytes):
             if len(val) < 2:
                 val = val + b'\x00' * (2 - len(val))
@@ -1066,52 +1066,65 @@ d_gimmick = {
 # < ------------------------------------------------------------------
 
 def bytes2bitmap(data: bytes) -> str:
-    return '{:0{width}b}'.format(int.from_bytes(data, 'little'), width = len(data) * 8)
+    """Translates a given bytes block data into a little endian binary string. Meaning, the least significant bytes
+    come first. E.g., 1101 signifies 1+2+8==11, rather than 8+4+1==13."""
+    return '{:0{width}b}'.format(int.from_bytes(data, 'little'), width = len(data) * 8)[::-1]
 
 def bitmap2bytes(bitmap: str) -> bytes:
+    """Translates a little endian binary string in little endian bytes data."""
     n = len(bitmap)
-    if (n % 8) != 0:
-        raise ValueError(f"Invalid bitmap length {n} not being a multiple of 8.")
-    return int(bitmap,2).to_bytes(round(n/8), 'little')
+    if n % 8:
+        n = (n//8) + 1
+    return int(bitmap[::-1], 2).to_bytes(n//8, 'little')
 
-def prefix_bitmap_to_8_product(bitmap: str, *, delete_leading_zeros: bool = True) -> str:
-    """Drop leading zeros. Then prefix zeros until len(bm) % 8 == 0."""
-    if delete_leading_zeros:
-        bitmap = re.sub("^0*", "", bitmap)
+def suffix_bitmap_to_8_product(bitmap: str, *, delete_trailing_zeros_first: bool = True) -> str:
+    """Drop trailing zeros. Then suffix zeros until len(bm) % 8 == 0."""
+    if delete_trailing_zeros_first:
+        bitmap = re.sub("0*$", "", bitmap)
     if len(bitmap) % 8:
-        bitmap = '0' * (8 - len(bitmap) % 8) + bitmap
+        bitmap = bitmap + '0' * (8 - len(bitmap) % 8)
     return bitmap
 
-def get_range_from_bitmap(bitmap: str, index_start: int, index_end: int, *, do_invert: bool = False) -> Optional[int]:
-    # Note: Being numerals the left-most entries in the bitmap are the most significant!
-    #  However, our indexing schema asks for little endian. Hence, when accessing the bitmap,
-    #  we have to invert the indices to start on the right side of the numeral.
-    #  Thus, the index [start:end] becomes [n-end:n-start].]
-    n = len(bitmap)
-    bm = bitmap[(n-index_end):(n-index_start)]
+def get_range_from_bitmap(bitmap: str, index_start: int, index_end: int) -> int:
+    """Get the range of little endian bitmap[index_start:index_end] and convert it into a number."""
+    bm = bitmap[index_start:index_end]
     if len(bm) == 0:
-        return None
-    return int(bm[::-1] if do_invert else bm, 2)
+        return 0
+    return int(bm[::-1], 2)
 
-def set_range_to_bitmap(bitmap: str, index_start: int, index_end: int, val: int, *, do_invert: bool = False) -> str:
+def set_range_to_bitmap(bitmap: str, index_start: int, index_end: int, val: int) -> str:
+    """:param bitmap: Some little endian bitmap string of sufficient length.
+    :param index_start: Starting index of the range in bitmap where the val is to be inserted.
+    :param index_end: Ending index of the range in bitmap where the val is to be inserted.
+    :param val: Value to be inserted. It is expected that val < (index_end-index_start)^2. Else the highest
+      significant bits will be lost (little endian!)."""
     width = index_end - index_start
     if width == 0:
         return bitmap  # << Nothing to do.
-    rg = '{:0{width}b}'.format(val, width=width)
-    if len(rg) > width:
-        raise ValueError(f"Encountered range '{rg}' of length {len(rg)}. However, width <= {width} was expected.")
-    if do_invert:
-        rg = rg[::-1]
-    n = len(bitmap)
-    return bitmap[0:n-index_end] + rg + bitmap[n-index_start:]
+    rg = '{:0b}'.format(val)[::-1]
+    if len(rg) < width:
+        rg += '0' * (width - len(rg))
+    elif len(rg) > width:
+        rg = rg[0:width]
+    return bitmap[0:index_start] + rg + bitmap[index_end:]
 
-def get_bitrange_value_from_bytes(data: bytes, index_start: int, index_end: int, *, do_invert: bool = False):
+def get_bitrange_value_from_bytes(data: bytes, index_start: int, index_end: int):
+    """Returns the interpreted integer value from a binary section within a bytes string.
+    :param data: Some little endian bytes string.
+    :param index_start: Binary-minded starting index.
+    :param index_end: Binary-minded ending index. Such an index, e.g., in 2 bytes, would run in [0:16]."""
     bm = bytes2bitmap(data)
-    return get_range_from_bitmap(bm, index_start, index_end, do_invert=do_invert)
+    return get_range_from_bitmap(bm, index_start, index_end)
 
-def set_bitrange_value_to_bytes(data: bytes, index_start: int, index_end: int, val: int, *, do_invert: bool = False) -> bytes:
+def set_bitrange_value_to_bytes(data: bytes, index_start: int, index_end: int, val: int) -> bytes:
+    """Converts a little endian bytes string to little endian binary, inserts a given int into this binary,
+    and converts the result back to bytes.
+    :param data: Some bytes string.
+    :param index_start: Binary-minded starting index. Meaning, e.g., a 2-bytes string would index in [0:16].
+    :param index_end: Binary-minded ending index.
+    :param val: Integer value to be inserted."""
     bm = bytes2bitmap(data)
-    bm = set_range_to_bitmap(bm, index_start, index_end, val, do_invert=do_invert)
+    bm = set_range_to_bitmap(bm, index_start, index_end, val)
     return bitmap2bytes(bm)
 
 
@@ -1243,13 +1256,13 @@ class Item:
 
     def get_item_property(self, prop: E_ItemBitProperties) -> Optional[bool]:
         """:returns None, if this Item is analytical or otherwise too short.
-        Else True if the ItemProperty bit in question is 1, and False if it is 0."""
+        Else True if the single-bit ItemProperty in question is 1, and False if it is 0."""
         if self.is_analytical:
             return None
         val = prop.value
         if (len(self.data_item) * 8) < val:
             return False
-        return True if get_range_from_bitmap(bytes2bitmap(self.data_item), val, val+1) else False
+        return True if get_range_from_bitmap(bytes2bitmap(self.data_item), val, val + 1) else False
 
     def copy_with_item_property_set(self, prop: E_ItemBitProperties, enabled: bool) -> Optional[bytes]:
         """Copies this item's byte string, and sets the given value to the given item property."""
@@ -1257,10 +1270,9 @@ class Item:
             return None
         val = prop.value
         if (len(self.data_item) * 8) < val:
-            return
+            return None
         bm = bytes2bitmap(self.data_item)
-        # bm = bm[0:val] + ('1' if enabled else '0') + bm[(val+1):]
-        bm = set_range_to_bitmap(bm, val, val+1, 1 if enabled else 0)
+        bm = set_range_to_bitmap(bm, val, val + 1, 1 if enabled else 0)
         return bitmap2bytes(bm)
 
     @property
@@ -1306,7 +1318,7 @@ class Item:
     def type_code(self) -> Optional[str]:
         if self.is_analytical:
             return None
-        bm = bytes2bitmap(self.data_item)[::-1]
+        bm = bytes2bitmap(self.data_item)
         if len(bm) < 106:
             return None  # No item with type code.
         l1 = chr(int(bm[76:84][::-1], 2))
@@ -1512,16 +1524,16 @@ class Item:
         if self.is_analytical or not self.get_item_property(E_ItemBitProperties.IP_PERSONALIZED):
             return None
         index0, index1 = self.get_extended_item_index()[E_ExtProperty.EP_PERSONALIZATION]
-        bm = bytes2bitmap(self.data_item)[::-1]
+        bm = bytes2bitmap(self.data_item)
         bm_short = bm[index0:index1]
         # [Note: The letters are encoded in 7-bit Ascii.]
         while len(bm_short) % 7 != 0:
             bm_short += '0'
         res = ""
-        n = round(len(bm_short) / 8)
+        n = len(bm_short) // 8
         for j in range(n):
-            bm_letter = bm_short[(j*7):((j+1)*7)][::-1]
-            c = chr(int(bm_letter,2))
+            bm_letter = bm_short[(j*7):((j+1)*7)]
+            c = chr(int(bm_letter[::-1], 2))
             if c == '\x00':
                 break
             else:
@@ -1550,10 +1562,10 @@ class Item:
             val = (2**11) - 1
         elif val <= 10:
             return
-        bvalr = ('{:0{width}b}'.format(val, width = 11))[::-1]
-        bmr = bytes2bitmap(self.data_item)[::-1]
-        bmr = bmr[:index[0]] + bvalr + bmr[index[1]:]
-        bm = prefix_bitmap_to_8_product(bmr[::-1])
+        bval = ('{:0{width}b}'.format(val, width = 11))[::-1]
+        bm = bytes2bitmap(self.data_item)
+        bm = bm[:index[0]] + bval + bm[index[1]:]
+        bm = suffix_bitmap_to_8_product(bm)
         self.data_item = bitmap2bytes(bm)
 
     @property
@@ -1578,12 +1590,13 @@ class Item:
         if (index[1] - index[0]) != 17:
             _log.warning(f"Durability extended section expected to be of 17 bit length. However, index does not reflect that: {index}.")
             return
-        val_max = '{:0{width}b}'.format(dur, width = 8)
-        val_current = '{:0{width}b}'.format(dur, width = 9)  #<< yes. 9.
-        val = val_max[::-1] + val_current[::-1]
-        bmr = bytes2bitmap(self.data_item)[::-1]
-        bmr = bmr[:index[0]] + val + bmr[index[1]:]
-        self.data_item = bitmap2bytes(bmr[::-1])
+        val_max = '{:0{width}b}'.format(dur, width = 8)[::-1]
+        val_current = '{:0{width}b}'.format(dur, width = 9)[::-1]  #<< yes. 9.
+        # [Note: Yes, it is first the maximum, then the current value.]
+        val = val_max + val_current
+        bm = bytes2bitmap(self.data_item)
+        bm = bm[:index[0]] + val + bm[index[1]:]
+        self.data_item = bitmap2bytes(bm)
 
     def durability2default(self):
         """Sets this items durability to the default defined by armor_weapons.tsv."""
@@ -1646,9 +1659,9 @@ class Item:
             qs = val
         bmr_qs = '{:0{width}b}'.format(qs, width=3)[::-1]
         index = self.get_extended_item_index()[E_ExtProperty.EP_QUEST_SOCKETS]
-        bmr = bytes2bitmap(self.data_item)[::-1]
-        bmr = bmr[:index[0]] + bmr_qs + bmr[index[1]:]
-        self.data_item = bitmap2bytes(bmr[::-1])
+        bm = bytes2bitmap(self.data_item)
+        bm = bm[:index[0]] + bmr_qs + bm[index[1]:]
+        self.data_item = bitmap2bytes(bm)
 
     @property
     def is_socketable(self) -> Optional[bool]:
@@ -1667,7 +1680,7 @@ class Item:
         except KeyError as err:
             _log.warning(f"Failure to identify MODS for Item {Item.type_name}: {err}")
             return None
-        bmr = bytes2bitmap(self.data_item)[::-1][index0_mods:]
+        bm = bytes2bitmap(self.data_item)[index0_mods:]
         mods = list()  # type: List[Dict[str, Mod_BitShape]]
         index_offset = 0
         found_anything = True
@@ -1677,14 +1690,14 @@ class Item:
                 if (is_mod_superior_weapon and not km.is_mod_superior_weapon) or (is_mod_superior_armor and not km.is_mod_superior_armor):
                     continue
                 regexp = km.regexp_binary_code[::-1]
-                ms = [(m.start(0), m.end(0)) for m in re.finditer(regexp, bmr[index_offset:])]
+                ms = [(m.start(0), m.end(0)) for m in re.finditer(regexp, bm[index_offset:])]
                 if ms and ms[0][0] == 0:
                     mods.append(
                         {
                             'index0': ms[0][0] + index0_mods + index_offset,
                             'index1': ms[0][1] + index0_mods + index_offset,
                             'mod': km,
-                            'bmr': bmr[ms[0][0]:ms[0][1]]
+                            'bm': bm[ms[0][0]:ms[0][1]]
                         }
                     )
                     index_offset += ms[0][1]
@@ -1715,14 +1728,14 @@ class Item:
         item_class = self.item_class  # type: E_ItemClass
 
         try:
-            sz_custom_graphics = 4 if get_range_from_bitmap(bm, index_bit, index_bit+1) > 0 else 1
+            sz_custom_graphics = 4 if get_range_from_bitmap(bm, index_bit, index_bit + 1) > 0 else 1
         except Exception as err:
             print (f"Error encountered while trying to get range for custom graphics: {str(err)}")
             return res
         res[E_ExtProperty.EP_CUSTOM_GRAPHICS] = index_bit, (index_bit + sz_custom_graphics)
         index_bit = index_bit + sz_custom_graphics
 
-        sz_class_specific = 12 if get_range_from_bitmap(bm, index_bit, index_bit+1) > 0 else 1
+        sz_class_specific = 12 if get_range_from_bitmap(bm, index_bit, index_bit + 1) > 0 else 1
         res[E_ExtProperty.EP_CLASS_SPECIFIC] = index_bit, (index_bit + sz_class_specific)
         index_bit = index_bit + sz_class_specific
 
@@ -1767,7 +1780,7 @@ class Item:
             # Personalization is encoded in 7-bit ASCII and stopped by a traditional 0-entry.
             # [Note: Do not use self.personalization here, lest you enter an infinite recursion!]
             sz_personalization = 0
-            bmp = bm[::-1][index_bit:(index_bit+105)]
+            bmp = bm[index_bit:(index_bit+105)]
             while bmp[sz_personalization:(sz_personalization + 7)] != '0000000':
                 # current_char = chr(int(bmp[sz_personalization:(sz_personalization + 7)][::-1],2))
                 sz_personalization = sz_personalization + 7
@@ -1815,7 +1828,7 @@ class Item:
 
         is_runeword = self.get_item_property(E_ItemBitProperties.IP_RUNEWORD)
         sz_mods = 0
-        bmr = bm[::-1]
+        bmr = bm
         if is_runeword:
             # It may be that the item is superior. Use known mods codes to determine site of '111111111' terminator.
             # A superior item may have one or two modifiers of total length 18 or 16 each. So possible lengths are:
@@ -1872,11 +1885,12 @@ class Item:
         if indices is None:
             return "No extended item index."
         res = ""
-        bmr = bytes2bitmap(self.data_item)[::-1]
+        bm = bytes2bitmap(self.data_item)
         for key in indices:
-            binary = bmr[indices[key][0]:indices[key][1]]
+            binary = bm[indices[key][0]:indices[key][1]]
             res += f"  {key}: [{indices[key][0]}:{indices[key][1]}], "
-            if key in (E_ExtProperty.EP_MODS, E_ExtProperty.EP_MODS_RUNEWORD):
+            # [Note: ]
+            if key in (E_ExtProperty.EP_MODS, E_ExtProperty.EP_MODS_RUNEWORD) and self.type_code not in ('ibk', 'tbk', 'key'):
                 mod_parsing = str(ModificationSet(binary))
                 mod_parsing = re.sub('\\n', "\n    * ", mod_parsing)
                 res += mod_parsing
@@ -2188,7 +2202,7 @@ class Item:
                     continue
                 props += f"{prop}: {self.get_item_property(prop)}, "
 
-            bm = bytes2bitmap(self.data_item)[::-1]
+            bm = bytes2bitmap(self.data_item)
             bl = len(bm)
 
             classification = f"{self.item_grade}, armor: {self.is_armor}, weapon: {self.is_weapon}, sockets: {self.n_sockets_occupied}/{self.n_sockets}, stack: {self.is_stack}, set: {self.is_set}"
@@ -2276,9 +2290,9 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         significance is only padding. '1111111111111111111111111111111111111110' is a character, who has
         unlocked all waypoints. '111111111 111110000 000 000000000 000000000 0' is a character midway throw act 2."""
         return {
-            E_Progression.EP_NORMAL: bytes2bitmap(self.data[643:648])[::-1],
-            E_Progression.EP_NIGHTMARE: bytes2bitmap(self.data[667:672])[::-1],
-            E_Progression.EP_HELL: bytes2bitmap(self.data[691:696])[::-1]
+            E_Progression.EP_NORMAL: bytes2bitmap(self.data[643:648]),
+            E_Progression.EP_NIGHTMARE: bytes2bitmap(self.data[667:672]),
+            E_Progression.EP_HELL: bytes2bitmap(self.data[691:696])
         }
 
     @waypoint_map.setter
@@ -2304,7 +2318,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 if val[j] in ('0', '1'):
                     update = update[:j] + val[j] + update[(j+1):]
             if update != current[key]:
-                self.data = self.data[:index[0]] + bitmap2bytes(update[::-1]) + self.data[index[1]:]
+                self.data = self.data[:index[0]] + bitmap2bytes(update) + self.data[index[1]:]
                 haa_required = self.get_highest_accessible_act_by_waypoint_bm(update)
                 if haa_required > haa[key]:
                     self.highest_accessible_act = {key: haa_required}
@@ -2744,7 +2758,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 self.level_by_header = vals[key]
             bitmap = set_range_to_bitmap(bitmap, index, index + 9, key.value)
             index = index + 9
-            bitmap = set_range_to_bitmap(bitmap, index, index + key.get_attr_sz_bits(), vals[key], do_invert=False)
+            bitmap = set_range_to_bitmap(bitmap, index, index + key.get_attr_sz_bits(), vals[key])
             index = index + key.get_attr_sz_bits()
         bitmap = set_range_to_bitmap(bitmap, index, index + 9, 0x1ff)
         block = bitmap2bytes(bitmap)
@@ -2763,11 +2777,11 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         index_current = index_start * 8
         while c < 16:
             c = c + 1
-            key = get_bitrange_value_from_bytes(self.data, index_current, index_current + 9, do_invert=False)
+            key = get_bitrange_value_from_bytes(self.data, index_current, index_current + 9)
             if 0 <= key < 16:
                 attr = E_Attributes(key)
                 res[attr] = get_bitrange_value_from_bytes(self.data,
-                                index_current + 9, index_current + 9 + attr.get_attr_sz_bits(), do_invert=False)
+                                                          index_current + 9, index_current + 9 + attr.get_attr_sz_bits())
                 index_current = index_current + 9 + attr.get_attr_sz_bits()
             else:
                 if key != 511:
@@ -3067,23 +3081,23 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
     def _normalize_rune_item(item: Item) -> bytes:
         """Dispels magic (dropping mod section), removes runeword-powers (not the runes though),
         use self.separate_socketed_items_from_item for that and sets the quality to normal."""
-        bmr = bytes2bitmap(item.copy_with_item_property_set(E_ItemBitProperties.IP_RUNEWORD, False))[::-1]
+        bm = bytes2bitmap(item.copy_with_item_property_set(E_ItemBitProperties.IP_RUNEWORD, False))
         quality = item.quality
-        if quality not in (E_Quality.EQ_NORMAL, E_Quality.EQ_SUPERIOR) or 8 * len(bmr) < 154 or item.n_sockets == 0:
+        if quality not in (E_Quality.EQ_NORMAL, E_Quality.EQ_SUPERIOR) or 8 * len(bm) < 154 or item.n_sockets == 0:
             return item.data_item  # << Nothing to do.
-        bmr_mods_superior = ''
+        bm_mods_superior = ''
         if quality == E_Quality.EQ_SUPERIOR:
             d_mods_superior = item.get_known_mods(is_mod_superior_weapon=item.is_weapon, is_mod_superior_armor=item.is_armor)
             for j in range(len(d_mods_superior)):
-                bmr_mods_superior += d_mods_superior[j]['bmr']
+                bm_mods_superior += d_mods_superior[j]['bm']
         ext_index = item.get_extended_item_index()
         # [Drops all mods. The '1111111110*' suffix, too.]
-        bmr = bmr[:ext_index[E_ExtProperty.EP_MODS][0]]
-        bmr = bmr[:ext_index[E_ExtProperty.EP_RUNEWORD][0]] + bmr[ext_index[E_ExtProperty.EP_RUNEWORD][1]:]
+        bm = bm[:ext_index[E_ExtProperty.EP_MODS][0]]
+        bm = bm[:ext_index[E_ExtProperty.EP_RUNEWORD][0]] + bm[ext_index[E_ExtProperty.EP_RUNEWORD][1]:]
         #bmr = bmr[:ext_index[E_ExtProperty.EP_QUEST_SOCKETS][0]] + '000' + bmr[ext_index[E_ExtProperty.EP_QUEST_SOCKETS][1]:]
-        bmr += bmr_mods_superior
-        bmr += '111111111'
-        bm = prefix_bitmap_to_8_product(bmr[::-1])
+        bm += bm_mods_superior
+        bm += '111111111'
+        bm = suffix_bitmap_to_8_product(bm)
         return bitmap2bytes(bm)
 
     def separate_socketed_items_from_item(self, item: Item):
@@ -3164,12 +3178,12 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             if count > 0:
                 # Set socket count to new value.
                 bts = set_bitrange_value_to_bytes(item.data_item, index_sockets[0], index_sockets[1], count)
-                bmr = bytes2bitmap(bts)[::-1]
+                bmr = bytes2bitmap(bts)
                 bmr = bmr[:index_sockets[0]] + '{:0{width}b}'.format(count,width=4)[::-1] + bmr[index_sockets[1]:]
             else:
                 # Remove all sockets.
                 bts = item.copy_with_item_property_set(E_ItemBitProperties.IP_SOCKETED, False)
-                bmr = bytes2bitmap(bts)[::-1]
+                bmr = bytes2bitmap(bts)
                 bmr = bmr[:index_sockets[0]] + bmr[index_sockets[1]:]
                 index_quest_sockets = ext_index[E_ExtProperty.EP_QUEST_SOCKETS]
                 # [Note: For non-quest items this number counts the number of employed sockets.]
@@ -3177,12 +3191,12 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         else:
             # Create sockets ex nihilo.
             bts = item.copy_with_item_property_set(E_ItemBitProperties.IP_SOCKETED, True)
-            bmr = bytes2bitmap(bts)[::-1]
+            bmr = bytes2bitmap(bts)
             bmr = bmr[:index_sockets[0]] + '{:0{width}b}'.format(count,width=4)[::-1] + bmr[index_sockets[1]:]
         bmr = re.sub('0+$', "", bmr)
         if len(bmr) % 8:
             bmr += '0' * (8 - len(bmr) % 8)
-        bts = bitmap2bytes(bmr[::-1])
+        bts = bitmap2bytes(bmr)
         self.data = self.data[:item.index_start] + bts + self.data[item.index_end:]
 
     def dispel_magic(self, item):
@@ -3196,7 +3210,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
             return
 
         # First set quality to normal (2) formally.
-        bmr = bytes2bitmap(item.data_item)[::-1]
+        bmr = bytes2bitmap(item.data_item)
         bmr = bmr[:150] + '0100' + bmr[154:]
 
         # Handle Sockets (mechanical items).
@@ -3207,10 +3221,8 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         bmr = bmr[:index_ext[E_ExtProperty.EP_SET][0]] + bmr[index_ext[E_ExtProperty.EP_SET][1]:]
         bmr = bmr[:index_ext[E_ExtProperty.EP_QUALITY_ATTRIBUTES][0]] + ('0'*12 if is_charm else '') + bmr[index_ext[E_ExtProperty.EP_QUALITY_ATTRIBUTES][1]:]
 
-        bm = bmr[::-1]
-        bm = prefix_bitmap_to_8_product(bm)
-
-        bts = bitmap2bytes(bm)
+        bmr = suffix_bitmap_to_8_product(bmr)
+        bts = bitmap2bytes(bmr)
         self.data = self.data[:item.index_start] + bts + self.data[item.index_end:]
         _log.info(f"Dispelled magic for {item.type_name}.")
 
@@ -3248,7 +3260,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 item.quality not in (E_Quality.EQ_RARE, E_Quality.EQ_MAGICALLY_ENHANCED, E_Quality.EQ_CRAFT, E_Quality.EQ_UNIQUE, E_Quality.EQ_SET)):
             return None
 
-        bmr_item = bytes2bitmap(item.data_item)[::-1]
+        bmr_item = bytes2bitmap(item.data_item)
         index_item_magic = index_ext[E_ExtProperty.EP_MODS_RUNEWORD if has_runeword else E_ExtProperty.EP_MODS]
         bmr_magic = bmr_item[index_item_magic[0]:index_item_magic[1]]
         if len(bmr_magic) == 0:
@@ -3256,7 +3268,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         bmr_magic += '111111111'
 
         # Muggle jewel, the extension part [160:] merely comprised the 0x1ff part anyway.
-        bmr_tpl = bytes2bitmap(bts_tpl)[::-1]
+        bmr_tpl = bytes2bitmap(bts_tpl)
         bmr_tpl = bmr_tpl[0:160]
         bmr_tpl += bmr_magic
 
@@ -3274,7 +3286,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         # [Note: The muggle jewel is normal. Its original quality attributes are emtpy.]
         # [Note: Only the realm bit is following. Inserting the item's quality attributes.]
         bmr_tpl = bmr_tpl[:159] + bmr_quality_attributes + bmr_tpl[159:]
-        bm_tpl = prefix_bitmap_to_8_product(bmr_tpl[::-1])
+        bm_tpl = suffix_bitmap_to_8_product(bmr_tpl)
 
         item_forged = Item(bitmap2bytes(bm_tpl), 0, len(bm_tpl) // 8)
         item_forged.item_level = item.item_level
@@ -3315,9 +3327,9 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                     _log.warning(f"Failure to adjust socket count of {item.n_sockets} to {item.n_sockets_occupied}. Strange socket index block of len != 4: {index_sock}.")
                     return
                 bmr_sock = '{:0{width}b}'.format(item.n_sockets_occupied, width=4)[::-1]
-                bmr = bytes2bitmap(item.data_item)[::-1]
+                bmr = bytes2bitmap(item.data_item)
                 bmr = bmr[:index_sock[0]] + bmr_sock + bmr[index_sock[1]:]
-                item.data_item = bitmap2bytes(bmr[::-1])
+                item.data_item = bitmap2bytes(bmr)
 
         name_old = item.type_name
         item.type_code = type_code_new
@@ -3567,7 +3579,7 @@ class Horadric:
             index_start = data.data.find(b'gf', 765)
             index_end = data.data.find(b'if', index_start)
             bts = data.data[index_start:index_end]
-            bmr = bytes2bitmap(bts)[::-1]
+            bmr = bytes2bitmap(bts)
             print(f"{data.get_name(True)} from '{data.pfname}'.")
             print("Bitmap (little endian):")
             print(bmr)
@@ -3580,7 +3592,7 @@ class Horadric:
                 key = bmr[index:(index+9)]
                 if not key:
                     break
-                val_key = get_range_from_bitmap(key[::-1], 0, len(key))
+                val_key = get_range_from_bitmap(key, 0, len(key))
                 # Attribute keys range in 0,..,15. A 'key' > 15 is bound to be the 0x1ff section terminator.
                 if val_key > 15:
                     print(f"Remainder: {bmr[index:]}")
@@ -3592,7 +3604,7 @@ class Horadric:
                 twenty_one_bit_ignore_bits = 8 if attr.get_attr_sz_bits() == 21 else 0
                 part0 = bmr[(index+9):(index+9+twenty_one_bit_ignore_bits)]
                 part1 = bmr[(index+9+twenty_one_bit_ignore_bits):index_end]
-                code_quarters = get_range_from_bitmap(part0[::-1], 0, len(part0)) if len(part0) else 0
+                code_quarters = get_range_from_bitmap(part0, 0, len(part0)) if len(part0) else 0
                 quarters = 0
                 if code_quarters == 64:
                     quarters = 1
@@ -3601,8 +3613,8 @@ class Horadric:
                 elif code_quarters == 192:
                     quarters = 3
                 index = index_end
-                s_prefix = f"{part0} ({get_range_from_bitmap(part0[::-1], 0, len(part0))} -> {quarters}/4)" if part0 else ""
-                s_suffix = f"{part1} ({get_range_from_bitmap(part1[::-1], 0, len(part1))})"
+                s_prefix = f"{part0} ({get_range_from_bitmap(part0, 0, len(part0))} -> {quarters}/4)" if part0 else ""
+                s_suffix = f"{part1} ({get_range_from_bitmap(part1, 0, len(part1))})"
                 print(f"Val: {s_prefix} {s_suffix}\nraw: {raw}\n")
             print("------------------------------------------------------------------------------")
 
@@ -3664,7 +3676,8 @@ class Horadric:
             if val:
                 attributes[attr] = val
             else:
-                del attributes[attr]
+                if attr in attributes:
+                    del attributes[attr]
             data.set_attributes(attributes)
             if self.is_standalone:
                 data.update_all()
