@@ -184,6 +184,12 @@ class ItemFamily:
         """Number of cols this item takes up in inventory. At most. Accuracy depends on item_codes.tsv."""
         return self.item_class.volume_default()[1] if self._cols is None else self._cols
 
+    @staticmethod
+    def is_special_extended(code: str) -> bool:
+        """@returns True if and only if code denotes an Item class that is extended, but still special.
+          Meaning Tomes of Scrolls mostly."""
+        return True if code in ['tbk', 'ibk', 'aqv', 'cqv', 'ear'] else False
+
     def __str__(self):
         return f"{self.item_class} ({self.rows},{self.cols}): {self.code_names}"
 
@@ -1336,6 +1342,7 @@ class Item:
 
     @property
     def type_name(self) -> Optional[str]:
+        """:returns a human-readable tpye designation of this Item."""
         tn = ItemFamily.get_name_by_code(self.type_code)
         return f"unknown type code '{self.type_code}'" if tn is None else tn
 
@@ -1572,19 +1579,20 @@ class Item:
             name = prefix + re.sub('[_-]', 'x', name[len(prefix):])
         return name
 
-    def create_personalized_copy(self, name: Optional[str]) -> Optional[bytes]:
+    def create_personalized_copy(self, name: Optional[str]) -> bytes:
         """Magically inscribes the given name onto a copy of this Item's byte string.
         :param name: 7-bit ASCII by these rules:
             * 2-15 characters in length
             * Must begin and end with a letter
             * May contain up to one hyphen (-) xor underscore (_) that may not be first or last symbol.
             * Will be auto-terminated by a 0-sequence, 0000000.
+        :return: The entire object
         [Warning note: Altering personalization will most probably alter the length of this Item and may invalidate indexing.
          So do not replace self.data_item with the copy created by this call lightly.]"""
         # Example: The name 'Alissa' would encode thus: "1000001001101110010111100111110011110000110000000" (49 bit)
-        if self.is_analytical or self.get_item_property(E_ItemBitProperties.IP_COMPACT):
-            _log.warning(f"Unable to write '{name}' onto Item that is either analytical or compact.")
-            return None
+        if self.is_analytical or self.get_item_property(E_ItemBitProperties.IP_COMPACT) or ItemFamily.is_special_extended(self.type_code):
+            _log.warning(f"Unable to write '{name}' onto Item '{self.type_name}' that is either analytical, very special, or compact.")
+            return self.data_item
         name = self.normalize_name(name)
         had_been_personalized = self.get_item_property(E_ItemBitProperties.IP_PERSONALIZED)
         index_pers = self.get_extended_item_index()[E_ExtProperty.EP_PERSONALIZATION]  # type: Tuple[int, int]
@@ -1593,7 +1601,7 @@ class Item:
         bm_name = ''
         if name is None:
             if not had_been_personalized:
-                return  #<< Nothing to do.
+                return self.data_item  #<< Nothing to do.
         else:
             for c in list(name):
                 bm_name += '{:0{width}b}'.format(ord(c), width=7)[::-1]
@@ -3568,6 +3576,10 @@ class Horadric:
         if parsed.set_quests:
             self.set_quests(parsed.set_quests)
 
+        if parsed.depersonalize:
+            for data in self.data_all:
+                self.personalize_horadric(data, None)
+
         if parsed.personalize:
             for data in self.data_all:
                 self.personalize_horadric(data, parsed.personalize)
@@ -3854,13 +3866,15 @@ class Horadric:
             data.update_all()
             data.save2disk()
 
-    def drop_horadric(self, data: Data):
+    def drop_horadric(self, data: Data, *, do_save: Optional[bool] = None):
         """Drops all items from the Horadric Cube. If standalone mode, also saves the results to disk."""
         items = Item(data.data).get_cube_contents()  # type: List[Item]
         # [Note: Iterate in reversed order, so that dropping front items will not destroy indices for back items.]
         for item in reversed(items):
             data.drop_item(item)
-        if self.is_standalone:
+        if do_save is None:
+            do_save = self.is_standalone
+        if do_save:
             data.update_all()
             data.save2disk()
             print(f"Dropped {len(items)} items from the Horadric cube.")
@@ -3945,19 +3959,19 @@ class Horadric:
                 data.update_all()
                 data.save2disk()
 
-    def personalize_horadric(self, data: Data, name: str):
+    def personalize_horadric(self, data: Data, name: Optional[str] = None):
+        """Within the Horadric Cube, give all adequate items an personalization name.
+        :param data: Some Data object.
+        :param name: a 2-15 letter name with potentially one hyphen xor underscore.
+          May also be None. In that case, existing personalization will be wiped."""
         items = Item(data.data).get_cube_contents()  # type: List[Item]
+        if not items:
+            return
+        cube_named = b''  # type: bytes
         for item_in in items:
-            print(f"Attempting to set name '{name}'.")
-            bts = item_in.create_personalized_copy(name)
-            item_out = Item(bts, 0, len(bts))
-            print(f"'{item_out.personalization}'")
-            print(bytes2bitmap(item_out.data_item))
-            with open("/home/kochmn/cap.cube", 'wb') as OUT:
-                OUT.write(bts)
-        #if self.is_standalone:
-            #data.update_all()
-            #data.save2disk()
+            cube_named += item_in.create_personalized_copy(name)
+        # [Note: self.insert_horadric already includes an automatic update_all and save action, if self.is_standalone.]
+        self.insert_horadric(data, cube_named)
 
     def regrade_horadric(self, data: Data):
         items = Item(data.data).get_cube_contents()  # type: List[Item]
@@ -4050,7 +4064,7 @@ class Horadric:
         """Takes a byte block of Horadric cube player items and moves it into the players Horadric Cube.
         Replaces old contents.
         After this is done the character file is saved automatically."""
-        self.drop_horadric(data)
+        self.drop_horadric(data, do_save=False)
         data.add_items_to_player(items)
         if self.is_standalone:
             data.update_all()
@@ -4126,6 +4140,7 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--set_waypoints', type=str, help="Set waypoints as optional prefix /INDEX_DIFFICULTY-/ and bitmap /.{39}/ where 0/1 means off/on and everything else is ignored.")
         parser.add_argument('--set_quests', type=str, help="Set quests as optional prefix /INDEX_DIFFICULTY-/ and bitmap /.{27}/ where 0/1 means reset/completed and everything else is ignored.")
         parser.add_argument('--personalize', type=str,help="Personalize the extended items within the Horadric Cube, using the given string that would be a valid character name.")
+        parser.add_argument('--depersonalize', action='store_true', help="Remove personalization from extended items within the Horadric Cube.")
         parser.add_argument('pfnames', nargs='*', type=str, help='List of path and filenames to target .d2s character files.')
         parsed = parser.parse_args(args)  # type: argparse.Namespace
         return parsed

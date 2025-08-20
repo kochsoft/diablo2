@@ -59,7 +59,8 @@ usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
                          [--enable_nirvana] [--enable_godmode]
                          [--disable_godmode] [--info] [--info_stats]
                          [--set_waypoints SET_WAYPOINTS]
-                         [--set_quests SET_QUESTS]
+                         [--set_quests SET_QUESTS] [--personalize PERSONALIZE]
+                         [--depersonalize]
                          [pfnames ...]
 
 Tool script for doing small scale changes to Diablo II .d2s save game files.
@@ -116,6 +117,9 @@ options:
                         Set waypoints as optional prefix /INDEX_DIFFICULTY-/ and bitmap /.{39}/ where 0/1 means off/on and everything else is ignored.
   --set_quests SET_QUESTS
                         Set quests as optional prefix /INDEX_DIFFICULTY-/ and bitmap /.{27}/ where 0/1 means reset/completed and everything else is ignored.
+  --personalize PERSONALIZE
+                        Personalize the extended items within the Horadric Cube, using the given string that would be a valid character name.
+  --depersonalize       Remove personalization from extended items within the Horadric Cube.
 
 Example call:
 $ python3 horazons_folly.py --info conan.d2s ormaline.d2s
