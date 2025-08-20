@@ -1031,6 +1031,11 @@ sum_god_skills = sum(d_god_skills) + d_god_attr[E_Attributes.AT_UNUSED_SKILLS]
 data_tpl_horadric_cube = b'JM\x10\x00\x80\x00e\x00\x00"\xf6\x86\x07\x028\xce1\xff\x86\xe0?'
 # < ------------------------------------------------------------------
 
+# > Very simple cap of no distinction at all. ------------------------
+# Just a plain cap of item code 'cap' with defense 6 and durability 12/12.
+data_tpl_skull_cap=b"JM\x10\x00\x80\x00e\x00\x008\x16\x06\x07\x02T'\xd7(\x86\x00\x02\x0c\x0c\xfe\x03"
+# < ------------------------------------------------------------------
+
 # > items of adornment. ----------------------------------------------
 class E_ItemTpl(Enum):
     IT_UNSPECIFIED = 0
@@ -1074,7 +1079,8 @@ def bitmap2bytes(bitmap: str) -> bytes:
     """Translates a little endian binary string in little endian bytes data."""
     n = len(bitmap)
     if n % 8:
-        n = (n//8) + 1
+        bitmap += '0' * (8-(n%8))
+        n = len(bitmap)
     return int(bitmap[::-1], 2).to_bytes(n//8, 'little')
 
 def suffix_bitmap_to_8_product(bitmap: str, *, delete_trailing_zeros_first: bool = True) -> str:
@@ -1249,6 +1255,8 @@ class Item:
 
     @data_item.setter
     def data_item(self, bts: bytes):
+        """Replaces the original Item space of self within self.data with the given bts sequence. Know, what you
+        do, when len(bts) != (self.index_end - self.index_start). This will invalidate indices."""
         if self.is_analytical:
             return
         else:
@@ -1530,7 +1538,7 @@ class Item:
         while len(bm_short) % 7 != 0:
             bm_short += '0'
         res = ""
-        n = len(bm_short) // 8
+        n = len(bm_short) // 7
         for j in range(n):
             bm_letter = bm_short[(j*7):((j+1)*7)]
             c = chr(int(bm_letter[::-1], 2))
@@ -1539,6 +1547,66 @@ class Item:
             else:
                 res += c
         return res
+
+    @staticmethod
+    def normalize_name(name: str) -> Optional[str]:
+        """Modifies the given name string into a valid Diablo II character name.
+        :param name: Character name satisfying:
+            * 2-15 characters in length
+            * Must begin and end with a letter
+            * May contain up to one hyphen (-) xor underscore (_) that may not be first or last symbol.
+        :returns an adequately altered name. If symbols must be changed or added, the character 'x' will be used.
+          Or None, if None was passed in the first place. This is for usage convenience."""
+        if name is None:
+            return None
+        if len(name) > 15:
+            name = name[:15]
+        elif len(name) < 2:
+            name = (name + 'x') if len(name) == 1 else 'xx'
+        name = re.sub("[^a-zA-Z_-]", 'x', name)
+        name = re.sub("^[_-]", 'x', name)
+        name = re.sub("[_-]$", 'x', name)
+        h = re.search('^(.*?[_-])', name)
+        if h is not None:
+            prefix = h.groups()[0]
+            name = prefix + re.sub('[_-]', 'x', name[len(prefix):])
+        return name
+
+    def create_personalized_copy(self, name: Optional[str]) -> Optional[bytes]:
+        """Magically inscribes the given name onto a copy of this Item's byte string.
+        :param name: 7-bit ASCII by these rules:
+            * 2-15 characters in length
+            * Must begin and end with a letter
+            * May contain up to one hyphen (-) xor underscore (_) that may not be first or last symbol.
+            * Will be auto-terminated by a 0-sequence, 0000000.
+        [Warning note: Altering personalization will most probably alter the length of this Item and may invalidate indexing.
+         So do not replace self.data_item with the copy created by this call lightly.]"""
+        # Example: The name 'Alissa' would encode thus: "1000001001101110010111100111110011110000110000000" (49 bit)
+        if self.is_analytical or self.get_item_property(E_ItemBitProperties.IP_COMPACT):
+            _log.warning(f"Unable to write '{name}' onto Item that is either analytical or compact.")
+            return None
+        name = self.normalize_name(name)
+        had_been_personalized = self.get_item_property(E_ItemBitProperties.IP_PERSONALIZED)
+        index_pers = self.get_extended_item_index()[E_ExtProperty.EP_PERSONALIZATION]  # type: Tuple[int, int]
+        bm = bytes2bitmap(self.data_item)
+        bm = bm[0:E_ItemBitProperties.IP_PERSONALIZED.value] + ('0' if name is None else '1') + bm[(E_ItemBitProperties.IP_PERSONALIZED.value + 1):]
+        bm_name = ''
+        if name is None:
+            if not had_been_personalized:
+                return  #<< Nothing to do.
+        else:
+            for c in list(name):
+                bm_name += '{:0{width}b}'.format(ord(c), width=7)[::-1]
+            # [Note: Exactly 1 zero-byte is needed as terminator if the string has less than 15 characters.]
+            if len(bm_name) < 105:
+                bm_name += '0000000'
+        bm = bm[0:index_pers[0]] + bm_name + bm[index_pers[1]:]
+        if len(bm) % 8:
+            bm += '0' * (8 - (len(bm) % 8))
+        # Ensure that the 0-suffix is not becoming too long.
+        while bm[-8:] == '00000000':
+            bm = bm[:(len(bm)-8)]
+        return bitmap2bytes(bm)
 
     @property
     def defense(self) -> Optional[int]:
@@ -1781,10 +1849,11 @@ class Item:
             # [Note: Do not use self.personalization here, lest you enter an infinite recursion!]
             sz_personalization = 0
             bmp = bm[index_bit:(index_bit+105)]
-            while bmp[sz_personalization:(sz_personalization + 7)] != '0000000':
+            while (bmp[sz_personalization:(sz_personalization + 7)] != '0000000') and (sz_personalization < 105):
                 # current_char = chr(int(bmp[sz_personalization:(sz_personalization + 7)][::-1],2))
                 sz_personalization = sz_personalization + 7
-            sz_personalization = sz_personalization + 7
+            if sz_personalization < 105:
+                sz_personalization = sz_personalization + 7
         res[E_ExtProperty.EP_PERSONALIZATION] = index_bit, (index_bit + sz_personalization)
         index_bit = index_bit + sz_personalization
 
@@ -1828,13 +1897,12 @@ class Item:
 
         is_runeword = self.get_item_property(E_ItemBitProperties.IP_RUNEWORD)
         sz_mods = 0
-        bmr = bm
         if is_runeword:
             # It may be that the item is superior. Use known mods codes to determine site of '111111111' terminator.
             # A superior item may have one or two modifiers of total length 18 or 16 each. So possible lengths are:
             # {16, 18, 32, 34, 36}. After that the '111111111' terminator follows.
             for l in (0,16,18,32,34,36):
-                if re.search('^' + '.'*l + '111111111', bmr[index_bit:(index_bit+45)]) is not None:
+                if re.search('^' + '.'*l + '111111111', bm[index_bit:(index_bit+45)]) is not None:
                     sz_mods = l
                     break
             res[E_ExtProperty.EP_MODS] = index_bit, (index_bit + sz_mods)
@@ -1844,9 +1912,9 @@ class Item:
             if index_end % 8 > 0:
                 index_end = index_end + 8 - index_end % 8
             sz_intermezzo = 0
-            while index_end <= len(bmr):
+            while index_end <= len(bm):
                 try:
-                    gps = re.search("^(.*?)(1111111110*)$", bmr[index_bit:index_end]).groups()
+                    gps = re.search("^(.*?)(1111111110*)$", bm[index_bit:index_end]).groups()
                     sz_mods = len(gps[0])
                     sz_intermezzo = len(gps[1])
                     break
@@ -1855,15 +1923,15 @@ class Item:
             res[E_ExtProperty.EP_MODS] = index_bit, (index_bit + sz_mods)
             index_bit += sz_mods + sz_intermezzo
 
-        res[E_ExtProperty.EP_MODS_RUNEWORD] = len(bmr), len(bmr)
-        index_end = len(bmr)
-        if index_bit < len(bmr):
+        res[E_ExtProperty.EP_MODS_RUNEWORD] = len(bm), len(bm)
+        index_end = len(bm)
+        if index_bit < len(bm):
             try:
-                gps = re.search("^(.*)1111111110*$", bmr[index_bit:index_end]).groups()
+                gps = re.search("^(.*)1111111110*$", bm[index_bit:index_end]).groups()
                 sz_mods_rw = len(gps[0])
                 res[E_ExtProperty.EP_MODS_RUNEWORD] = index_bit, index_bit + sz_mods_rw
             except AttributeError:
-                _log.warning(f"Strange runeword mods section '{bmr[index_bit:]} encountered.'")
+                _log.warning(f"Strange runeword mods section '{bm[index_bit:]} encountered.'")
         return res
 
     def get_extended_item_int_value(self, prop_ext: E_ExtProperty) -> Optional[int]:
@@ -3500,6 +3568,10 @@ class Horadric:
         if parsed.set_quests:
             self.set_quests(parsed.set_quests)
 
+        if parsed.personalize:
+            for data in self.data_all:
+                self.personalize_horadric(data, parsed.personalize)
+
         if parsed.ensure_horadric:
             for data in self.data_all:
                 self.ensure_horadric(data)
@@ -3873,6 +3945,20 @@ class Horadric:
                 data.update_all()
                 data.save2disk()
 
+    def personalize_horadric(self, data: Data, name: str):
+        items = Item(data.data).get_cube_contents()  # type: List[Item]
+        for item_in in items:
+            print(f"Attempting to set name '{name}'.")
+            bts = item_in.create_personalized_copy(name)
+            item_out = Item(bts, 0, len(bts))
+            print(f"'{item_out.personalization}'")
+            print(bytes2bitmap(item_out.data_item))
+            with open("/home/kochmn/cap.cube", 'wb') as OUT:
+                OUT.write(bts)
+        #if self.is_standalone:
+            #data.update_all()
+            #data.save2disk()
+
     def regrade_horadric(self, data: Data):
         items = Item(data.data).get_cube_contents()  # type: List[Item]
         for item in items:
@@ -4039,6 +4125,7 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--info_stats', action='store_true', help='Flag. Nerd-minded. Detailed info tool on the parsing of attributes and skills.')
         parser.add_argument('--set_waypoints', type=str, help="Set waypoints as optional prefix /INDEX_DIFFICULTY-/ and bitmap /.{39}/ where 0/1 means off/on and everything else is ignored.")
         parser.add_argument('--set_quests', type=str, help="Set quests as optional prefix /INDEX_DIFFICULTY-/ and bitmap /.{27}/ where 0/1 means reset/completed and everything else is ignored.")
+        parser.add_argument('--personalize', type=str,help="Personalize the extended items within the Horadric Cube, using the given string that would be a valid character name.")
         parser.add_argument('pfnames', nargs='*', type=str, help='List of path and filenames to target .d2s character files.')
         parsed = parser.parse_args(args)  # type: argparse.Namespace
         return parsed
