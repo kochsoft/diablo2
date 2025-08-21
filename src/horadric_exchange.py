@@ -37,6 +37,9 @@ pfname_script = Path(__file__)
 pfname_icon =  Path(pfname_script.parent, "logo_horadric_exchange.png")
 pfname_icon2 = Path(pfname_script.parent, "potion_of_life.png")
 
+colors = { 'button': '#009999', 'red'   : '#ff5050', 'green' : '#90ee90' }
+
+
 try:
     import tkinter as tk
     import tkinter.filedialog
@@ -147,6 +150,8 @@ class Horadric_GUI:
         self.check_godmode = None  # type: Optional[tk.Checkbutton]
         self.check_wp_hop = None  # type: Optional[tk.Checkbutton]
         self.entry_runic_cube = None  # type: Optional[tk.Entry]
+        self.button_personalize = None  # type: Optional[tk.Button]
+        self.entry_personalize = None  # type: Optional[tk.Entry]
         self.entry_boost_skills = None  # type: Optional[tk.Entry]
         self.entry_boost_attributes = None  # type: Optional[tk.Entry]
         self.entry_set_sockets = None  # type: Optional[tk.Entry]
@@ -183,9 +188,9 @@ class Horadric_GUI:
         pname = os.path.expanduser(self.pname_work)
         pname_d2 = os.path.expanduser(self.pname_d2)
         if pname == pname_d2 or (os.path.isdir(pname) and os.access(pname, os.W_OK) and os.access(pname, os.R_OK)):
-            self.button_pname_work.config(bg='#90ee90')
+            self.button_pname_work.config(bg=colors['green'])
             return True
-        self.button_pname_work.config(bg='#ff5050')
+        self.button_pname_work.config(bg=colors['red'])
         if show_info:
             TextWindow(self.root, f"""Working directory '{self.pname_work}' cannot be opened for reading and writing.
 
@@ -566,6 +571,36 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         data.place_items_into_storage_maps(items)
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
+    def personalize(self, name: Optional[str]):
+        data = self.verify_hero()
+        if data is None:
+            return
+        if not name:
+            name = None
+        items = Item(data.data).get_cube_contents()
+        items_new = list()  # type: List[Item]
+        for item in items:
+            row = item.row
+            col = item.col
+            bts = item.create_personalized_copy(name)
+            if bts:
+                item_new = Item(bts, 0, len(bts))
+                item_new.row = row
+                item_new.col = col
+                items_new.append(item_new)
+        data.drop_items(items)
+        data.place_items_into_storage_maps(items_new, E_ItemStorage.IS_CUBE)
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
+
+    def verify_personalization_name(self, name: str):
+        """Verifies if the current personalization string is valid. If it is: Turn the entries background green, else red."""
+        normalized = Item.normalize_name(name)
+        is_valid = (name == '') or (len(name) >= 2 and normalized == name)
+        if is_valid:
+            self.entry_personalize.config({'background': colors['green']})
+        else:
+            self.entry_personalize.config({'background': colors['red']})
+
     @staticmethod
     def entry2int(entry: tk.Entry, default_placeholder: int = 0, min_val: int = 0, max_val: int = 1023):
         """Verify if the entry has an int-parsable value. If not, replace by str(default_placeholder)."""
@@ -723,6 +758,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         for widget in [self.button_load_cube, self.button_save_cube, self.button_reset_skills, self.button_runic_cube,
                        self.button_reset_attributes, self.button_boost_skills, self.button_boost_attributes,
                        self.check_hardcore, self.check_godmode, self.check_wp_hop, self.entry_boost_skills, self.entry_runic_cube,
+                       self.button_personalize, self.entry_personalize,
                        self.entry_boost_attributes, self.entry_set_sockets, self.button_horazon, self.button_ensure_cube,
                        self.button_enable_nightmare, self.button_enable_hell, self.button_enable_nirvana,
                        self.button_revive_hero, self.button_revive_mercenary, self.button_jewelize,
@@ -965,10 +1001,19 @@ Beware!"""
         var_runic_cube = tk.StringVar()
         var_runic_cube.set("ort, sol, t4, t4, b4, t0, a0")
         self.entry_runic_cube = tk.Entry(self.tab2, textvariable=var_runic_cube)
-        self.entry_runic_cube.grid(row=5, column=1, columnspan=5, sticky='ew')
+        self.entry_runic_cube.grid(row=5, column=1, columnspan=2, sticky='ew')
         self.button_runic_cube = tk.Button(self.tab2, text='Runes to Cube', command=lambda: self.runic_cube(var_runic_cube.get()), width=10, height=1, bg='#009999')
         self.button_runic_cube.grid(row=5, column=0)
         Hovertip(self.button_runic_cube, 'Write a comma-separated list of rune names and/or gem codes, /^[tasredb][0-4]$/ (bone=skull), and click this. Will add these socketables to the Cube and its environment.')
+
+        var_personalize = tk.StringVar()
+        var_personalize.set("")
+        self.entry_personalize = tk.Entry(self.tab2, textvariable=var_personalize)
+        self.entry_personalize.grid(row=5, column=4, columnspan=2, sticky='ew')
+        self.entry_personalize.bind('<KeyRelease>', lambda ev: self.verify_personalization_name(var_personalize.get()))
+        self.button_personalize = tk.Button(self.tab2, text='Personalize to >>', command=lambda: self.personalize(var_personalize.get()), width=10, height=1, bg='#009999')
+        self.button_personalize.grid(row=5, column=3, sticky='ew')
+        Hovertip(self.button_personalize, 'Will dedicate extended items within the Horadric Cube with a name of your choosing. Or remove such a dedication.')
 
         var_skills = tk.StringVar()
         var_skills.set('0')

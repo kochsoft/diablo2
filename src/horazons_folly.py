@@ -187,8 +187,8 @@ class ItemFamily:
     @staticmethod
     def is_special_extended(code: str) -> bool:
         """@returns True if and only if code denotes an Item class that is extended, but still special.
-          Meaning Tomes of Scrolls mostly."""
-        return True if code in ['tbk', 'ibk', 'aqv', 'cqv', 'ear'] else False
+          Meaning Tomes of Scrolls mostly, but also quivers, ears, and various quest items."""
+        return True if code in ['tbk', 'ibk', 'aqv', 'cqv', 'ear', 'leg', 'hdm', 'msf', 'vip', 'hst', 'g33', 'qf1', 'qf2', 'hfh'] else False
 
     def __str__(self):
         return f"{self.item_class} ({self.rows},{self.cols}): {self.code_names}"
@@ -1261,8 +1261,8 @@ class Item:
 
     @data_item.setter
     def data_item(self, bts: bytes):
-        """Replaces the original Item space of self within self.data with the given bts sequence. Know, what you
-        do, when len(bts) != (self.index_end - self.index_start). This will invalidate indices."""
+        """Replaces the original Item space of self within self.data with the given bts sequence. Know what you do,
+        if len(bts) != (self.index_end - self.index_start). This will invalidate indices."""
         if self.is_analytical:
             return
         else:
@@ -1342,7 +1342,7 @@ class Item:
 
     @property
     def type_name(self) -> Optional[str]:
-        """:returns a human-readable tpye designation of this Item."""
+        """:returns a human-readable type designation of this Item."""
         tn = ItemFamily.get_name_by_code(self.type_code)
         return f"unknown type code '{self.type_code}'" if tn is None else tn
 
@@ -3960,7 +3960,7 @@ class Horadric:
                 data.save2disk()
 
     def personalize_horadric(self, data: Data, name: Optional[str] = None):
-        """Within the Horadric Cube, give all adequate items an personalization name.
+        """Within the Horadric Cube, give all adequate items a personalization name.
         :param data: Some Data object.
         :param name: a 2-15 letter name with potentially one hyphen xor underscore.
           May also be None. In that case, existing personalization will be wiped."""
