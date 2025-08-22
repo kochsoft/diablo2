@@ -1011,7 +1011,7 @@ Beware!"""
         self.entry_personalize = tk.Entry(self.tab2, textvariable=var_personalize)
         self.entry_personalize.grid(row=5, column=4, columnspan=2, sticky='ew')
         self.entry_personalize.bind('<KeyRelease>', lambda ev: self.verify_personalization_name(var_personalize.get()))
-        self.button_personalize = tk.Button(self.tab2, text='Personalize to >>', command=lambda: self.personalize(var_personalize.get()), width=10, height=1, bg='#009999')
+        self.button_personalize = tk.Button(self.tab2, text='Personalize Cube:', command=lambda: self.personalize(var_personalize.get()), width=10, height=1, bg='#009999')
         self.button_personalize.grid(row=5, column=3, sticky='ew')
         Hovertip(self.button_personalize, 'Will dedicate extended items within the Horadric Cube with a name of your choosing. Or remove such a dedication.')
 
