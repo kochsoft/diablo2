@@ -18,12 +18,22 @@ Charm Analysis.
 101100001 == 269
 11001000 == 20
 111000100 == 71 (dim Vision)
+01110010 == 78
 
 
-data = "110110110000100000001110100000" (224)
+00000000001010100000010000001001100001010000010100 1111100000100110000011000100001000011100100000011010100101000000110101101010000001101010110100000011010
+    * Strength Bonus[0:17](8i32[9:17](10))
+    * Enhanced Defense[17:35](9i[26:35]+(100)%)
+    * Increased Chance to Block[35:51](7i[44:51](74)%)
+    * Hitherto unknown modification[51:153] with id '111100000'.
 
-data = "110110110000010000"
+data_rw = "111100000100110000011000100001000011100100000011010100101000000110101101010000001101010110100000011010"
 
+data = "1111100000100110000011000100001000011100100000011010100101000000110101101010000001101010110100000011010"
+
+Broken Codes: (i.e., these are legal, but do not seem to do much. Restricted to armor or such?)
+=============
+"000001010 1000000" << id: 160
 
 Python Code:
 ============
@@ -589,6 +599,36 @@ Unique Bow Eagle Horn
     * Ignore Target Defense[58:68](1[67:68](1))
     * Enhanced Max Damage based on Char Level[68:83](6f3[77:83]Level *(2.0)%)
     * Attack Rating based on Char Level[83:98](6f1[92:98]Level *(6.0))
+
+Jewel
+-----
+Item 'Jewel' (29 bytes) (normal, armor: False, weapon: False, sockets: 0/0, stack: False, set: False) IB_PLAYER #34 personalization: 'None', index: (1545, 1574)
+Max size in inventory: (1, 1), Defense (base): -10, Durability (base): 0/0, Stack: 0,
+Parent: IP_STORED, Storage: IS_STASH, (r:4, c:4), Equip: IE_UNSPECIFIED
+identified: True, broken: False, socketed: False, newly_found: False, starter_gear: False, compact: False, ethereal: False, personalized: False, runeword: False, 
+type code: jew, quality: magically_enhanced(4), ilevel: 64, is charm: False, Bit length: 232 (29.0 bytes)
+No known mods recognized.
+  quest_sockets: [108:111], 000
+  quality: [150:154], 0010
+  custom_graphics: [154:158], 1101
+  class_specific: [158:159], 0
+  quality_attributes: [159:181], 0000010110011001110100
+  runeword: [181:181], 
+  personalization: [181:181], 
+  tomes: [181:181], 
+  realm: [181:182], 0
+  defense: [182:182], 
+  durability: [182:182], 
+  stack: [182:182], 
+  set: [182:182], 
+  sockets: [182:182], 
+  mods: [182:216], 1011010000111001011011010010101010
+    * Resist Poison[0:17](8i50[9:17](28)%)
+    * Hitherto unknown modification[17:34] with id '110110100'.
+  mods_runeword: [232:232], 
+01010010101100100000100000000000000000010000000010100110000000000 0010 001 0101 01010110101001101110111000000100000101111101010110011011111001010000 000001 0010 110100000010110011001110100010110100001110010110110100101010101111111110000000
+b'JM\x10\x00\x80\x00e\x00\x88\xaaVv\x07\x82\xbe\x9a}\n -\xd0\xccE\x0b\xa7-U\xff\x01'
+
 
 
 ----

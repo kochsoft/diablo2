@@ -9,7 +9,7 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 16	Enhanced Defense	000010000	+,%					9i					000010000100101010	
 17	Enhanced Max Damage	100010000	,%	,%				9i	>9i				100010000010101110010101110	The second parameter seems to be decisive.
 19	Increase Attack Rating	110010000						10i					1100100001100000001	
-20	Increased Chance to Block	001010000	,%					7i					0010100001010100	
+20	Increased Chance to Block	001010000	,%					6i					001010000101010	
 21	Minimum Damage Bonus	101010000						6i					101010000110000	Yes, the value has 6 bit.
 22	Maximum Damage Bonus	011010000						7i					0110100001011111	Yes, the value has 7 bit.
 23	Minimum Damage Bonus(b)	111010000						6i					111010000110000	Seems to be redundant to mod 21. Found on Steel runeword.
@@ -43,6 +43,7 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 86	On Kill: Life Steal	011010100						7i					0110101001011000	
 87	Vendor Cost	111010100	-,%					7i					1110101001111000	
 89	Light Bonus	100110100						4i4					1001101001111	
+91	Requirements Reduction	110110100	(,-100)%					8i					11011010000101000	Requirements Percentage. Positive. Example value: 20%, will be displayed as -80%
 93	Increased Attack Speed	101110100	,%					7i20					1011101000100110	
 96	Faster Run and Walk	000001100	,%					7i20					0000011001000001	
 97	oskill	100001100		+				9s	6i				100001100111101100100000	First param is skill id. Second is lvl bonus.
