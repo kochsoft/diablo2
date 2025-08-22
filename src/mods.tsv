@@ -40,7 +40,7 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 78	Attacker takes Damage	011100100						7i					0111001000001000	Thorns.
 79	Extra Gold from Monsters	111100100	+,%					9i100					111100100001100010	
 81	Knockback	100010100						1000000					1000101001000000	The 7i seems to be simply ‚1000000‘.
-83	All Skills Bonus (Class specific)	110010100	class	+				3i	3i				110010100011100	First param is character class id, second is global skill bonus.
+83	All Skills Bonus (Class specific)	110010100	class	+				3c	3i				110010100011100	First param is character class id, second is global skill bonus.
 86	On Kill: Life Steal	011010100						7i					0110101001011000	
 87	Vendor Cost	111010100	-,%					7i					1110101001111000	
 89	Light Bonus	100110100						4i4					1001101001111	
@@ -76,7 +76,7 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 154	Reduce Stamina Drain	010110010	,%					7i20					0101100100110001	
 159	Min Damage Bonus on Throw	111110010						6i					111110010010000	
 160	Max Damage Bonus on Throw	000001010						7i					0000010101000000	
-188	Add Skill Tab	001111010	tab	char		+		3i	3i	0000000000	3i		0011110100100010000000000111	Tab index from bottom to top, character index, and level bonus.
+188	Add Skill Tab	001111010	tab	class		+		3i	3c	0000000000	3i		0011110100100010000000000111	Tab index from bottom to top, character index, and level bonus.
 196	On Kill: Autocast	001000110	level			,%		6i	9s	0	7i		00100011000101000111010000100110	Thr 1i seems to be simply ‚0‘.
 198	On Attack: Autocast	011000110	level			,%		6i	9s	0	7i		01100011010001010101100000101000	The 1i seems to be simply ‚0‘.
 201	On Being Struck: Autocast	100100110	level			,%		6i	9s	0	7i		10010011000101000110100000000101	The 1i seems to be simply ‚0‘.

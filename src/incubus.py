@@ -146,14 +146,17 @@ class TableMods:
         self.data = TableMods.read_mods_tsv(pfname)
 
     @staticmethod
-    def read_mods_tsv(pfname: Optional[str] = None) -> List[Dict[E_ColumnType, str]]:
-        """:param pfname: Target pfname to the .tsv file."""
+    def read_mods_tsv(pfname: Optional[str] = None) -> Dict[str, Dict[E_ColumnType, str]]:
+        """Reader function for reading in mods.tsv, the modification table file.
+        :param pfname: Target pfname to the .tsv file.
+        :returns a dict. Keys are 9-bit mod id strings. Values are sub-dicts, mapping column types to their
+          respective string values."""
         if pfname is None:
             pfname = pfname_mods_tsv
         if not Path.is_file(Path(pfname)):
             _log.error(f"Failure to load modification .tsv file '{pfname}'. Returning empty data structure.")
-            return list()
-        res = list()  # type: List[Dict[E_ColumnType, str]]
+            return dict()
+        res = dict()  # type: Dict[str, Dict[E_ColumnType, str]]
         with (open(pfname, 'r') as IN):
             # [Note: Eat the header line!]
             IN.readline()
@@ -180,14 +183,13 @@ class TableMods:
                     break
                 entry = parse_line(line)
                 if entry:
-                    res.append(entry)
+                    res[entry[E_ColumnType.CT_ID]] = entry
         return res
 
     def get_line_by_id(self, id_mod: str) -> Optional[Dict[E_ColumnType, str]]:
         """:param id_mod: Modification id as little endian binary string of length 9. E.g., '011011000' for cold damage.
         :returns a dict of the line identified by id_mod. Or None in case of failure."""
-        ind = [id_mod == val[E_ColumnType.CT_ID] for val in self.data]
-        return self.data[ind.index(True)] if True in ind else None
+        return self.data[id_mod] if id_mod in self.data else None
 
     def __str__(self) -> str:
         return f"Table with {len(self.data)} rows from '{self.pfname}'." if self.data else f"Empty table from '{self.pfname}'."
@@ -236,7 +238,8 @@ class ModificationParameter:
           'relation': '>' or '='. It is a requirement that a value of this param structure is either >=
             or = to a value that has been preceding it.
           'n_bits': Number of bits that is expected for this structure template.
-          'tp': Value type. 'i' in case of integers, 'f' in case of floats, '' in case of literals.
+          'tp': Value type. 'i' in case of integers, 'f' in case of floats, '' in case of literals,
+            's' is a special int, reserved for 9-bit skill ids. 'c' is for 3-bit character class ids.
           'offset': In case of integers this is the offset that has to be added to the in-game value to reach
             the save-game representation. E.g. '10' for armor class. In-Game armor of 100 is saved as 110.
             In case of little endian binary floats this defines the position of the point. 0 equals an integer.
@@ -253,7 +256,7 @@ class ModificationParameter:
         res['literal'] = search_literal.groups()[1] if is_literal else None
 
         # Regex: Parse the entire param.
-        search_all = re.search("^([>=]?)([0-9]*)([fis]?)([0-9]*)$", param)
+        search_all = re.search("^([>=]?)([0-9]*)([fisc]?)([0-9]*)$", param)
         if search_all is None:
             _log.warning(f"Encountered invalid modification parameter '{param}. Returning None.'")
             return None
@@ -272,6 +275,11 @@ class ModificationParameter:
     def is_skill(self) -> bool:
         """:returns True if and only if self.param equals '9s', signifying a skill id."""
         return isinstance(self.param, str) and ('9s' == self.param)
+
+    @property
+    def is_class(self) -> bool:
+        """:returns True if and only if self.param equals '3c', signifying a character class id."""
+        return isinstance(self.param, str) and ('3c' == self.param)
 
     @staticmethod
     def get_name_skill(id_skill: Union[int, str]) -> str:
@@ -303,6 +311,14 @@ class ModificationParameter:
             return 'no skill'
         index = id_skill - offset
         return redundant_skills[character][index] if index < len(redundant_skills[character]) else f'unknown skill ({id_skill})'
+
+    @staticmethod
+    def get_name_class(id_class: Union[int, str]) -> str:
+        """Takes a string id and returns a human-readable name. E.g., '54' is the Sorceress spell 'Teleport'. Compare 'Skills.txt'."""
+        if isinstance(id_class, str):
+            id_class = int(id_class[::-1], 2)
+        options = ['Amazon', "Sorceress", "Necromancer", "Paladin", "Barbarian", "Druid", "Assassin"]
+        return options[id_class] if id_class < len(options) else f"unknown ({id_class})"
 
     @property
     def code(self) -> Optional[Dict[str, Union[str, int, None]]]:
@@ -509,6 +525,8 @@ class ModificationItem:
                 param_binary = self.binary[param.index0:param.index1]
                 if param.is_skill:
                     value = '(' + param.get_name_skill(param_binary) + ')'
+                elif param.is_class:
+                    value = '(' + param.get_name_class(param_binary) + ')'
                 else:
                     value = f'({param.bin2val_templated(param_binary)})'
                 prefix_suffix = spec[E_ColumnType(j + 3)].split(',', 1)
