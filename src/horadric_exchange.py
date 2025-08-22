@@ -150,6 +150,7 @@ class Horadric_GUI:
         self.check_godmode = None  # type: Optional[tk.Checkbutton]
         self.check_wp_hop = None  # type: Optional[tk.Checkbutton]
         self.entry_runic_cube = None  # type: Optional[tk.Entry]
+        self.button_revive_cows = None  # type: Optional[tk.Button]
         self.button_personalize = None  # type: Optional[tk.Button]
         self.entry_personalize = None  # type: Optional[tk.Entry]
         self.entry_boost_skills = None  # type: Optional[tk.Entry]
@@ -571,6 +572,25 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         data.place_items_into_storage_maps(items)
         self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
+    def needs_revive_cows(self):
+        data = self.verify_hero()
+        if data is None:
+            return False
+        for prog in [E_Progression.EP_NORMAL, E_Progression.EP_NIGHTMARE, E_Progression.EP_HELL]:
+            bts = E_Quest.get_quest_block(data.data, prog)
+            if E_Quest.is_cow_level_done(bts):
+                return True
+        return False
+
+    def revive_cows(self):
+        self.horadric_horazon.revive_cows()
+
+    def needs_personalize(self) -> bool:
+        data = self.verify_hero()
+        if data is None:
+            return False
+        return False if (not data.has_horadric_cube) or (data.n_cube_contents_shallow == 0) else True
+
     def personalize(self, name: Optional[str]):
         data = self.verify_hero()
         if data is None:
@@ -758,7 +778,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         for widget in [self.button_load_cube, self.button_save_cube, self.button_reset_skills, self.button_runic_cube,
                        self.button_reset_attributes, self.button_boost_skills, self.button_boost_attributes,
                        self.check_hardcore, self.check_godmode, self.check_wp_hop, self.entry_boost_skills, self.entry_runic_cube,
-                       self.button_personalize, self.entry_personalize,
+                       self.button_revive_cows, self.button_personalize, self.entry_personalize,
                        self.entry_boost_attributes, self.entry_set_sockets, self.button_horazon, self.button_ensure_cube,
                        self.button_enable_nightmare, self.button_enable_hell, self.button_enable_nirvana,
                        self.button_revive_hero, self.button_revive_mercenary, self.button_jewelize,
@@ -802,6 +822,10 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
                 self.button_ensure_cube.config(state='normal')
             else:
                 self.button_ensure_cube.config(state='disabled')
+            if not self.needs_revive_cows():
+                self.button_revive_cows.config(state='disabled')
+            if not self.needs_personalize():
+                self.button_personalize.config(state='disabled')
             if data.progression >= 5:
                 self.button_enable_nightmare.config(state='disabled')
             if data.progression >= 10:
@@ -995,7 +1019,7 @@ Beware!"""
         Hovertip(self.button_enable_hell, 'If still in normal or nightmare mode. Enable Hell, and raise your character\'s level to 68 (if necessary) and fill his stash with gold.')
 
         self.button_enable_nirvana = tk.Button(self.tab2, text='Enable Nirvana', command=self.enable_nirvana, width=15, height=1, bg='#009999')
-        self.button_enable_nirvana.grid(row=4, column=5, sticky='w')
+        self.button_enable_nirvana.grid(row=4, column=5, sticky='ew')
         Hovertip(self.button_enable_nirvana, 'Beat Hell, transcend the World (enabling all waypoints, resetting most quests), raise your character\'s level to 86 (if necessary), and fill his stash with gold.')
 
         var_runic_cube = tk.StringVar()
@@ -1006,13 +1030,17 @@ Beware!"""
         self.button_runic_cube.grid(row=5, column=0)
         Hovertip(self.button_runic_cube, 'Write a comma-separated list of rune names and/or gem codes, /^[tasredb][0-4]$/ (bone=skull), and click this. Will add these socketables to the Cube and its environment.')
 
+        self.button_revive_cows = tk.Button(self.tab2, text='Revive Cow King', command=lambda: self.revive_cows(), width=10, height=1, bg='#009999')
+        self.button_revive_cows.grid(row=5, column=3, sticky='ew')
+        Hovertip(self.button_revive_cows, 'Will revive the Cow King in all difficulty levels where he died dismally for his people.')
+
         var_personalize = tk.StringVar()
         var_personalize.set("")
         self.entry_personalize = tk.Entry(self.tab2, textvariable=var_personalize)
-        self.entry_personalize.grid(row=5, column=4, columnspan=2, sticky='ew')
+        self.entry_personalize.grid(row=5, column=5, sticky='ew')
         self.entry_personalize.bind('<KeyRelease>', lambda ev: self.verify_personalization_name(var_personalize.get()))
         self.button_personalize = tk.Button(self.tab2, text='Personalize Cube:', command=lambda: self.personalize(var_personalize.get()), width=10, height=1, bg='#009999')
-        self.button_personalize.grid(row=5, column=3, sticky='ew')
+        self.button_personalize.grid(row=5, column=4, sticky='ew')
         Hovertip(self.button_personalize, 'Will dedicate extended items within the Horadric Cube with a name of your choosing. Or remove such a dedication.')
 
         var_skills = tk.StringVar()
@@ -1046,9 +1074,9 @@ Beware!"""
         var_n_sockets = tk.StringVar()
         var_n_sockets.set('6')
         self.entry_set_sockets = tk.Entry(self.tab2, textvariable=var_n_sockets)
-        self.entry_set_sockets.grid(row=7, column=3, sticky='ew')
+        self.entry_set_sockets.grid(row=7, column=4, sticky='ew')
         self.button_set_sockets = tk.Button(self.tab2, text='Set Sockets', command=self.set_sockets, bg='#009999')
-        self.button_set_sockets.grid(row=7, column=4, sticky='ew')
+        self.button_set_sockets.grid(row=7, column=3, sticky='ew')
         Hovertip(self.button_set_sockets, 'Within the items of the Horadric Cube, attempt to set this number of sockets ({0,..,6}).')
         self.button_empty_sockets = tk.Button(self.tab2, text='Empty Sockets', command=self.empty_sockets, bg='#009999')
         self.button_empty_sockets.grid(row=7, column=5, sticky='ew')

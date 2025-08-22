@@ -797,6 +797,21 @@ class E_Quest(Enum):
         """:returns an example of a 96 bytes quest structure in a game that has all quests and the cow level concluded."""
         return b'\x01\x00\x01\x10\x1d\x10M\x90\x1d\x14U\x10\x1d\x10\x01\x00\x01\x00\x1d\x10y\x1c\r\x10\x81\x11\x05\x10%\x1e\x01\x00\x01\x00\x01\x10\xfd\x10\xf9\x13\x01\x10\x1d\x10q\x10\x01\x00\x01\x00\x01\x10\x01\x13\x01\x10\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00!\x90\x01\x10\x8d\x17\x1d\x10}\x13\xed\x14\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'
 
+    @staticmethod
+    def is_cow_level_done(quest_block: bytes) -> bool:
+        """:param quest_block: A quest block for a difficulty setting. As may be returned by self.get_quest_block(..)
+        :return True if and only if the cow level has been completed in the given quest block. That is encoded
+        as bit 10 (not 11!) of Quest 8 -- The Search for Cain."""
+        return bytes2bitmap(quest_block)[(E_Quest.EQ_Q_SEARCH_FOR_CAIN.value * 8) + 10] == '1'
+
+    @staticmethod
+    def reset_cow_level(quest_block: bytes, set_to_done: bool = False):
+        """Resets the cow-level."""
+        bm = bytes2bitmap(quest_block)
+        index_cow_level = (E_Quest.EQ_Q_SEARCH_FOR_CAIN.value * 8) + 10
+        bm = bm[:index_cow_level] + ('1' if set_to_done else '0') + bm[(index_cow_level + 1):]
+        return bitmap2bytes(bm)
+
     def pos_byte_in_d2s(self, difficulty: E_Progression) -> int:
         """:returns the first byte of this quest given difficulty level in the entire .d2s file."""
         if difficulty == E_Progression.EP_NORMAL:
@@ -3529,6 +3544,9 @@ class Horadric:
         if parsed.revive_merc:
             self.set_dead_mercenary(False)
 
+        if parsed.revive_cows:
+            self.revive_cows()
+
         if parsed.redeem_golem:
             for data in self.data_all:
                 self.redeem_golem(data)
@@ -3748,6 +3766,17 @@ class Horadric:
         for data in self.data_all:
             print(f"Attempting to ensure {'death' if val else 'life'} for {data.get_name(True)}'s mercenary.")
             data.is_dead_mercenary = val
+            if self.is_standalone:
+                data.update_all()
+                data.save2disk()
+
+    def revive_cows(self):
+        for data in self.data_all:
+            print(f"Attempting to ensure life for {data.get_name(True)}'s cow king.")
+            for prog in [E_Progression.EP_NORMAL, E_Progression.EP_NIGHTMARE, E_Progression.EP_HELL]:
+                bts = E_Quest.get_quest_block(data.data, prog)
+                bts = E_Quest.reset_cow_level(bts)
+                data.data = E_Quest.set_quest_block(data.data, bts, prog)
             if self.is_standalone:
                 data.update_all()
                 data.save2disk()
@@ -4125,6 +4154,7 @@ $ python3 {Path(sys.argv[0]).name} --info conan.d2s ormaline.d2s"""
         parser.add_argument('--softcore', action='store_true', help="Flag. Set target characters to soft core mode.")
         parser.add_argument('--revive_self', action='store_true', help="Flag. If your character is dead, this will revive him. Even if he is a hardcore character. He still may have to pick up his corpse though.")
         parser.add_argument('--revive_merc', action='store_true', help="Flag. If your mercenary is dead, this will revive him.")
+        parser.add_argument('--revive_cows', action='store_true', help='Flag. If your cow king is dead, this will revive him.')
         parser.add_argument('--redeem_golem', action='store_true', help="Flag. If there is an iron golem, dispel it and return its items into the player's inventory.")
         parser.add_argument('--boost_attributes', type=int, help='Set this number to the given value.')
         parser.add_argument('--boost_skills', type=int, help='Set this number to the given value.')

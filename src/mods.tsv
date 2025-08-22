@@ -35,6 +35,7 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 57	Poison damage X-Y over duration Z	100111000	Min(10s)	Max(10s)	,frames			10i	10i	9i			10011100010010100001001010000110100100	Min X, Max Y. Both state the amount of damage this poison causes over roughly 10 seconds, and 256 frames. Z is the duration in frames. D2 runs at 25fps.
 60	On Hit: Life Steal	001111000	,%					7i					0011110000111000	
 62	On Hit: Mana Steal	011111000	,%					7i					0111110000010000	
+73	Increase Maximum Durability	100100100						8i					10010010001010000	Works on items as absolute bonus, and remains invisible in mods list.
 74	Replenish Life	010100100						6i30					010100100101001	
 75	Increase Maximum Durability	110100100	+,%					7i20					1101001000100010	Seems to be a superiority modification for, e.g., superior armor.
 78	Attacker takes Damage	011100100						7i					0111001000001000	Thorns.
@@ -49,9 +50,11 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 96	Faster Run and Walk	000001100	,%					7i20					0000011001000001	
 97	oskill	100001100		+				9s	6i				100001100111101100100000	First param is skill id. Second is lvl bonus.
 99	Faster Hit Recovery	110001100	,%					7i20					1100011000110001	
+102	Faster Block Rate	011001100	,%					7i20					0110011000100110	
 105	Faster Cast Rate	100101100	,%					7i20					1001011001011010	
 107	skill	110101100		+				9s	3i				110101100011011000100	First param is skill id. Second is lvl bonus.
 110	Poison Length Reduced	011101100	,%					8i20					01110110010110100	
+112	Hit causes Monster to flee Probability	000011100	(,/1.27)%					7i					0000111001111110	
 113	Hit blinds Target	100011100						1000000					1000111001000000	
 114	Damage taken adds to Mana	010011100	,%					6i					010011100010100	Unclear which values are really accepted how.
 115	Ignore Target Defense	110011100						1					1100111001	That parameter seems to be simply ‚1‘.
@@ -59,6 +62,8 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 117	Prevent Monster Healing	101011100						1000000					1010111001000000	The 7i seems to be simply ‚1000000‘.
 121	Enhanced Damage to Demons	100111100	,%					9i20					100111100011111010	
 122	Enhanced Damage to Undead	010111100	,%					9i20					010111100100010010	
+123	Attack Rating Bonus to Demons	110111100						10i128					1101111000010011100	
+124	Attack Rating Bonus to Undead	001111100						10i128					0011111000010111001	
 127	All Skills Bonus	111111100	+					3i					111111100010	
 128	Attacker takes Lightning Damage	000000010						5i					00000001011111	
 135	Open Wounds Probability	111000010	,%					7i					1110000101001100	
@@ -81,6 +86,7 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 198	On Attack: Autocast	011000110	level			,%		6i	9s	0	7i		01100011010001010101100000101000	The 1i seems to be simply ‚0‘.
 201	On Being Struck: Autocast	100100110	level			,%		6i	9s	0	7i		10010011000101000110100000000101	The 1i seems to be simply ‚0‘.
 204	Charged Item	001100110	level				/	6i	9s	0	8i	>8i	00110011001001011000111000111100001111000	The 1i seems to be simply ‚0‘.
+218	Max Damage Bonus based on Char Level	010110110						6f3					010110110001000	
 219	Enhanced Max Damage based on Char Level	110110110	Level *,%					6f3					110110110000010	
 220	Strength Bonus based on Char Level	001110110	Level *					6f3					001110110011000	
 223	Vitality Bonus based on Char Level	111110110	Level *					6f3					111110110001000	

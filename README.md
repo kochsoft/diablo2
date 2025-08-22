@@ -40,7 +40,7 @@ that is attached to this repository.
 # Help Text (March 15th 2025)
 
 ```
-python3 horazons_folly.py --help
+$ python3 horazons_folly.py --help
  
 usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
                          [--exchange_horadric]
@@ -52,7 +52,8 @@ usage: horazons_folly.py [-h] [--omit_backup] [--pfname_backup PFNAME_BACKUP]
                          [--dispel_magic] [--toggle_ethereal]
                          [--jewelize [JEWELIZE]] [--regrade_horadric]
                          [--ensure_horadric] [--hardcore] [--softcore]
-                         [--revive_self] [--revive_merc] [--redeem_golem]
+                         [--revive_self] [--revive_merc] [--revive_cows]
+                         [--redeem_golem]
                          [--boost_attributes BOOST_ATTRIBUTES]
                          [--boost_skills BOOST_SKILLS] [--reset_attributes]
                          [--reset_skills] [--enable_nightmare] [--enable_hell]
@@ -99,6 +100,7 @@ options:
   --softcore            Flag. Set target characters to soft core mode.
   --revive_self         Flag. If your character is dead, this will revive him. Even if he is a hardcore character. He still may have to pick up his corpse though.
   --revive_merc         Flag. If your mercenary is dead, this will revive him.
+  --revive_cows         Flag. If your cow king is dead, this will revive him.
   --redeem_golem        Flag. If there is an iron golem, dispel it and return its items into the player's inventory.
   --boost_attributes BOOST_ATTRIBUTES
                         Set this number to the given value.
