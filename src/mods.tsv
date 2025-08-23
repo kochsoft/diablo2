@@ -15,6 +15,7 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 23	Minimum Damage Bonus(b)	111010000						6i					111010000110000	Seems to be redundant to mod 21. Found on Steel runeword.
 24	Maximum Damage Bonus(b)	000110000						7i					0001100001100000	Seems to be redundant to mod 22. Found on Steel runeword.
 27	Mana Recovery	110110000	,%					8i					11011000011010100	
+28	Heal Stamina Plus	001110000	,%					8i					00111000010011000	
 31	Defense Bonus	111110000						11i10					11111000001101100100	
 32	Defense against Missile	000001000						9i					000001000001001100	
 33	Defense against Melee	100001000						8i					10000100001001100	

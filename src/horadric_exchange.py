@@ -28,8 +28,6 @@ default =\
 }
 # < ------------------------------------------------------------------
 
-
-
 logging.basicConfig(level=logging.INFO, format= '[%(asctime)s] {%(filename)s:%(lineno)d} %(levelname)s - %(message)s',datefmt='%H:%M:%S')
 _log = logging.getLogger()
 
@@ -589,7 +587,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         data = self.verify_hero()
         if data is None:
             return False
-        return False if (not data.has_horadric_cube) or (data.n_cube_contents_shallow == 0) else True
+        return len(Item(data.data).get_cube_contents(restrict2regular_extended=True)) > 0
 
     def personalize(self, name: Optional[str]):
         data = self.verify_hero()
@@ -597,7 +595,7 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
             return
         if not name:
             name = None
-        items = Item(data.data).get_cube_contents()
+        items = Item(data.data).get_cube_contents(restrict2regular_extended=True)
         items_new = list()  # type: List[Item]
         for item in items:
             row = item.row

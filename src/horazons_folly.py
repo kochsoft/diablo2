@@ -2124,8 +2124,11 @@ class Item:
                     res.append(item)
         return res
 
-    def get_cube_contents(self) -> List[Item]:
-        """:returns list of items and socketed items found in the Horadric Cube."""
+    def get_cube_contents(self, *, restrict2regular_extended: bool = False) -> List[Item]:
+        """:param restrict2regular_extended: If given as True, this will only include items that are regular
+          extended items. I.e., items that can be modified. Non-regular extended items encompass tomes, quivers,
+          and the like.
+        :returns list of items and socketed items found in the Horadric Cube."""
         items = self.get_block_items(E_ItemBlock.IB_PLAYER)
         found_cube = False
         res = list()  # type: List[Item]
@@ -2138,6 +2141,8 @@ class Item:
             if not found_cube:
                 continue
             if item.stash_type == E_ItemStorage.IS_CUBE or item.item_parent == E_ItemParent.IP_ITEM:
+                if restrict2regular_extended and (self.get_item_property(E_ItemBitProperties.IP_COMPACT) or ItemFamily.is_special_extended(self.type_code)):
+                    continue
                 res.append(item)
             else:
                 found_cube = False
@@ -3993,7 +3998,7 @@ class Horadric:
         :param data: Some Data object.
         :param name: a 2-15 letter name with potentially one hyphen xor underscore.
           May also be None. In that case, existing personalization will be wiped."""
-        items = Item(data.data).get_cube_contents()  # type: List[Item]
+        items = Item(data.data).get_cube_contents(restrict2regular_extended=True)  # type: List[Item]
         if not items:
             return
         cube_named = b''  # type: bytes
