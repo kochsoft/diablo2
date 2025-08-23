@@ -3484,6 +3484,10 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
         golem = 'golem commanding, ' if self.has_iron_golem else ''
         merc = self.get_info_mercenary()
         god_status = ('demi-goddess' if self.is_demi_god else 'heroine') if self.get_class_enum().is_female() else ('demi-god' if self.is_demi_god else 'hero')
+        haa = self.highest_accessible_act
+        cow_level_done = ''
+        for prog in [E_Progression.EP_NORMAL, E_Progression.EP_NIGHTMARE, E_Progression.EP_HELL]:
+            cow_level_done += '1' if E_Quest.is_cow_level_done(E_Quest.get_quest_block(self.data, prog)) else '0'
         attr = self.get_attributes()
         s_attr = ''
         for key in self.get_attributes():
@@ -3499,9 +3503,9 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
               f"Progress: {self.progression}.\n" \
               f"attributes: {s_attr}" \
               f"learned skill-set : {self.skills2str()}\n" \
+              f"highest accessible act: {[f"{key}: {haa[key]}" for key in haa]}, Cow Level done in NNH: {cow_level_done}\n" \
               f"quest map: {self.get_quests_simplified()}\n" \
-              f"waypoint map: {self.waypoint_map}\n" \
-              f"highest accessible act: {self.highest_accessible_act}"
+              f"waypoint map: {self.waypoint_map}\n"
         item_analysis = Item(self.data)
         items = item_analysis.get_block_items()
         for item in items:

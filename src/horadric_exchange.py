@@ -581,7 +581,11 @@ February 2025, Markus-H. Koch ( https://github.com/kochsoft/diablo2 )"""
         return False
 
     def revive_cows(self):
+        data = self.verify_hero()
+        if data is None:
+            return
         self.horadric_horazon.revive_cows()
+        self.ta_insert_character_data(self.horadric_horazon, data.pfname, self.ta_hero)
 
     def needs_personalize(self) -> bool:
         data = self.verify_hero()
