@@ -475,7 +475,7 @@ class ModificationItem:
         :param table: Table of known modification specifications.
         :returns dict.
           'is_valid': bool. Was a known modification type found and could it be parsed?
-          'index0': int. Repeats the given index0.
+          'index0': int. Repeats the given index0. I.e., the first bit of the 9-bit-long id for this mod.
           'index1': index within binary of the first entry beyond this modification item.
             May be == len(binary) if this is the last item or if this modification could not be identified,
             making it a residual (which is not valid).
@@ -556,7 +556,9 @@ class ModificationSet:
             self.items_modification.append(mod)
             if not mod.is_valid:
                 # [Note: A non-valid mod is designed to hold the unparsable remainder binary and should be part of
-                #  the modification list. Its chief problem is the first mod within it being hitherto unknown in [1].]
+                #  the modification list. Its chief problem is the first mod within it being hitherto unknown in [1].
+                #  It is quite possible that all other modifications beyond this first unknown one are quite known.
+                #  However, we would not know, because it is unclear at what index their ids would begin.]
                 break
             index0 = mod.parsed['index1']
 

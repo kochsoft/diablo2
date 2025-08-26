@@ -80,6 +80,7 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 152	Indestructible	000110010						1					0001100101	
 153	Cannot be Frozen	100110010						1					1001100101	
 154	Reduce Stamina Drain	010110010	,%					7i20					0101100100110001	
+156	Piercing Attack	001110010	,%					7i					0011100101001100	
 159	Min Damage Bonus on Throw	111110010						6i					111110010010000	
 160	Max Damage Bonus on Throw	000001010						7i					0000010101000000	
 188	Add Skill Tab	001111010	tab	class		+		3i	3c	0000000000	3i		0011110100100010000000000111	Tab index from bottom to top, character index, and level bonus.
