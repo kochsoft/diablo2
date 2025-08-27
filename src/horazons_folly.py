@@ -2556,7 +2556,7 @@ this page was an excellent source for that: https://github.com/WalterCouto/D2CE/
                 if quest.index_act >= act:
                     break
                 val_old = int.from_bytes(data[quest.value:(quest.value+2)], 'little')
-                val_new = int.from_bytes(b'\x01\x00' if quest.is_marker else b'\x07\x10', 'little')
+                val_new = int.from_bytes(b'\x01\x20' if quest.is_marker else b'\x07\x10', 'little')
                 val = int.to_bytes(val_old | val_new, 2, 'little')
                 data = data[:quest.value] + val + data[(quest.value+2):]
             self.data = E_Quest.set_quest_block(self.data, data, difficulty)
