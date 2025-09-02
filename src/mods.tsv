@@ -76,6 +76,7 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 145	Absorb Lightning	100010010						7i					1000100100010100	
 147	Absorb Magic	110010010						7i					1100100101101000	
 148	Absorb Cold	001010010						7i					0010100100010100	
+150	Slow Targets	011010010	,%					7i					0110100100111100	
 151	Aura on Equip	111010010		+				9s	5i				11101001011100110000101	First param is skill id. Second is lvl.
 152	Indestructible	000110010						1					0001100101	
 153	Cannot be Frozen	100110010						1					1001100101	
@@ -97,6 +98,7 @@ no	name	id	label_0	label_1	label_2	label_3	label_4	param_0	param_1	param_2	param
 240	Magic Find Bonus based on Char Level	000011110	Level *,%					6f3					000011110000100	
 252	Repair Damage over Time	001111110	1 in 100s/					6i					001111110010011	The example, having value 50, repairs one in 100s/50=2s.
 253	Replenish Quantity	101111110	1 in 200s/					6i					101111110101000	
+254	Increased Stack Size	011111110						8i					01111111011110100	Stack is increased by the number. Dispel magic does not reduce that number though.
 332	Poison Skill Damage Bonus	001100101	,%					9i50					001100101101010100	
 333	Reduce Enemy Fire Resist	101100101	-,%					8i					10110010111000100	
 334	Reduce Enemy Lightning Resist	011100101	-,%					8i					01110010111000100	
