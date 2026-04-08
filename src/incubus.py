@@ -32,7 +32,7 @@ import os
 import re
 import logging
 import argparse
-from Tools.i18n.pygettext import is_literal_string
+#from Tools.i18n.pygettext import is_literal_string
 from collections import OrderedDict as odict
 from argparse import RawTextHelpFormatter
 from numbers import Number
